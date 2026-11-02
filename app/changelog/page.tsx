@@ -62,7 +62,7 @@ const CHANGELOG: YearBlock[] = [
             title: "Internal Search & Real-Time UI",
             bullets: [
               {
-                text: "Built the Gyra Internal Search Engine using DuckDuckGo and Cheerio — no third-party search APIs required.",
+                text: "Built the Gyra Internal Search Engine",
                 bold: ["Gyra Internal Search Engine"],
               },
               {
@@ -70,7 +70,7 @@ const CHANGELOG: YearBlock[] = [
                 bold: ["Atlas"],
               },
               {
-                text: "Redesigned the Thinking UI to show live timers, animated mini-orbs, and real-time page counts (e.g., '4 pages found').",
+                text: "Redesigned the Thinking UI to show live timers, animated mini-orbs, and real-time page counts",
               },
             ],
           },

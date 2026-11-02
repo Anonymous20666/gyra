@@ -1,18 +1,18 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { supabase } from "../supabase";
-import SettingsPanel from "../components/SettingsPanel";
-import VoiceOutput, { VoiceToggleButton } from "../components/VoiceOutput";
+import { useEffect, useRef, useState } from "react";
 import AttachmentMenu from "../components/AttachmentMenu";
 import GyraMark from "../components/GyraMark";
+import SettingsPanel from "../components/SettingsPanel";
 import VoiceMode from "../components/VoiceMode";
+import VoiceOutput from "../components/VoiceOutput";
+import { supabase } from "../supabase";
 
 import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
+import remarkGfm from "remark-gfm";
 
 // ============================================================
 // MessageContent — Advanced Markdown Renderer
@@ -120,6 +120,7 @@ export default function Dashboard() {
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showToolsMenu, setShowToolsMenu] = useState(false);
 
   const [subscription, setSubscription] = useState<{
     plan: string;
@@ -1471,6 +1472,25 @@ export default function Dashboard() {
             />
           )}
 
+          {/* 🚨 TOOLS MENU POPUP 🚨 */}
+          {showToolsMenu && (
+            <div className="absolute bottom-20 left-0 w-full bg-[#212121] border border-zinc-800 rounded-3xl p-4 shadow-2xl z-50 animate-in slide-in-from-bottom-5 fade-in duration-200">
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => {
+                    setShowToolsMenu(false);
+                    // Add your Notebooks logic here later
+                    alert("Opening Notebooks..."); 
+                  }}
+                  className="flex items-center gap-3 px-4 py-3 bg-zinc-900 hover:bg-zinc-800 rounded-xl text-sm font-medium transition-colors text-left text-white"
+                >
+                  <span className="text-xl">📓</span>
+                  Notebooks
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className={`w-full bg-[#212121] rounded-[32px] p-3 flex flex-col gap-2 transition-opacity ${attachment?.status === "nsfw" ? "opacity-50 pointer-events-none" : ""}`}>
             <input
               type="text"
@@ -1505,13 +1525,18 @@ export default function Dashboard() {
                 >
                   <svg className="w-4 h-4 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={showAttachMenu ? "M6 18L18 6M6 6l12 12" : "M12 4v16m8-8H4"} /></svg>
                 </button>
+
+                {/* 🚨 NEW TOOLS MIC BUTTON 🚨 */}
                 <button
-                  onClick={() => setShowVoiceMode(true)}
+                  onClick={() => setShowToolsMenu(!showToolsMenu)}
                   className="w-9 h-9 rounded-full bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center transition-colors"
-                  title="Voice mode"
+                  title="Tools"
                 >
-                  🎙
+                  <svg className="w-5 h-5 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                  </svg>
                 </button>
+
                 {input.trim().length > 0 || attachment ? (
                   <button
                     type="button"
@@ -1524,14 +1549,7 @@ export default function Dashboard() {
                   >
                     <svg className="w-5 h-5" fill="none" stroke="white" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 12h14M12 5l7 7-7 7" /></svg>
                   </button>
-                ) : (
-                  <button
-                    onClick={() => setShowVoiceMode(true)}
-                    className="bg-white text-black px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 hover:bg-zinc-200 transition-colors"
-                  >
-                    🎙 Speak
-                  </button>
-                )}
+                ) : null}
               </div>
             </div>
           </div>
