@@ -251,8 +251,10 @@ If a user asks you to MODIFY an image, you MUST end your response with this exac
           
           // PHASE 1: ATLAS (Research)
           let context = "";
-          if (search) {
-            controller.enqueue(encodeEvent({ type: "status", agent: "Atlas", status: "Searching and scraping the web..." }));
+          
+          // 🚨 FIX: Atlas now runs if Search is ON, OR if it's a Code Request
+          if (search || isCodeRequest) {
+            controller.enqueue(encodeEvent({ type: "status", agent: "Atlas", status: "Researching documentation and scraping the web..." }));
             const searchResult = await atlasInternalSearch(lastUserMessage);
             context = searchResult.context;
             
@@ -262,6 +264,13 @@ If a user asks you to MODIFY an image, you MUST end your response with this exac
                 agent: "Atlas", 
                 status: `Scraped ${searchResult.sources.length} sources.`, 
                 sources: searchResult.sources
+              }));
+            } else {
+               // If it fails to scrape, still show Atlas so the user knows it ran
+               controller.enqueue(encodeEvent({ 
+                type: "status", 
+                agent: "Atlas", 
+                status: `Researched context.`, 
               }));
             }
           }
