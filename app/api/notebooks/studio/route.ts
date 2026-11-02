@@ -12,9 +12,10 @@ export async function POST(req: Request) {
 
     const context = sources?.map(s => s.content).join("\n\n") || "";
 
-    const prompt = `Based on the following text, generate a comprehensive ${type}.\n\nTEXT:\n${context}`;
+    if (!context) return NextResponse.json({ error: "No sources found" }, { status: 400 });
 
-    // Call your AI provider (non-streaming for Studio outputs)
+    const prompt = `Based on the following sources, generate a comprehensive, highly detailed ${type}. Format it beautifully using Markdown.\n\nSOURCES:\n${context}`;
+
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -22,16 +23,20 @@ export async function POST(req: Request) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
+        model: "openai/gpt-oss-120b",
         messages: [{ role: "user", content: prompt }],
+        temperature: 0.5,
       }),
     });
 
     const data = await response.json();
-    const output = data.choices[0].message.content;
+    const output = data.choices?.[0]?.message?.content;
+
+    if (!output) throw new Error("No output generated");
 
     return NextResponse.json({ output });
   } catch (error) {
+    console.error(error);
     return NextResponse.json({ error: "Failed to generate" }, { status: 500 });
   }
 }
