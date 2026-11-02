@@ -1477,16 +1477,15 @@ export default function Dashboard() {
             <div className="absolute bottom-20 left-0 w-full bg-[#212121] border border-zinc-800 rounded-3xl p-4 shadow-2xl z-50 animate-in slide-in-from-bottom-5 fade-in duration-200">
               <div className="flex flex-col gap-2">
                 <button
-                  onClick={() => {
-                    setShowToolsMenu(false);
-                    // Add your Notebooks logic here later
-                    alert("Opening Notebooks..."); 
-                  }}
-                  className="flex items-center gap-3 px-4 py-3 bg-zinc-900 hover:bg-zinc-800 rounded-xl text-sm font-medium transition-colors text-left text-white"
-                >
-                  <span className="text-xl">📓</span>
-                  Notebooks
-                </button>
+  onClick={() => {
+    setShowToolsMenu(false);
+    window.location.href = "/notebooks";
+  }}
+  className="flex items-center gap-3 px-4 py-3 bg-zinc-900 hover:bg-zinc-800 rounded-xl text-sm font-medium transition-colors text-left text-white"
+>
+  <span className="text-xl">📓</span>
+  Notebooks
+</button>
               </div>
             </div>
           )}
