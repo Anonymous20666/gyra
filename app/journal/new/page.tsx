@@ -14,6 +14,7 @@ export default function NewJournalEntry() {
   const [images, setImages] = useState<string[]>([]);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [location, setLocation] = useState<string | null>(null);
+  const [isBookmarked, setIsBookmarked] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   // UI States
@@ -65,21 +66,19 @@ export default function NewJournalEntry() {
       } finally {
         setIsSearchingLocation(false);
       }
-    }, 500); // 500ms debounce
+    }, 500);
 
     return () => clearTimeout(delayDebounceFn);
   }, [locationQuery]);
 
-  // Helper to pick an icon based on the location type from the API
   const getLocationIcon = (type: string, category: string) => {
     if (type?.includes('aerodrome') || type?.includes('airport')) return '✈️';
     if (type?.includes('hotel') || type?.includes('motel')) return '🛏️';
     if (category?.includes('natural') || type?.includes('peak')) return '🏔️';
     if (category?.includes('place') || type?.includes('city') || type?.includes('state')) return '🏙️';
-    return '📍'; // Default pin
+    return '📍';
   };
 
-  // Helper to format the location title nicely
   const formatLocationName = (loc: any) => {
     const name = loc.name || loc.display_name.split(',')[0];
     const city = loc.address?.city || loc.address?.town || loc.address?.state || loc.address?.country;
@@ -93,10 +92,7 @@ export default function NewJournalEntry() {
   const handleLocationSelect = (loc: any) => {
     const shortName = loc.name || loc.display_name.split(',')[0];
     const city = loc.address?.city || loc.address?.state || loc.address?.country || "";
-    
-    // Format the tag at the top (e.g., "Lagos · Lagos")
     setLocation(city ? `${shortName} · ${city}` : shortName);
-    
     setIsLocating(false);
     setLocationQuery("");
     setLocationResults([]);
@@ -117,16 +113,27 @@ export default function NewJournalEntry() {
       images,
       audio_url: audioUrl,
       location_name: location,
+      is_bookmarked: isBookmarked,
     }]);
 
     router.push("/journal");
   };
 
+  // 🚨 FIX: Convert files to Base64 so they save permanently in Supabase
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-    const newImages = Array.from(files).map(file => URL.createObjectURL(file));
-    setImages(prev => [...prev, ...newImages]);
+
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImages(prev => [...prev, reader.result as string]);
+      };
+      reader.readAsDataURL(file);
+    });
+    
+    // Reset input so the same file can be selected again
+    e.target.value = '';
   };
 
   const removeImage = (index: number) => {
@@ -169,9 +176,8 @@ export default function NewJournalEntry() {
       <div className="flex-1 overflow-y-auto px-4 py-6">
         <p className="text-center text-xs text-zinc-500 font-medium mb-4">Tue, 3 Nov</p>
 
-        {/* Attachments Row (Location, Audio, Images) */}
+        {/* Attachments Row */}
         <div className="flex flex-wrap gap-2 mb-6">
-          {/* Location Tag */}
           {location && (
             <div className="flex items-center gap-2 bg-[#1c1c1e] rounded-lg px-3 py-1.5 text-sm border border-zinc-800">
               <div className="w-5 h-5 rounded-full bg-zinc-800 flex items-center justify-center text-[10px]">📍</div>
@@ -180,7 +186,6 @@ export default function NewJournalEntry() {
             </div>
           )}
 
-          {/* Audio Tag */}
           {audioUrl && (
             <div className="w-full bg-[#1e1b4b] border border-indigo-900/50 rounded-xl p-3 flex items-center gap-3">
               <button className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center shrink-0">
@@ -196,12 +201,11 @@ export default function NewJournalEntry() {
             </div>
           )}
 
-          {/* Images */}
           {images.length > 0 && (
             <div className="flex gap-2 overflow-x-auto w-full pb-2">
               {images.map((img, i) => (
                 <div key={i} className="relative w-24 h-24 shrink-0">
-                  <img src={img} className="w-full h-full object-cover rounded-xl" />
+                  <img src={img} className="w-full h-full object-cover rounded-xl border border-zinc-700" />
                   <button onClick={() => removeImage(i)} className="absolute -top-2 -right-2 w-6 h-6 bg-zinc-800 border border-zinc-600 rounded-full flex items-center justify-center text-xs hover:bg-red-500 hover:border-red-500">✕</button>
                 </div>
               ))}
@@ -218,7 +222,6 @@ export default function NewJournalEntry() {
           className="w-full bg-transparent text-2xl font-bold text-white placeholder:text-zinc-600 outline-none mb-4"
         />
         
-        {/* Tiptap Rich Text Editor */}
         <EditorContent editor={editor} />
       </div>
 
@@ -241,7 +244,6 @@ export default function NewJournalEntry() {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
           </button>
           
-          {/* LOCATION BUTTON */}
           <button onClick={() => setIsLocating(true)} className="w-10 h-10 rounded-full flex items-center justify-center text-zinc-300 hover:bg-zinc-800">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
           </button>
@@ -295,27 +297,15 @@ export default function NewJournalEntry() {
       {/* PREMIUM LOCATION SEARCH BOTTOM SHEET */}
       {isLocating && (
         <div className="absolute inset-0 bg-black/60 z-50 flex items-end justify-center" onClick={() => setIsLocating(false)}>
-          <div 
-            className="bg-[#1c1c1e] w-full max-w-md rounded-t-3xl flex flex-col h-[85vh] animate-in slide-in-from-bottom-full duration-300 ease-out" 
-            onClick={e => e.stopPropagation()}
-          >
-            {/* Drag Handle */}
+          <div className="bg-[#1c1c1e] w-full max-w-md rounded-t-3xl flex flex-col h-[85vh] animate-in slide-in-from-bottom-full duration-300 ease-out" onClick={e => e.stopPropagation()}>
             <div className="w-full flex justify-center pt-3 pb-2">
               <div className="w-12 h-1.5 bg-zinc-700 rounded-full"></div>
             </div>
 
-            {/* Search Input */}
             <div className="px-4 pb-4 flex items-center gap-2">
               <div className="flex-1 bg-[#2c2c2e] rounded-xl flex items-center px-3 py-2.5 border border-zinc-800 focus-within:border-zinc-600 transition-colors">
                 <svg className="w-5 h-5 text-zinc-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                <input 
-                  autoFocus
-                  type="text" 
-                  placeholder="Search locations..." 
-                  value={locationQuery}
-                  onChange={(e) => setLocationQuery(e.target.value)}
-                  className="bg-transparent w-full text-white outline-none placeholder:text-zinc-500"
-                />
+                <input autoFocus type="text" placeholder="Search locations..." value={locationQuery} onChange={(e) => setLocationQuery(e.target.value)} className="bg-transparent w-full text-white outline-none placeholder:text-zinc-500" />
                 {locationQuery && (
                   <button onClick={() => setLocationQuery("")} className="w-5 h-5 bg-zinc-600 rounded-full flex items-center justify-center text-xs text-black">✕</button>
                 )}
@@ -325,28 +315,16 @@ export default function NewJournalEntry() {
               </button>
             </div>
             
-            {/* Results List */}
             <div className="flex-1 overflow-y-auto px-2 pb-10">
               {isSearchingLocation ? (
-                <div className="flex justify-center py-6">
-                  <div className="w-6 h-6 border-2 border-zinc-500 border-t-transparent rounded-full animate-spin"></div>
-                </div>
+                <div className="flex justify-center py-6"><div className="w-6 h-6 border-2 border-zinc-500 border-t-transparent rounded-full animate-spin"></div></div>
               ) : locationResults.length > 0 ? (
                 locationResults.map((loc: any) => (
-                  <button 
-                    key={loc.place_id} 
-                    onClick={() => handleLocationSelect(loc)} 
-                    className="w-full flex items-center gap-3 p-3 hover:bg-[#2c2c2e] rounded-xl text-left transition-colors"
-                  >
-                     <div className="w-9 h-9 rounded-full bg-zinc-800 flex items-center justify-center text-lg shadow-sm">
-                       {getLocationIcon(loc.type, loc.class)}
-                     </div>
-                     
+                  <button key={loc.place_id} onClick={() => handleLocationSelect(loc)} className="w-full flex items-center gap-3 p-3 hover:bg-[#2c2c2e] rounded-xl text-left transition-colors">
+                     <div className="w-9 h-9 rounded-full bg-zinc-800 flex items-center justify-center text-lg shadow-sm">{getLocationIcon(loc.type, loc.class)}</div>
                      <div className="flex-1 min-w-0">
                        <p className="text-white text-[15px] truncate">{formatLocationName(loc)}</p>
-                       {loc.address?.suburb && (
-                         <p className="text-zinc-500 text-xs truncate">{loc.address.suburb}</p>
-                       )}
+                       {loc.address?.suburb && <p className="text-zinc-500 text-xs truncate">{loc.address.suburb}</p>}
                      </div>
                   </button>
                 ))
@@ -363,14 +341,19 @@ export default function NewJournalEntry() {
         </div>
       )}
 
-      {/* More Options Modal */}
+      {/* 🚨 MORE OPTIONS MODAL (Wired up) 🚨 */}
       {showMoreOptions && (
         <div className="absolute inset-0 bg-black/60 z-50 flex items-center justify-center p-6" onClick={() => setShowMoreOptions(false)}>
            <div className="bg-[#1c1c1e] w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
-              {["Entry Date", "Choose Journals", "Add Bookmark", "Remove Title", "Find in Entry"].map(opt => (
-                <button key={opt} className="w-full text-left px-5 py-4 text-white hover:bg-zinc-800 border-b border-zinc-800/50">{opt}</button>
-              ))}
-              <button className="w-full text-left px-5 py-4 text-red-500 hover:bg-zinc-800 font-medium">Delete</button>
+              <button onClick={() => { setIsBookmarked(!isBookmarked); setShowMoreOptions(false); }} className="w-full text-left px-5 py-4 text-white hover:bg-zinc-800 border-b border-zinc-800/50">
+                {isBookmarked ? "Remove Bookmark" : "Add Bookmark"}
+              </button>
+              <button onClick={() => { setTitle(""); setShowMoreOptions(false); }} className="w-full text-left px-5 py-4 text-white hover:bg-zinc-800 border-b border-zinc-800/50">
+                Remove Title
+              </button>
+              <button onClick={() => { router.back(); }} className="w-full text-left px-5 py-4 text-red-500 hover:bg-zinc-800 font-medium border-b border-zinc-800/50">
+                Delete
+              </button>
               <button onClick={() => setShowMoreOptions(false)} className="w-full text-center px-5 py-4 text-zinc-400 hover:bg-zinc-800 bg-zinc-900">Cancel</button>
            </div>
         </div>

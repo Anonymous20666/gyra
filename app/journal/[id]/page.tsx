@@ -14,7 +14,6 @@ export default function ViewJournalEntry() {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Edit states
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
 
@@ -23,11 +22,7 @@ export default function ViewJournalEntry() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return router.push("/login");
 
-      const { data } = await supabase
-        .from("journal_entries")
-        .select("*")
-        .eq("id", entryId)
-        .single();
+      const { data } = await supabase.from("journal_entries").select("*").eq("id", entryId).single();
 
       if (data) {
         setEntry(data);
@@ -44,11 +39,7 @@ export default function ViewJournalEntry() {
 
   const handleUpdate = async () => {
     setIsSaving(true);
-    await supabase
-      .from("journal_entries")
-      .update({ title, content, updated_at: new Date().toISOString() })
-      .eq("id", entryId);
-
+    await supabase.from("journal_entries").update({ title, content, updated_at: new Date().toISOString() }).eq("id", entryId);
     setEntry({ ...entry, title, content });
     setIsEditing(false);
     setIsSaving(false);
@@ -60,15 +51,10 @@ export default function ViewJournalEntry() {
     router.push("/journal");
   };
 
-  if (loading) return (
-    <div className="min-h-screen bg-black flex items-center justify-center">
-      <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-    </div>
-  );
+  if (loading) return <div className="min-h-screen bg-black flex items-center justify-center"><div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div></div>;
 
   return (
     <main className="h-screen bg-black text-white flex flex-col overflow-hidden">
-      {/* Top Bar */}
       <header className="flex items-center justify-between px-4 py-3 bg-black/90 backdrop-blur-md border-b border-zinc-800/50">
         <button onClick={() => router.push("/journal")} className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
@@ -90,14 +76,13 @@ export default function ViewJournalEntry() {
         </div>
       </header>
 
-      {/* Content */}
       <div className="flex-1 overflow-y-auto px-4 py-6">
         <p className="text-center text-xs text-zinc-500 font-medium mb-6">
           {new Date(entry.created_at).toLocaleDateString("en-US", { weekday: 'short', day: 'numeric', month: 'short' })}
         </p>
 
-        {/* Media Attachments */}
-        {entry.images?.length > 0 && !isEditing && (
+        {/* 🚨 FIX: Show images whether editing or viewing 🚨 */}
+        {entry.images?.length > 0 && (
           <div className="flex gap-2 overflow-x-auto mb-6 pb-2">
             {entry.images.map((img: string, i: number) => (
               <img key={i} src={img} className="w-32 h-32 rounded-xl object-cover border border-zinc-800" />
@@ -105,36 +90,21 @@ export default function ViewJournalEntry() {
           </div>
         )}
 
-        {entry.location_name && !isEditing && (
+        {entry.location_name && (
            <div className="inline-flex items-center gap-2 bg-zinc-800 rounded-lg px-3 py-1.5 text-sm border border-zinc-700 mb-6">
              <span className="text-zinc-400">📍</span> {entry.location_name}
            </div>
         )}
 
-        {/* Title & Content */}
         {isEditing ? (
           <>
-            <input 
-              type="text" 
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Title"
-              className="w-full bg-transparent text-2xl font-bold text-white placeholder:text-zinc-600 outline-none mb-4"
-            />
-            <textarea 
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Start writing..."
-              className="w-full bg-transparent text-base text-zinc-300 placeholder:text-zinc-600 outline-none resize-none min-h-[300px]"
-            />
+            <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" className="w-full bg-transparent text-2xl font-bold text-white placeholder:text-zinc-600 outline-none mb-4" />
+            <textarea value={content} onChange={(e) => setContent(e.target.value)} placeholder="Start writing..." className="w-full bg-transparent text-base text-zinc-300 placeholder:text-zinc-600 outline-none resize-none min-h-[300px]" />
           </>
         ) : (
           <>
             <h1 className="text-2xl font-bold text-white mb-4">{entry.title || "Untitled"}</h1>
-            <div 
-              className="prose prose-invert max-w-none text-base text-zinc-300 leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: entry.content || "No content." }} 
-            />
+            <div className="prose prose-invert max-w-none text-base text-zinc-300 leading-relaxed" dangerouslySetInnerHTML={{ __html: entry.content || "No content." }} />
           </>
         )}
       </div>
