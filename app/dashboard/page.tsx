@@ -1477,15 +1477,15 @@ export default function Dashboard() {
             <div className="absolute bottom-20 left-0 w-full bg-[#212121] border border-zinc-800 rounded-3xl p-4 shadow-2xl z-50 animate-in slide-in-from-bottom-5 fade-in duration-200">
               <div className="flex flex-col gap-2">
                 <button
-  onClick={() => {
-    setShowToolsMenu(false);
-    window.location.href = "/notebooks";
-  }}
-  className="flex items-center gap-3 px-4 py-3 bg-zinc-900 hover:bg-zinc-800 rounded-xl text-sm font-medium transition-colors text-left text-white"
->
-  <span className="text-xl">📓</span>
-  Notebooks
-</button>
+                  onClick={() => {
+                    setShowToolsMenu(false);
+                    window.location.href = "/journal"; // Changed to /journal
+                  }}
+                  className="flex items-center gap-3 px-4 py-3 bg-zinc-900 hover:bg-zinc-800 rounded-xl text-sm font-medium transition-colors text-left text-white"
+                >
+                  <span className="text-xl">🖋️</span>
+                  Journal
+                </button>
               </div>
             </div>
           )}
@@ -1525,14 +1525,26 @@ export default function Dashboard() {
                   <svg className="w-4 h-4 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={showAttachMenu ? "M6 18L18 6M6 6l12 12" : "M12 4v16m8-8H4"} /></svg>
                 </button>
 
-                {/* 🚨 NEW TOOLS MIC BUTTON 🚨 */}
+                {/* 🚨 GYRA "G" TOOLS BUTTON 🚨 */}
                 <button
                   onClick={() => setShowToolsMenu(!showToolsMenu)}
-                  className="w-9 h-9 rounded-full bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center transition-colors"
-                  title="Tools"
+                  className="w-9 h-9 rounded-full bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center transition-colors group"
+                  title="Gyra Tools"
                 >
-                  <svg className="w-5 h-5 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                  {/* Stylized Gyra 'G' Logo */}
+                  <svg 
+                    className="w-[18px] h-[18px] text-zinc-300 group-hover:text-white transition-colors" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2.5" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                  >
+                    {/* The outer C shape */}
+                    <path d="M21 12a9 9 0 1 1-9-9c2.5 0 4.8 1 6.5 2.5" />
+                    {/* The inner horizontal bar of the G */}
+                    <path d="M12 12h9" />
                   </svg>
                 </button>
 
