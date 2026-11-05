@@ -8,6 +8,12 @@ import SettingsPanel from "../components/SettingsPanel";
 import VoiceMode from "../components/VoiceMode";
 import VoiceOutput from "../components/VoiceOutput";
 import { supabase } from "../supabase";
+import { 
+  Terminal, Settings, BookOpen, Folder, Bot, 
+  Paperclip, Zap, Search, Image as ImageIcon, 
+  FileText, Mic, MapPin, MoreHorizontal, Sparkles,
+  Volume2, ThumbsUp, ThumbsDown, Copy, RotateCcw, Share2
+} from "lucide-react";
 
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -232,7 +238,11 @@ export default function Dashboard() {
       .eq("chat_id", chatId)
       .order("created_at", { ascending: true });
     if (data) {
-      setMessages(data.map((m: any) => ({ role: m.role, content: m.content })));
+      setMessages(data.map((m: any) => ({ 
+        role: m.role, 
+        content: m.content,
+        generatedImage: m.generated_image || null 
+      })));
     }
   };
 
@@ -415,6 +425,7 @@ export default function Dashboard() {
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let fullReply = "";
+      let generatedImageUrl = "";
       let buffer = "";
       let startTime = Date.now();
 
@@ -445,7 +456,6 @@ export default function Dashboard() {
                   time: parsed.time
                 }];
                 
-                // Update the search status if Atlas is done
                 if (parsed.agent === "Atlas") {
                    if (parsed.status.includes("Scraped")) {
                      currentMsg.searchStatus = "done";
@@ -480,9 +490,10 @@ export default function Dashboard() {
 
             // 4. Catch Generated Images
             if (parsed.type === "image") {
+              generatedImageUrl = parsed.url;
               setMessages((prev) => {
                 const next = [...prev];
-                next[next.length - 1].generatedImage = parsed.url;
+                next[next.length - 1].generatedImage = generatedImageUrl;
                 return next;
               });
             }
@@ -496,7 +507,18 @@ export default function Dashboard() {
                 return next;
               });
             }
-            await supabase.from("messages").insert([{ chat_id: chatId, role: "assistant", content: fullReply }]);
+            
+            const insertPayload: any = { 
+              chat_id: chatId, 
+              role: "assistant", 
+              content: fullReply 
+            };
+            
+            if (generatedImageUrl) {
+              insertPayload.generated_image = generatedImageUrl;
+            }
+
+            await supabase.from("messages").insert([insertPayload]);
           }
         } catch (e) {
           console.error("Failed to parse chunk:", e);
@@ -716,7 +738,7 @@ export default function Dashboard() {
         <div className="absolute inset-0 bg-black/90 z-[85] flex items-center justify-center p-6 backdrop-blur-sm">
           <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-8 max-w-md w-full flex flex-col items-center text-center">
             <div className="w-16 h-16 rounded-full bg-blue-500/10 border border-blue-500/30 flex items-center justify-center mb-5">
-              <span className="text-2xl">⚡</span>
+              <Zap className="w-8 h-8 text-blue-500" />
             </div>
             <h2 className="text-2xl font-bold mb-3">Chat limit reached</h2>
             <p className="text-zinc-400 mb-8 leading-relaxed">
@@ -900,7 +922,7 @@ export default function Dashboard() {
             {[
               {
                 label: "Console",
-                icon: "🎛️",
+                icon: <Terminal className="w-5 h-5" />,
                 action: () => {
                   window.location.href = "/console";
                   setIsSidebarOpen(false);
@@ -908,7 +930,7 @@ export default function Dashboard() {
               },
               {
                 label: "Automations",
-                icon: "⚙️",
+                icon: <Settings className="w-5 h-5" />,
                 action: () => {
                   window.location.href = "/studio";
                   setIsSidebarOpen(false);
@@ -916,7 +938,7 @@ export default function Dashboard() {
               },
               {
                 label: "Library",
-                icon: "📚",
+                icon: <BookOpen className="w-5 h-5" />,
                 action: () => {
                   window.location.href = "/library";
                   setIsSidebarOpen(false);
@@ -924,12 +946,12 @@ export default function Dashboard() {
               },
               {
                 label: "Projects",
-                icon: "📁",
+                icon: <Folder className="w-5 h-5" />,
                 action: () => alert("Projects coming soon!"),
               },
               {
                 label: "Gyra Bot",
-                icon: "🤖",
+                icon: <Bot className="w-5 h-5" />,
                 badge: "New",
                 action: () => window.open("https://t.me/Gyra_AiBot", "_blank"),
               },
@@ -937,9 +959,9 @@ export default function Dashboard() {
               <button
                 key={item.label}
                 onClick={item.action}
-                className="flex items-center gap-3 px-4 py-3 bg-zinc-900 hover:bg-zinc-800 rounded-xl text-sm font-medium transition-colors text-left"
+                className="flex items-center gap-3 px-4 py-3 bg-zinc-900 hover:bg-zinc-800 rounded-xl text-sm font-medium transition-colors text-left text-zinc-300 hover:text-white"
               >
-                <span className="w-5 h-5 flex items-center justify-center text-zinc-400">
+                <span className="flex items-center justify-center">
                   {item.icon}
                 </span>
                 {item.label}
@@ -965,7 +987,7 @@ export default function Dashboard() {
                     ).toLocaleDateString()}`}
                 </p>
               </div>
-              <span className="text-2xl">⚡</span>
+              <Zap className="w-6 h-6 text-blue-400" />
             </div>
           ) : (
             <button
@@ -1028,13 +1050,7 @@ export default function Dashboard() {
                           : "opacity-0 group-hover:opacity-100"
                       }`}
                     >
-                      <svg
-                        className="w-4 h-4"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
-                      </svg>
+                      <MoreHorizontal className="w-4 h-4" />
                     </button>
                     {activeChatMenu === chat.id && (
                       <div className="absolute right-0 top-12 w-40 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl z-[100] p-1 flex flex-col">
@@ -1081,19 +1097,7 @@ export default function Dashboard() {
         <div className="p-4 border-t border-zinc-800/50">
           <div className="flex items-center gap-2">
             <div className="flex-1 flex items-center gap-2 bg-zinc-900 rounded-full px-4 py-2">
-              <svg
-                className="w-4 h-4 text-zinc-500"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
+              <Search className="w-4 h-4 text-zinc-500" />
               <input
                 type="text"
                 placeholder="Search"
@@ -1106,25 +1110,7 @@ export default function Dashboard() {
               onClick={() => setShowSettings(true)}
               className="w-10 h-10 rounded-full bg-zinc-900 hover:bg-zinc-800 flex items-center justify-center transition-colors shrink-0"
             >
-              <svg
-                className="w-5 h-5 text-zinc-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-              </svg>
+              <Settings className="w-5 h-5 text-zinc-400" />
             </button>
             <button
               onClick={createNewChat}
@@ -1180,7 +1166,7 @@ export default function Dashboard() {
               className="w-9 h-9 rounded-full bg-zinc-900 hover:bg-zinc-800 flex items-center justify-center transition-colors"
               title="Developer Console"
             >
-              <span className="text-zinc-300 text-sm">🎛️</span>
+              <Terminal className="w-5 h-5 text-zinc-300" />
             </Link>
             <button
               onClick={() => (window.location.href = "/api")}
@@ -1309,7 +1295,7 @@ export default function Dashboard() {
                       {msg.generatedImage && (
                         <div className="mt-4 border border-zinc-800 rounded-2xl overflow-hidden w-full max-w-md animate-in fade-in zoom-in-95 duration-500 shadow-xl">
                           <div className="bg-[#1e1e1e] px-4 py-3 border-b border-zinc-800 flex items-center gap-2">
-                             <svg className="w-5 h-5 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                             <ImageIcon className="w-5 h-5 text-zinc-300" />
                              <span className="text-sm font-medium text-white">Imagine</span>
                           </div>
                           <img src={msg.generatedImage} alt="Generated" className="w-full object-cover" />
@@ -1339,7 +1325,7 @@ export default function Dashboard() {
                                     alert("Sharing is not supported on this browser.");
                                 }
                             }} className="flex items-center gap-2 text-sm text-zinc-300 hover:text-white transition-colors">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+                              <Share2 className="w-4 h-4" />
                               Share
                             </button>
                           </div>
@@ -1349,10 +1335,10 @@ export default function Dashboard() {
                       {/* ACTION BUTTONS (DeepSeek Style) */}
                       {msg.content && !loading && (
                         <div className="flex items-center gap-1 mt-3 text-zinc-400">
-                          <button onClick={() => navigator.clipboard.writeText(msg.content)} className="p-2 hover:bg-zinc-800 rounded-lg transition-colors" title="Copy"><svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg></button>
-                          <button className="p-2 hover:bg-zinc-800 rounded-lg transition-colors" title="Good response"><svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.514" /></svg></button>
-                          <button className="p-2 hover:bg-zinc-800 rounded-lg transition-colors" title="Bad response"><svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.514" /></svg></button>
-                          <button onClick={() => readAloud(msg.content)} className="p-2 hover:bg-zinc-800 rounded-lg transition-colors" title="Read aloud"><svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /></svg></button>
+                          <button onClick={() => navigator.clipboard.writeText(msg.content)} className="p-2 hover:bg-zinc-800 rounded-lg transition-colors" title="Copy"><Copy className="w-[18px] h-[18px]" /></button>
+                          <button className="p-2 hover:bg-zinc-800 rounded-lg transition-colors" title="Good response"><ThumbsUp className="w-[18px] h-[18px]" /></button>
+                          <button className="p-2 hover:bg-zinc-800 rounded-lg transition-colors" title="Bad response"><ThumbsDown className="w-[18px] h-[18px]" /></button>
+                          <button onClick={() => readAloud(msg.content)} className="p-2 hover:bg-zinc-800 rounded-lg transition-colors" title="Read aloud"><Volume2 className="w-[18px] h-[18px]" /></button>
                           
                           <button 
                             onClick={async () => {
@@ -1400,10 +1386,10 @@ export default function Dashboard() {
                             className="p-2 hover:bg-zinc-800 rounded-lg transition-colors" 
                             title="Share"
                           >
-                            <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+                            <Share2 className="w-[18px] h-[18px]" />
                           </button>
                           
-                          <button onClick={regenerateResponse} className="ml-auto p-2 hover:bg-zinc-800 rounded-lg transition-colors" title="Regenerate"><svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg></button>
+                          <button onClick={regenerateResponse} className="ml-auto p-2 hover:bg-zinc-800 rounded-lg transition-colors" title="Regenerate"><RotateCcw className="w-[18px] h-[18px]" /></button>
                         </div>
                       )}
                     </div>
@@ -1451,7 +1437,9 @@ export default function Dashboard() {
                   {attachment.type === "image" ? (
                     <img src={attachment.base64} alt="preview" className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-2xl">📎</div>
+                    <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
+                       <FileText className="w-8 h-8 text-zinc-400" />
+                    </div>
                   )}
                   <button onClick={() => setAttachment(null)} className="absolute top-1 right-1 w-5 h-5 bg-black/60 hover:bg-black rounded-full flex items-center justify-center text-white backdrop-blur-sm">
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -1479,11 +1467,13 @@ export default function Dashboard() {
                 <button
                   onClick={() => {
                     setShowToolsMenu(false);
-                    window.location.href = "/journal"; // Changed to /journal
+                    window.location.href = "/journal"; 
                   }}
                   className="flex items-center gap-3 px-4 py-3 bg-zinc-900 hover:bg-zinc-800 rounded-xl text-sm font-medium transition-colors text-left text-white"
                 >
-                  <span className="text-xl">🖋️</span>
+                  <span className="text-zinc-400">
+                    <FileText className="w-5 h-5" />
+                  </span>
                   Journal
                 </button>
               </div>
@@ -1506,14 +1496,14 @@ export default function Dashboard() {
                   onClick={() => setThinkMode(!thinkMode)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-medium transition-colors ${thinkMode ? "bg-blue-600/20 text-blue-400" : "text-zinc-400 hover:bg-zinc-800"}`}
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
+                  <Sparkles className="w-4 h-4" />
                   Think
                 </button>
                 <button
                   onClick={() => setSearchMode(!searchMode)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-medium transition-colors ${searchMode ? "bg-blue-600/20 text-blue-400" : "text-zinc-400 hover:bg-zinc-800"}`}
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
+                  <Search className="w-4 h-4" />
                   Search
                 </button>
               </div>
