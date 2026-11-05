@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import AttachmentMenu from "../components/AttachmentMenu";
 import GyraMark from "../components/GyraMark";
 import SettingsPanel from "../components/SettingsPanel";
@@ -12,13 +13,28 @@ import {
   Terminal, Settings, BookOpen, Folder, Bot, 
   Paperclip, Zap, Search, Image as ImageIcon, 
   FileText, Mic, MapPin, MoreHorizontal, Sparkles,
-  Volume2, ThumbsUp, ThumbsDown, Copy, RotateCcw, Share2
+  Volume2, ThumbsUp, ThumbsDown, Copy, RotateCcw, Share2,
+  Briefcase, Code, Heart, Home, Globe, Camera
 } from "lucide-react";
 
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import remarkGfm from "remark-gfm";
+
+// Map icons for projects
+const ICON_MAP: any = {
+  Folder: <Folder className="w-4 h-4" />,
+  Briefcase: <Briefcase className="w-4 h-4" />,
+  Code: <Code className="w-4 h-4" />,
+  Sparkles: <Sparkles className="w-4 h-4" />,
+  Zap: <Zap className="w-4 h-4" />,
+  Book: <BookOpen className="w-4 h-4" />,
+  Heart: <Heart className="w-4 h-4" />,
+  Home: <Home className="w-4 h-4" />,
+  Globe: <Globe className="w-4 h-4" />,
+  Camera: <Camera className="w-4 h-4" />,
+};
 
 // ============================================================
 // MessageContent — Advanced Markdown Renderer
@@ -116,10 +132,14 @@ function MessageContent({ content }: { content: string }) {
 }
 
 // ============================================================
-// Main Dashboard
+// Dashboard Content Component
 // ============================================================
-export default function Dashboard() {
+function DashboardContent() {
+  const searchParams = useSearchParams();
+  const projectId = searchParams.get("projectId");
+
   const [user, setUser] = useState<any>(null);
+  const [project, setProject] = useState<any>(null); // Project State
   const [showToS, setShowToS] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
@@ -192,12 +212,31 @@ export default function Dashboard() {
           }
         } catch {}
 
-        const { data: chatsData } = await supabase
+        // 🚨 FETCH PROJECT IF INSIDE ONE
+        if (projectId) {
+          const { data: projData } = await supabase
+            .from("projects")
+            .select("*")
+            .eq("id", projectId)
+            .single();
+          if (projData) setProject(projData);
+        }
+
+        // 🚨 FETCH CHATS FILTERED BY PROJECT
+        let query = supabase
           .from("chats")
           .select("*")
           .eq("user_id", user.id)
           .order("pinned", { ascending: false })
           .order("created_at", { ascending: false });
+
+        if (projectId) {
+          query = query.eq("project_id", projectId);
+        } else {
+          query = query.is("project_id", null); 
+        }
+
+        const { data: chatsData } = await query;
 
         if (chatsData) {
           setChats(chatsData);
@@ -220,7 +259,7 @@ export default function Dashboard() {
       } catch (e) {}
     };
     init();
-  }, []);
+  }, [projectId]);
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -250,7 +289,11 @@ export default function Dashboard() {
     if (!user) return;
     const { data } = await supabase
       .from("chats")
-      .insert([{ user_id: user.id, title: "New Conversation" }])
+      .insert([{ 
+        user_id: user.id, 
+        title: "New Conversation",
+        project_id: projectId || null // 🚨 Assign to project
+      }])
       .select()
       .single();
     if (data) {
@@ -362,7 +405,11 @@ export default function Dashboard() {
       if (!user) return;
       const { data } = await supabase
         .from("chats")
-        .insert([{ user_id: user.id, title: "New Conversation" }])
+        .insert([{ 
+          user_id: user.id, 
+          title: "New Conversation",
+          project_id: projectId || null 
+        }])
         .select()
         .single();
       if (!data) return;
@@ -416,6 +463,8 @@ export default function Dashboard() {
           messages: updatedMessages.map((m: any) => ({ role: m.role, content: m.content, imageBase64: m.imageBase64, fileBase64: m.fileBase64 })),
           think: thinkMode,
           search: searchMode,
+          // 🚨 INJECT PROJECT INSTRUCTIONS HERE
+          projectInstructions: project?.instructions || null 
         }),
       });
 
@@ -947,7 +996,10 @@ export default function Dashboard() {
               {
                 label: "Projects",
                 icon: <Folder className="w-5 h-5" />,
-                action: () => alert("Projects coming soon!"),
+                action: () => {
+                  window.location.href = "/projects"; // 🚨 Updated
+                  setIsSidebarOpen(false);
+                },
               },
               {
                 label: "Gyra Bot",
@@ -1156,9 +1208,19 @@ export default function Dashboard() {
                 />
               </svg>
             </button>
-            <div className="hidden md:block ml-2">
-              <h1 className="text-lg font-bold truncate max-w-[200px]">{chats.find(c => c.id === activeChatId)?.title || "Gyra"}</h1>
+            
+            {/* 🚨 UPDATED HEADER WITH PROJECT ICON */}
+            <div className="hidden md:flex items-center gap-2 ml-2">
+              {project && (
+                <div className="w-6 h-6 rounded bg-zinc-800 flex items-center justify-center text-zinc-400">
+                  {ICON_MAP[project.icon] || <Folder className="w-4 h-4" />}
+                </div>
+              )}
+              <h1 className="text-lg font-bold truncate max-w-[200px]">
+                {project ? project.name : (chats.find(c => c.id === activeChatId)?.title || "Gyra")}
+              </h1>
             </div>
+            
           </div>
           <div className="flex items-center gap-2">
             <Link
@@ -1200,8 +1262,8 @@ export default function Dashboard() {
         <GyraMark size={120} glow={false} animated={false} />
       </div>
     </div>
-    <p className="text-zinc-500 text-sm">
-      Gyra is Here to Help, Ask Anything.
+    <p className="text-zinc-500 text-sm text-center">
+      {project ? `Start chatting in ${project.name}.` : "Gyra is Here to Help, Ask Anything."}
     </p>
   </div>
 ) : (
@@ -1557,5 +1619,13 @@ export default function Dashboard() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function Dashboard() {
+  return (
+    <Suspense fallback={<div className="h-screen bg-black flex items-center justify-center text-white">Loading...</div>}>
+      <DashboardContent />
+    </Suspense>
   );
 }
