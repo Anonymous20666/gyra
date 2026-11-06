@@ -6,7 +6,7 @@ import { supabase } from "../../supabase";
 import { 
   Folder, MoreHorizontal, ArrowLeft, Plus, 
   FolderOpen, Zap, Share2, Edit, Copy, Trash, X, Check, Loader2,
-  ChevronDown // 🚨 FIXED: Added this import
+  ChevronDown 
 } from "lucide-react";
 
 export default function ProjectWorkspace() {
@@ -58,7 +58,6 @@ export default function ProjectWorkspace() {
     const { data: chatData } = await supabase.from("chats").select("*").eq("project_id", projectId).order("created_at", { ascending: false });
     if (chatData) setChats(chatData);
 
-    // Fetch shared access list
     const { data: accessData } = await supabase.from("project_access").select("*").eq("project_id", projectId);
     if (accessData) setInvitedUsers(accessData);
 
@@ -93,7 +92,6 @@ export default function ProjectWorkspace() {
     if (data) {
       setInvitedUsers([...invitedUsers, data]);
       
-      // Trigger Resend Email API
       try {
         await fetch("/api/send-invite", {
           method: "POST",
@@ -202,7 +200,7 @@ export default function ProjectWorkspace() {
 
       </div>
 
-      {/* 🚨 EDIT PROJECT MODAL 🚨 */}
+      {/* EDIT PROJECT MODAL */}
       {activeModal === "edit" && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 sm:p-6" onClick={() => setActiveModal(null)}>
           <div className="bg-[#1c1c1e] w-full max-w-lg rounded-3xl p-6 animate-in zoom-in-95 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
@@ -252,7 +250,7 @@ export default function ProjectWorkspace() {
         </div>
       )}
 
-      {/* 🚨 SHARE PROJECT MODAL 🚨 */}
+      {/* SHARE PROJECT MODAL */}
       {activeModal === "share" && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center sm:items-center p-0 sm:p-6" onClick={() => setActiveModal(null)}>
           <div className="bg-[#1c1c1e] w-full max-w-lg rounded-t-3xl sm:rounded-3xl p-6 animate-in slide-in-from-bottom-full sm:zoom-in-95" onClick={e => e.stopPropagation()}>
@@ -320,11 +318,12 @@ export default function ProjectWorkspace() {
         </div>
       )}
 
-      {/* 🚨 DELETE CONFIRMATION MODAL 🚨 */}
+      {/* DELETE CONFIRMATION MODAL */}
       {activeModal === "delete" && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-6" onClick={() => setActiveModal(null)}>
           <div className="bg-[#1c1c1e] w-full max-w-sm rounded-3xl p-6 text-center animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
-            <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4"><Trash className="w-6 h-6 text-red-500" /></div>
+            <div className="w-12() h-12 rounded-full bg-red {
+-500/10 flex items-center justify -center mx-auto mb-4 const"><Trash className="w params-6 h-6 text-red-500" /></div>
             <h2 className="text-xl font-bold mb-2">Delete Project?</h2>
             <p className="text-sm text-zinc-400 mb-6">This will permanently delete the project and all its conversations. This action cannot be undone.</p>
             <div className="flex gap-3">
