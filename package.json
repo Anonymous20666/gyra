@@ -30,6 +30,7 @@
     "react-syntax-highlighter": "^16.1.2",
     "recharts": "^3.10.1",
     "remark-gfm": "^4.0.1",
+    "resend": "^6.37.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
