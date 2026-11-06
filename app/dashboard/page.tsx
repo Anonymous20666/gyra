@@ -21,6 +21,7 @@ import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 
 // Map icons for projects
 const ICON_MAP: any = {
@@ -37,7 +38,7 @@ const ICON_MAP: any = {
 };
 
 // ============================================================
-// MessageContent — Advanced Markdown Renderer
+// MessageContent — Advanced Markdown Renderer (Mobile Fixed)
 // ============================================================
 function MessageContent({ content }: { content: string }) {
   const [copied, setCopied] = useState(false);
@@ -49,9 +50,10 @@ function MessageContent({ content }: { content: string }) {
   };
 
   return (
-    <div className="text-[15px] text-zinc-100 leading-[1.7] w-full overflow-x-auto">
+    <div className="text-[15px] text-zinc-100 leading-[1.7] w-full max-w-full overflow-hidden break-words">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
+        rehypePlugins={[rehypeRaw]}
         components={{
           code({ node, inline, className, children, ...props }: any) {
             const match = /language-(\w+)/.exec(className || "");
@@ -59,7 +61,7 @@ function MessageContent({ content }: { content: string }) {
 
             if (!inline && match) {
               return (
-                <div className="bg-[#1e1e1e] border border-zinc-700 rounded-xl overflow-hidden my-4 shadow-lg">
+                <div className="bg-[#1e1e1e] border border-zinc-700 rounded-xl overflow-hidden my-4 shadow-lg w-full max-w-full">
                   <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-700 bg-[#252526]">
                     <span className="text-xs text-zinc-400 font-mono font-semibold uppercase">{match[1]}</span>
                     <button
@@ -69,28 +71,30 @@ function MessageContent({ content }: { content: string }) {
                       {copied ? "✓ Copied" : "Copy"}
                     </button>
                   </div>
-                  <SyntaxHighlighter
-                    style={vscDarkPlus as any}
-                    language={match[1]}
-                    PreTag="div"
-                    customStyle={{ margin: 0, padding: "1.25rem", background: "transparent" }}
-                    {...props}
-                  >
-                    {codeString}
-                  </SyntaxHighlighter>
+                  <div className="w-full overflow-x-auto">
+                    <SyntaxHighlighter
+                      style={vscDarkPlus as any}
+                      language={match[1]}
+                      PreTag="div"
+                      customStyle={{ margin: 0, padding: "1.25rem", background: "transparent", fontSize: "13px" }}
+                      {...props}
+                    >
+                      {codeString}
+                    </SyntaxHighlighter>
+                  </div>
                 </div>
               );
             }
             return (
-              <code className="bg-zinc-800 text-zinc-200 px-1.5 py-0.5 rounded text-sm font-mono" {...props}>
+              <code className="bg-zinc-800 text-zinc-200 px-1.5 py-0.5 rounded text-sm font-mono whitespace-pre-wrap break-all" {...props}>
                 {children}
               </code>
             );
           },
           table({ children }) {
             return (
-              <div className="overflow-x-auto my-6 border border-zinc-800 rounded-lg">
-                <table className="w-full text-left text-sm text-zinc-300">
+              <div className="w-full overflow-x-auto my-6 border border-zinc-800 rounded-lg block">
+                <table className="w-full min-w-[500px] text-left text-sm text-zinc-300">
                   {children}
                 </table>
               </div>
@@ -100,25 +104,25 @@ function MessageContent({ content }: { content: string }) {
             return <thead className="bg-zinc-900 border-b border-zinc-800 text-white">{children}</thead>;
           },
           th({ children }) {
-            return <th className="px-4 py-3 font-semibold">{children}</th>;
+            return <th className="px-4 py-3 font-semibold whitespace-nowrap">{children}</th>;
           },
           td({ children }) {
             return <td className="px-4 py-3 border-b border-zinc-800/50">{children}</td>;
           },
           h3({ children }) {
-            return <h3 className="text-lg font-bold text-white mt-6 mb-3 flex items-center gap-2">{children}</h3>;
+            return <h3 className="text-lg font-bold text-white mt-6 mb-3 flex items-center gap-2 break-words">{children}</h3>;
           },
           p({ children }) {
-            return <p className="mb-4">{children}</p>;
+            return <p className="mb-4 break-words">{children}</p>;
           },
           ul({ children }) {
-            return <ul className="list-disc pl-6 mb-4 space-y-2">{children}</ul>;
+            return <ul className="list-disc pl-6 mb-4 space-y-2 break-words">{children}</ul>;
           },
           ol({ children }) {
-            return <ol className="list-decimal pl-6 mb-4 space-y-2">{children}</ol>;
+            return <ol className="list-decimal pl-6 mb-4 space-y-2 break-words">{children}</ol>;
           },
           li({ children }) {
-            return <li>{children}</li>;
+            return <li className="break-words">{children}</li>;
           },
           strong({ children }) {
             return <strong className="font-semibold text-white">{children}</strong>;
@@ -139,7 +143,7 @@ function DashboardContent() {
   const projectId = searchParams.get("projectId");
 
   const [user, setUser] = useState<any>(null);
-  const [project, setProject] = useState<any>(null); // Project State
+  const [project, setProject] = useState<any>(null); 
   const [showToS, setShowToS] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
@@ -212,7 +216,6 @@ function DashboardContent() {
           }
         } catch {}
 
-        // 🚨 FETCH PROJECT IF INSIDE ONE
         if (projectId) {
           const { data: projData } = await supabase
             .from("projects")
@@ -222,7 +225,6 @@ function DashboardContent() {
           if (projData) setProject(projData);
         }
 
-        // 🚨 FETCH CHATS FILTERED BY PROJECT
         let query = supabase
           .from("chats")
           .select("*")
@@ -240,7 +242,13 @@ function DashboardContent() {
 
         if (chatsData) {
           setChats(chatsData);
-          if (chatsData.length > 0) {
+          
+          const specificChatId = searchParams.get("chat");
+          
+          if (specificChatId) {
+            setActiveChatId(specificChatId);
+            await loadMessages(specificChatId);
+          } else if (chatsData.length > 0) {
             setActiveChatId(chatsData[0].id);
             await loadMessages(chatsData[0].id);
           }
@@ -259,7 +267,7 @@ function DashboardContent() {
       } catch (e) {}
     };
     init();
-  }, [projectId]);
+  }, [projectId, searchParams]);
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -292,7 +300,7 @@ function DashboardContent() {
       .insert([{ 
         user_id: user.id, 
         title: "New Conversation",
-        project_id: projectId || null // 🚨 Assign to project
+        project_id: projectId || null 
       }])
       .select()
       .single();
@@ -446,7 +454,6 @@ function DashboardContent() {
       });
     }
 
-    // Initialize assistant message with 6-agent tracking
     setMessages([
       ...updatedMessages,
       { role: "assistant", content: "", reasoning: "", reasoningTime: 0, searchStatus: null, searchCount: 0, generatedImage: null, agentLogs: [] },
@@ -463,7 +470,6 @@ function DashboardContent() {
           messages: updatedMessages.map((m: any) => ({ role: m.role, content: m.content, imageBase64: m.imageBase64, fileBase64: m.fileBase64 })),
           think: thinkMode,
           search: searchMode,
-          // 🚨 INJECT PROJECT INSTRUCTIONS HERE
           projectInstructions: project?.instructions || null 
         }),
       });
@@ -494,7 +500,6 @@ function DashboardContent() {
           try {
             const parsed = JSON.parse(dataStr);
             
-            // 1. Catch Agent Statuses
             if (parsed.type === "status") {
               setMessages((prev) => {
                 const next = [...prev];
@@ -517,7 +522,6 @@ function DashboardContent() {
               });
             }
 
-            // 2. Catch Orion's Reasoning
             if (parsed.type === "reasoning") {
               setMessages((prev) => {
                 const next = [...prev];
@@ -527,7 +531,6 @@ function DashboardContent() {
               });
             }
 
-            // 3. Catch Streaming Text
             if (parsed.type === "content") {
               fullReply += parsed.text;
               setMessages((prev) => {
@@ -537,7 +540,6 @@ function DashboardContent() {
               });
             }
 
-            // 4. Catch Generated Images
             if (parsed.type === "image") {
               generatedImageUrl = parsed.url;
               setMessages((prev) => {
@@ -547,7 +549,6 @@ function DashboardContent() {
               });
             }
 
-            // 🚨 5. Done (Captures real time and saves to DB) 🚨
           if (parsed.type === "done") {
             if (parsed.totalTime) {
               setMessages((prev) => {
@@ -712,7 +713,6 @@ function DashboardContent() {
   // ============================================================
   return (
     <main className="h-screen bg-black text-white flex relative overflow-hidden">
-      {/* Voice output */}
       {voiceEnabled && latestAssistantMessage && (
         <VoiceOutput
           enabled={voiceEnabled}
@@ -722,7 +722,6 @@ function DashboardContent() {
         />
       )}
 
-      {/* Voice mode overlay */}
       <VoiceMode
         open={showVoiceMode}
         onClose={() => setShowVoiceMode(false)}
@@ -730,7 +729,6 @@ function DashboardContent() {
         getLatestAssistantReply={getLatestAssistantReply}
       />
 
-      {/* Broadcast */}
       {activeBroadcast && (
         <div
           className={`absolute top-4 left-1/2 -translate-x-1/2 z-[90] max-w-md w-[calc(100%-2rem)] rounded-2xl border p-4 shadow-2xl ${
@@ -761,7 +759,6 @@ function DashboardContent() {
         </div>
       )}
 
-      {/* TOS */}
       {showToS && (
         <div className="absolute inset-0 bg-black/90 z-[80] flex items-center justify-center p-6 backdrop-blur-sm">
           <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-8 max-w-lg w-full flex flex-col items-center text-center">
@@ -782,7 +779,6 @@ function DashboardContent() {
         </div>
       )}
 
-      {/* Chat limit modal */}
       {showLimitModal && (
         <div className="absolute inset-0 bg-black/90 z-[85] flex items-center justify-center p-6 backdrop-blur-sm">
           <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-8 max-w-md w-full flex flex-col items-center text-center">
@@ -811,7 +807,6 @@ function DashboardContent() {
         </div>
       )}
 
-      {/* Settings */}
       {showSettings && (
         <SettingsPanel
           user={user}
@@ -820,7 +815,6 @@ function DashboardContent() {
         />
       )}
 
-      {/* Upgrade Modal */}
       {showUpgrade && (
         <div className="absolute inset-0 bg-black z-[75] flex flex-col overflow-hidden">
           <div className="flex items-center gap-4 p-4">
@@ -916,7 +910,6 @@ function DashboardContent() {
         </div>
       )}
 
-      {/* Mobile Overlay */}
       {isSidebarOpen && (
         <div
           onClick={() => setIsSidebarOpen(false)}
@@ -924,7 +917,6 @@ function DashboardContent() {
         />
       )}
 
-      {/* SIDEBAR */}
       <div
         className={`fixed md:relative inset-y-0 left-0 z-50 w-[85%] max-w-sm md:w-64 border-r border-zinc-800/50 flex flex-col justify-between bg-black transform transition-transform duration-300 ease-in-out ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
@@ -997,7 +989,7 @@ function DashboardContent() {
                 label: "Projects",
                 icon: <Folder className="w-5 h-5" />,
                 action: () => {
-                  window.location.href = "/projects"; // 🚨 Updated
+                  window.location.href = "/projects";
                   setIsSidebarOpen(false);
                 },
               },
@@ -1026,7 +1018,6 @@ function DashboardContent() {
             ))}
           </div>
 
-          {/* SuperGyra Status */}
           {isSuperGyra ? (
             <div className="w-full flex items-center gap-3 bg-blue-600/20 border border-blue-500/30 rounded-2xl p-4 mb-6">
               <div className="flex-1">
@@ -1186,7 +1177,6 @@ function DashboardContent() {
         </div>
       </div>
 
-      {/* MAIN AREA */}
       <div className="flex-1 flex flex-col relative z-10 h-full">
         <div className="w-full flex items-center justify-between px-4 py-3 border-b border-zinc-800/50 shrink-0">
           <div className="flex items-center gap-2">
@@ -1209,7 +1199,6 @@ function DashboardContent() {
               </svg>
             </button>
             
-            {/* 🚨 UPDATED HEADER WITH PROJECT ICON */}
             <div className="hidden md:flex items-center gap-2 ml-2">
               {project && (
                 <div className="w-6 h-6 rounded bg-zinc-800 flex items-center justify-center text-zinc-400">
@@ -1255,10 +1244,8 @@ function DashboardContent() {
         <div className="flex-1 overflow-y-auto w-full max-w-3xl mx-auto px-4 py-4">
           {messages.length === 0 ? (
   <div className="h-full flex flex-col items-center justify-center pb-20">
-    {/* The Logo Wrapper */}
     <div className="relative mb-6">
       <div className="w-32 h-32 md:w-40 md:h-40 flex items-center justify-center opacity-30 grayscale">
-        {/* Ensure GyraMark is the image component */}
         <GyraMark size={120} glow={false} animated={false} />
       </div>
     </div>
@@ -1273,7 +1260,6 @@ function DashboardContent() {
                   key={i}
                   className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}
                 >
-                  {/* USER MESSAGE */}
                   {msg.role === "user" && (
                     <div className="bg-[#2f2f2f] text-white px-5 py-3 rounded-3xl max-w-[85%] text-[15px] leading-relaxed">
                       {msg.imageBase64 && <img src={msg.imageBase64} className="w-48 h-auto rounded-xl mb-2 object-cover" />}
@@ -1281,25 +1267,20 @@ function DashboardContent() {
                     </div>
                   )}
 
-                  {/* ASSISTANT MESSAGE */}
                   {msg.role === "assistant" && (
                     <div className="w-full max-w-[95%] flex flex-col items-start">
                       
-                      {/* 🚨 GROK-STYLE STATUS WIDGET 🚨 */}
 {(msg.searchStatus || msg.reasoning || msg.reasoningTime > 0 || msg.agentLogs?.length > 0) && (
    <div className="mb-4 w-full flex flex-col gap-2 border-l-2 border-zinc-800 pl-4 py-2">
      
-     {/* 1. THINKING PHASE (With Mini Orb & Real Time) */}
      {(msg.agentLogs?.find((l: any) => l.status.includes("Analyzing") || l.status.includes("Thinking")) || msg.reasoning) && (
        <details className="group">
          <summary className="flex items-center gap-2 text-[14px] text-zinc-400 cursor-pointer select-none w-fit">
-           {/* Mini Glowing Orb Animation */}
            <div className="w-4 h-4 rounded-full bg-blue-500/20 border border-blue-400/50 flex items-center justify-center relative overflow-hidden">
              <div className="absolute inset-0 bg-blue-400/30 animate-pulse" />
              <div className="w-1.5 h-1.5 rounded-full bg-blue-300 animate-ping" />
            </div>
            
-           {/* Real-time Text */}
            <span>Thinking for {msg.reasoningTime || 2}s</span>
            <svg className="w-4 h-4 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
          </summary>
@@ -1309,7 +1290,6 @@ function DashboardContent() {
        </details>
      )}
 
-     {/* 2. SEARCHING PHASE */}
      {msg.agentLogs?.find((l: any) => l.status.includes("Searching")) && (
        <div className="flex items-center gap-2 text-sm text-zinc-400 mt-2">
          <div className="w-4 h-4 border-2 border-zinc-500 border-t-transparent rounded-full animate-spin"></div>
@@ -1317,11 +1297,9 @@ function DashboardContent() {
        </div>
      )}
 
-     {/* 3. RESULT PHASE (Real Number of Pages Found) */}
      {msg.searchStatus === "done" && msg.sources && msg.sources.length > 0 && (
        <div className="flex items-center gap-2 bg-[#1c1c1c] border border-zinc-800 px-3 py-1.5 rounded-xl mt-3 w-fit">
          <div className="flex -space-x-1">
-           {/* Render domain initials */}
            {msg.sources.slice(0, 3).map((src: any, i: number) => (
              <div key={i} className="w-5 h-5 bg-zinc-800 rounded-full border-2 border-[#1c1c1c] flex items-center justify-center text-[9px] font-bold text-white uppercase">
                {src.domain ? src.domain[0] : "W"}
@@ -1332,7 +1310,6 @@ function DashboardContent() {
        </div>
      )}
 
-     {/* 4. AGENT ACTIVITY LOGS (For Technical Builds) */}
      {msg.agentLogs && msg.agentLogs.filter((l: any) => !l.status.includes("Thinking") && !l.status.includes("Searching")).length > 0 && (
        <div className="flex flex-col gap-2 mt-2">
          {msg.agentLogs.filter((l: any) => !l.status.includes("Thinking") && !l.status.includes("Searching")).map((log: any, idx: number) => (
@@ -1348,12 +1325,10 @@ function DashboardContent() {
    </div>
 )}
 
-{/* ACTUAL TEXT CONTENT (Markdown Rendered) */}
 <div className="w-full">
    {msg.content ? <MessageContent content={msg.content} /> : (loading && <span className="inline-block w-2.5 h-4 bg-zinc-400 animate-pulse rounded-sm"></span>)}
 </div>
 
-                      {/* 🚨 GENERATED IMAGE UI 🚨 */}
                       {msg.generatedImage && (
                         <div className="mt-4 border border-zinc-800 rounded-2xl overflow-hidden w-full max-w-md animate-in fade-in zoom-in-95 duration-500 shadow-xl">
                           <div className="bg-[#1e1e1e] px-4 py-3 border-b border-zinc-800 flex items-center gap-2">
@@ -1394,7 +1369,6 @@ function DashboardContent() {
                         </div>
                       )}
 
-                      {/* ACTION BUTTONS (DeepSeek Style) */}
                       {msg.content && !loading && (
                         <div className="flex items-center gap-1 mt-3 text-zinc-400">
                           <button onClick={() => navigator.clipboard.writeText(msg.content)} className="p-2 hover:bg-zinc-800 rounded-lg transition-colors" title="Copy"><Copy className="w-[18px] h-[18px]" /></button>
@@ -1465,7 +1439,6 @@ function DashboardContent() {
 
         <div className="w-full max-w-3xl mx-auto px-4 pb-4 shrink-0 relative">
           
-          {/* Suggestions Pills */}
           {attachment?.status === "valid" && attachment.type === "image" && (
             <div className="flex gap-2 overflow-x-auto pb-3 custom-scrollbar animate-in fade-in slide-in-from-bottom-2">
               {["What's This", "Analyze", "Suggest a Solution"].map((s) => (
@@ -1480,7 +1453,6 @@ function DashboardContent() {
             </div>
           )}
 
-          {/* Selected Image / File Preview */}
           {attachment && (
             <div className="mb-3 animate-in fade-in slide-in-from-bottom-2">
               {attachment.status === "checking" ? (
@@ -1522,7 +1494,6 @@ function DashboardContent() {
             />
           )}
 
-          {/* 🚨 TOOLS MENU POPUP 🚨 */}
           {showToolsMenu && (
             <div className="absolute bottom-20 left-0 w-full bg-[#212121] border border-zinc-800 rounded-3xl p-4 shadow-2xl z-50 animate-in slide-in-from-bottom-5 fade-in duration-200">
               <div className="flex flex-col gap-2">
@@ -1577,13 +1548,11 @@ function DashboardContent() {
                   <svg className="w-4 h-4 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={showAttachMenu ? "M6 18L18 6M6 6l12 12" : "M12 4v16m8-8H4"} /></svg>
                 </button>
 
-                {/* 🚨 GYRA "G" TOOLS BUTTON 🚨 */}
                 <button
                   onClick={() => setShowToolsMenu(!showToolsMenu)}
                   className="w-9 h-9 rounded-full bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center transition-colors group"
                   title="Gyra Tools"
                 >
-                  {/* Stylized Gyra 'G' Logo */}
                   <svg 
                     className="w-[18px] h-[18px] text-zinc-300 group-hover:text-white transition-colors" 
                     viewBox="0 0 24 24" 
@@ -1593,9 +1562,7 @@ function DashboardContent() {
                     strokeLinecap="round" 
                     strokeLinejoin="round"
                   >
-                    {/* The outer C shape */}
                     <path d="M21 12a9 9 0 1 1-9-9c2.5 0 4.8 1 6.5 2.5" />
-                    {/* The inner horizontal bar of the G */}
                     <path d="M12 12h9" />
                   </svg>
                 </button>
