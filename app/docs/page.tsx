@@ -410,7 +410,7 @@ export default function DocsPage() {
         </div>
       </div>
 
-      <VideoHero videoSrc="/docs-hero-bg.mp4" posterSrc="/docs-hero-poster.jpg" eyebrow="Gyra Documentation" title={<>Everything you need<br />to build with Gyra.</>} description="Complete reference for the AI API, Media API, and the developer platform." cta={<div className="flex gap-4"><Link href="/api-keys" className="bg-white text-black px-7 py-3.5 rounded-full font-medium hover:bg-zinc-200 transition-colors">Get API key</Link><Link href="/playground" className="border border-white/20 hover:border-white/50 text-white px-7 py-3.5 rounded-full font-medium transition-colors backdrop-blur-sm bg-white/5">Try the Playground →</Link></div>} />
+      <VideoHero videoSrc="/docs-hero-bg.mp4" eyebrow="Gyra Documentation" title={<>Everything you need<br />to build with Gyra.</>} description="Complete reference for the AI API, Media API, and the developer platform." cta={<div className="flex gap-4"><Link href="/api-keys" className="bg-white text-black px-7 py-3.5 rounded-full font-medium hover:bg-zinc-200 transition-colors">Get API key</Link><Link href="/playground" className="border border-white/20 hover:border-white/50 text-white px-7 py-3.5 rounded-full font-medium transition-colors backdrop-blur-sm bg-white/5">Try the Playground →</Link></div>} />
 
       {/* Body Layout */}
       <div className="flex flex-1 max-w-[1400px] mx-auto w-full">

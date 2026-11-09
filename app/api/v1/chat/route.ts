@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { createHash } from "crypto";
+import { llm } from "../../../lib/llm";
 import {
   rateLimit,
   getClientIP,
@@ -163,18 +164,18 @@ async function callHuggingFace(messages: ChatMessage[]): Promise<string | null> 
 }
 
 async function callGroq(messages: ChatMessage[]): Promise<string | null> {
-  if (!process.env.GROQ_API_KEY) return null;
+  if (!llm().configured) return null;
   try {
     const res = await fetch(
-      "https://api.groq.com/openai/v1/chat/completions",
+      `${llm().base}/chat/completions`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+          Authorization: `Bearer ${llm().key}`,
         },
         body: JSON.stringify({
-          model: "llama-3.3-70b-versatile",
+          model: llm().model,
           messages,
           temperature: 0.7,
         }),

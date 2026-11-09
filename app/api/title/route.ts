@@ -1,17 +1,19 @@
+import { llm } from "../../lib/llm";
+
 export async function POST(req: Request) {
   try {
     const { message } = await req.json();
     if (!message) return Response.json({ title: "New Conversation" });
 
     // Use Groq's fastest model specifically for generating a short title
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    const res = await fetch(`${llm().base}/chat/completions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+        Authorization: `Bearer ${llm().key}`,
       },
       body: JSON.stringify({
-        model: "llama-3.1-8b-instant",
+        model: llm().model,
         messages: [
           {
             role: "system",

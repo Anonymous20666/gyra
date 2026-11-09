@@ -6,6 +6,7 @@ import {
   rateLimitResponse,
   jailbreakResponse,
 } from "../../security";
+import { llm } from "../../../lib/llm";
 
 // ============================================================
 // TAVILY WEB SEARCH
@@ -171,19 +172,17 @@ Natural English with contractions. When showing code, ALWAYS wrap it in triple-b
     // TEXT — Groq streaming
     const fullMessages = [systemPrompt, ...messages];
 
-    if (process.env.GROQ_API_KEY) {
+    if (llm().configured) {
       try {
-        const model = think
-            ? "openai/gpt-oss-120b"
-            : "llama-3.3-70b-versatile";
+        const model = llm().model;
 
         const groqRes = await fetch(
-          "https://api.groq.com/openai/v1/chat/completions",
+          `${llm().base}/chat/completions`,
           {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+              Authorization: `Bearer ${llm().key}`,
             },
             body: JSON.stringify({
               model,

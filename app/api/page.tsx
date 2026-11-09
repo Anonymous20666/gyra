@@ -64,7 +64,7 @@ export default function ApiPage() {
           loop
           playsInline
           preload="auto"
-          poster="/api-hero-poster.jpg"
+          poster="/api-hero.png"
           className="absolute inset-0 w-full h-full object-cover z-0"
         >
           <source src="/api-hero-bg.mp4" type="video/mp4" />

@@ -7,6 +7,8 @@ import {
 import { FREE_LIMIT } from "@/app/lib/paymentConfig";
 import { fal } from "@fal-ai/client";
 import * as cheerio from "cheerio";
+import { llm } from "@/app/lib/llm";
+import { webSearch } from "@/app/lib/websearch";
 
 fal.config({
   credentials: process.env.FAL_KEY,
@@ -28,68 +30,48 @@ function encodeEvent(data: any) {
 }
 
 // --- HELPER: CALL GROQ ---
+// Retries transient network failures: the self-hosted OpenAI-compatible
+// endpoint (local Ollama) can drop sockets under CPU load. Up to 3 attempts
+// with short backoff; non-2xx responses surface as empty content, not crashes.
 async function callGroq(systemPrompt: string, userPrompt: string, stream = false) {
-  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: { 
-      "Content-Type": "application/json", 
-      Authorization: `Bearer ${process.env.GROQ_API_KEY}` 
-    },
-    body: JSON.stringify({
-      model: "openai/gpt-oss-120b",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt }
-      ],
-      temperature: 0.3,
-      stream: stream,
-    }),
+  const url = `${llm().base}/chat/completions`;
+  const headers = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${llm().key}`,
+  };
+  const body = JSON.stringify({
+    model: llm().model,
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
+    ],
+    temperature: 0.3,
+    stream: stream,
   });
 
-  if (stream) return res;
-
-  const data = await res.json();
-  return data.choices?.[0]?.message?.content || "";
+  let lastErr: unknown = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = await fetch(url, { method: "POST", headers, body });
+      if (stream) return res;
+      if (!res.ok) return "";
+      const data = await res.json();
+      return data.choices?.[0]?.message?.content || "";
+    } catch (err) {
+      lastErr = err;
+      if (attempt < 2) await new Promise((r) => setTimeout(r, 1200 * (attempt + 1)));
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error("LLM request failed");
 }
 
-// --- HELPER: ATLAS INTERNAL SEARCH (DuckDuckGo + Scraper) ---
+// --- HELPER: ATLAS INTERNAL SEARCH (shared websearch: Bing + DDG fallbacks) ---
 async function atlasInternalSearch(query: string) {
   try {
-    const searchUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
-    const searchRes = await fetch(searchUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
-    const searchHtml = await searchRes.text();
-    
-    const $ = cheerio.load(searchHtml);
-    const results: { title: string, url: string }[] = [];
-    
-    $('.result__a').each((i, el) => {
-      if (i >= 3) return; // Top 3 results
-      let url = $(el).attr('href');
-      if (url && url.startsWith('/l/?uddg=')) {
-        url = decodeURIComponent(url.split('uddg=')[1]);
-      }
-      if (url) results.push({ title: $(el).text(), url });
-    });
-
-    let context = "";
-    const sources: string[] = [];
-
-    for (const result of results) {
-      try {
-        const pageRes = await fetch(result.url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
-        const pageHtml = await pageRes.text();
-        const page$ = cheerio.load(pageHtml);
-        
-        page$('script, style, nav, footer').remove();
-        const text = page$('body').text().replace(/\s+/g, ' ').trim().substring(0, 2000);
-        
-        context += `Source: ${result.url}\n${text}\n\n`;
-        sources.push(result.url);
-      } catch (e) {}
-    }
-
-    return { context, sources };
-  } catch (e) {
+    const { results, contexts } = await webSearch(query, { max: 3, contextChars: 2000 });
+    const context = contexts.map((c) => c.replace(/^\d+\./, 'Source')).join('\n\n');
+    return { context, sources: results.map((r) => r.url) };
+  } catch {
     return { context: "", sources: [] };
   }
 }

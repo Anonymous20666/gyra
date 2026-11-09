@@ -48,14 +48,17 @@ export default function LoginPage() {
     if (signInError) {
       // If sign in fails, try to sign them up
       if (signInError.message.includes("Invalid login credentials")) {
-        const { error: signUpError } = await supabase.auth.signUp({
+        const signUp = await supabase.auth.signUp({
           email,
           password,
         });
-        if (signUpError) {
-          setError(signUpError.message);
+        if (signUp.error) {
+          setError(signUp.error.message);
+        } else if (signUp.data?.session) {
+          // Auto-confirm mode: session issued immediately, skip OTP step
+          router.push("/dashboard");
         } else {
-          // If sign up is successful, send them to OTP verification
+          // Email confirmation required: ask for the OTP
           setStep("verify");
         }
       } else {
@@ -172,10 +175,7 @@ export default function LoginPage() {
               </div>
 
               <div>
-                <div className="flex justify-between items-center mb-1.5">
-                  <label className="text-xs text-zinc-400">Password</label>
-                  <Link href="/reset-password" className="text-xs text-zinc-500 hover:text-white transition-colors">Forgot?</Link>
-                </div>
+                <label className="block mb-1.5 text-xs text-zinc-400">Password</label>
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}

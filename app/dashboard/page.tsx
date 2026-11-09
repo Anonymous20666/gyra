@@ -192,6 +192,37 @@ function DashboardContent() {
   }, [messages]);
 
   // ============================================================
+  // ONE-SHOT ENTRY PROMPT (landing composer handoff)
+  // The landing composer stores {text, ts} in sessionStorage.
+  // Consume it once (10-min freshness) -> new chat + send.
+  // ============================================================
+  const entryHandledRef = useRef(false);
+  useEffect(() => {
+    if (entryHandledRef.current || !user) return;
+    entryHandledRef.current = true;
+    let entry: string | null = null;
+    try {
+      const raw = window.sessionStorage.getItem("gyra_entry_prompt");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (typeof parsed?.text === "string" && Date.now() - Number(parsed.ts || 0) < 10 * 60 * 1000) {
+          entry = parsed.text;
+        }
+        window.sessionStorage.removeItem("gyra_entry_prompt");
+      }
+    } catch {}
+    if (!entry) return;
+    const t = setTimeout(async () => {
+      try {
+        await createNewChat();
+        await new Promise((r) => setTimeout(r, 400));
+        await sendMessage(entry!);
+      } catch {}
+    }, 900);
+    return () => clearTimeout(t);
+  }, [user]);
+
+  // ============================================================
   // INIT
   // ============================================================
   useEffect(() => {
