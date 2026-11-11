@@ -2888,9 +2888,9 @@ body:has(.gy-page) {
 }
 
 .gy-chat-assistant .gy-chat-avatar {
-  background: rgba(72, 220, 229, 0.14);
+  background: rgba(79, 110, 247, 0.14);
   color: var(--gy-cyan);
-  border: 1px solid rgba(72, 220, 229, 0.28);
+  border: 1px solid rgba(79, 110, 247, 0.28);
 }
 
 .gy-chat-bubble {
@@ -2904,7 +2904,7 @@ body:has(.gy-page) {
 
 .gy-chat-assistant .gy-chat-bubble {
   background: rgba(13, 22, 35, 0.88);
-  border-color: rgba(72, 220, 229, 0.2);
+  border-color: rgba(79, 110, 247, 0.2);
 }
 
 .gy-chat-text {
@@ -2988,7 +2988,7 @@ body:has(.gy-page) {
 
 .gy-dossier-tab.on {
   border-color: var(--gy-border-active);
-  background: rgba(72, 220, 229, 0.12);
+  background: rgba(79, 110, 247, 0.12);
   color: var(--gy-cyan);
 }
 
@@ -3051,7 +3051,7 @@ body:has(.gy-page) {
   color: var(--gy-cyan);
   padding: 2px 6px;
   border-radius: 4px;
-  background: rgba(72, 220, 229, 0.1);
+  background: rgba(79, 110, 247, 0.1);
 }
 
 .gy-dossier-grid {
@@ -3493,7 +3493,7 @@ body:has(.gy-page) {
   font-size: 10.5px;
   color: var(--gy-cyan);
   background: rgba(5, 7, 11, 0.82);
-  border: 1px solid rgba(72, 220, 229, 0.3);
+  border: 1px solid rgba(79, 110, 247, 0.3);
   padding: 3px 8px;
   border-radius: 6px;
 }
@@ -3657,7 +3657,7 @@ body:has(.gy-page) {
   gap: 9px;
   padding: 12px 20px;
   border-radius: 12px;
-  border: 1px solid rgba(72, 220, 229, 0.55);
+  border: 1px solid rgba(79, 110, 247, 0.55);
   background: var(--gy-cyan);
   color: #041e24;
   font-size: 13.5px;
@@ -3668,7 +3668,7 @@ body:has(.gy-page) {
 }
 
 .gy-voice-unmute-btn.is-playing {
-  background: rgba(72, 220, 229, 0.16);
+  background: rgba(79, 110, 247, 0.16);
   color: var(--gy-cyan);
 }
 
@@ -3753,7 +3753,7 @@ body:has(.gy-page) {
   letter-spacing: 0.1em;
   padding: 3px 7px;
   border-radius: 5px;
-  background: rgba(72, 220, 229, 0.12);
+  background: rgba(79, 110, 247, 0.12);
   color: var(--gy-cyan);
   flex-shrink: 0;
 }
@@ -3787,7 +3787,7 @@ body:has(.gy-page) {
 }
 
 .gy-wb-view-switch button.on {
-  background: rgba(72, 220, 229, 0.15);
+  background: rgba(79, 110, 247, 0.15);
   color: var(--gy-cyan);
 }
 
@@ -3822,8 +3822,8 @@ body:has(.gy-page) {
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: rgba(72, 220, 229, 0.14);
-  border: 1px solid rgba(72, 220, 229, 0.4);
+  background: rgba(79, 110, 247, 0.14);
+  border: 1px solid rgba(79, 110, 247, 0.4);
   color: var(--gy-cyan);
   font-size: 11px;
   display: inline-flex;
@@ -3903,7 +3903,7 @@ body:has(.gy-page) {
 }
 
 .gy-wb-file-tab.on {
-  background: rgba(72, 220, 229, 0.09);
+  background: rgba(79, 110, 247, 0.09);
   color: var(--gy-text-primary);
 }
 
@@ -4033,7 +4033,7 @@ body:has(.gy-page) {
 
 .gy-orb-sat-btn.on {
   border-color: var(--gy-border-active);
-  background: rgba(72, 220, 229, 0.1);
+  background: rgba(79, 110, 247, 0.1);
 }
 
 .gy-orb-sat-btn span {
@@ -4201,7 +4201,7 @@ body:has(.gy-page) {
   flex-direction: column;
   gap: 3px;
   padding-left: 14px;
-  border-left: 2px solid rgba(72, 220, 229, 0.4);
+  border-left: 2px solid rgba(79, 110, 247, 0.4);
 }
 
 .gy-dev-feat strong {
@@ -4256,7 +4256,7 @@ body:has(.gy-page) {
 }
 
 .gy-dev-tabs button.on {
-  background: rgba(72, 220, 229, 0.14);
+  background: rgba(79, 110, 247, 0.14);
   color: var(--gy-cyan);
 }
 
@@ -4328,7 +4328,7 @@ body:has(.gy-page) {
 .gy-price-card-featured {
   border-color: var(--gy-border-active);
   background: linear-gradient(180deg, rgba(16, 28, 44, 0.88), rgba(10, 16, 26, 0.88));
-  box-shadow: 0 28px 70px -28px rgba(72, 220, 229, 0.2);
+  box-shadow: 0 28px 70px -28px rgba(79, 110, 247, 0.2);
 }
 
 .gy-price-title-row {
@@ -4461,7 +4461,7 @@ body:has(.gy-page) {
 .gy-credit-pill:hover,
 .gy-credit-popular {
   border-color: var(--gy-border-active);
-  background: rgba(72, 220, 229, 0.08);
+  background: rgba(79, 110, 247, 0.08);
 }
 
 .gy-credit-usd {
@@ -4540,7 +4540,7 @@ body:has(.gy-page) {
 .gy-final-banner {
   padding: clamp(38px, 6vw, 72px) 24px;
   border-radius: 24px;
-  background: radial-gradient(90% 120% at 50% 0%, rgba(72, 220, 229, 0.12), rgba(10, 16, 26, 0.86) 65%);
+  background: radial-gradient(90% 120% at 50% 0%, rgba(79, 110, 247, 0.12), rgba(10, 16, 26, 0.86) 65%);
   border: 1px solid var(--gy-border);
   text-align: center;
   display: flex;
@@ -4666,3 +4666,504 @@ body:has(.gy-page) {
     font-size: 11.5px;
   }
 }
+
+/* ============================================================================
+ * ROUND 5L — captured-thread chat language · honest player chrome ·
+ * recorded-run pane · accent alignment (2026-11-09)
+ * ============================================================================ */
+
+/* --- Living field tone-down: more negative space, less plexus --- */
+.gy-living-field {
+  opacity: 0.72;
+}
+
+/* --- Captured thread chrome (hero cards + workbench thread) --- */
+.gy-thread-header {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--gy-border-subtle);
+}
+
+.gy-thread-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--gy-accent);
+  box-shadow: 0 0 10px rgba(79, 110, 247, 0.75);
+  flex-shrink: 0;
+}
+
+.gy-thread-topic {
+  font-family: var(--font-gy-mono, "JetBrains Mono", monospace);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gy-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.gy-thread-stamp {
+  margin-left: auto;
+  font-family: var(--font-gy-mono, "JetBrains Mono", monospace);
+  font-size: 10.5px;
+  color: rgba(255, 255, 255, 0.32);
+  flex-shrink: 0;
+}
+
+.gy-turn-user {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  margin-top: 12px;
+}
+
+.gy-turn-user .gy-thread-user-bubble {
+  max-width: 88%;
+}
+
+.gy-turn-time {
+  font-family: var(--font-gy-mono, "JetBrains Mono", monospace);
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.3);
+  padding-right: 3px;
+}
+
+.gy-turn-gyra {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.gy-turn-gyra .gy-thread-gyra-body {
+  gap: 8px;
+}
+
+.gy-gyra-meta-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.gy-gyra-name {
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--gy-text-primary);
+  letter-spacing: 0.01em;
+}
+
+.gy-gyra-chip {
+  font-family: var(--font-gy-mono, "JetBrains Mono", monospace);
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  color: #A5B4FF;
+  background: rgba(79, 110, 247, 0.12);
+  border: 1px solid rgba(79, 110, 247, 0.3);
+  border-radius: 999px;
+  padding: 2px 9px;
+  white-space: nowrap;
+}
+
+.gy-gyra-prose {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--gy-text-secondary);
+}
+
+.gy-gyra-prose strong {
+  color: var(--gy-text-primary);
+  font-weight: 600;
+}
+
+.gy-gyra-prose code {
+  font-family: var(--font-gy-mono, "JetBrains Mono", monospace);
+  font-size: 11.5px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--gy-border-subtle);
+  border-radius: 6px;
+  padding: 1px 5px;
+  color: var(--gy-text-primary);
+}
+
+/* Tiny "sample" tag inside the research matrix (muted, non-competing) */
+.gy-wf-sample-tag {
+  font-style: normal;
+  font-family: var(--font-gy-mono, "JetBrains Mono", monospace);
+  font-size: 8.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gy-text-muted);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-left: 6px;
+  vertical-align: 1px;
+}
+
+/* --- Workbench captured-thread header --- */
+.gy-wb-thread {
+  flex: 1;
+  min-width: 280px;
+  max-width: 640px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.gy-wb-thread .gy-turn-user,
+.gy-wb-thread .gy-turn-gyra {
+  margin-top: 0;
+}
+
+@media (max-width: 920px) {
+  .gy-wb-thread {
+    max-width: 100%;
+  }
+}
+
+/* --- Workbench: recorded run pane (real product footage) --- */
+.gy-wb-mode-recorded {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.gy-wb-recorded-pane {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 30px 20px 36px;
+}
+
+.gy-wb-recorded-frame {
+  height: min(460px, 68vw);
+  aspect-ratio: 390 / 844;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid var(--gy-border);
+  box-shadow:
+    0 24px 60px -24px rgba(0, 0, 0, 0.8),
+    var(--gy-specular-inset);
+  background: #0B0C10;
+}
+
+.gy-wb-recorded-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 17px;
+}
+
+.gy-wb-recorded-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  max-width: 540px;
+}
+
+.gy-wb-recorded-meta p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--gy-text-secondary);
+}
+
+/* --- Hero showcase: honest caption under the viewport --- */
+.gy-video-caption {
+  margin: 10px 4px 0;
+  font-family: var(--font-gy-mono, "JetBrains Mono", monospace);
+  font-size: 11px;
+  color: var(--gy-text-muted);
+  text-align: center;
+}
+
+/* --- Composer: static model badge (no fictional alternates) --- */
+.gy-model-badge-static {
+  cursor: default;
+  user-select: none;
+}
+
+.gy-model-badge-static:hover {
+  border-color: var(--gy-border);
+  background: #22252D;
+}
+
+/* --- Voice studio: single profile card (replaces fake preset tabs) --- */
+.gy-voice-profile-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--gy-border-subtle);
+  background: rgba(12, 19, 30, 0.65);
+}
+
+/* --- Compare quick-bar: keep buttons on one line on narrow cards --- */
+@media (max-width: 560px) {
+  .gy-compare-quick-bar {
+    flex-wrap: wrap;
+  }
+  .gy-compare-quick-btns button {
+    white-space: nowrap;
+  }
+}
+/* ============================================================================
+ * ROUND 5M — PROFESSIONAL DESIGN PASS (2026-11-10)
+ * Appended by agent. Goal: Meta-AI / professional-AI-site standard on top of
+ * round5l — unified accent, disciplined surfaces, fluid section rhythm,
+ * refined type scale, quiet premium micro-interactions.
+ *
+ * Rules honored: one accent (indigo #4F6EF7), no scroll hijacking
+ * (opacity/transform only), prefers-reduced-motion respected everywhere,
+ * no JS, no new components, no content changes.
+ * ============================================================================ */
+
+/* ---------- 0. GLOBAL POLISH ------------------------------------------------ */
+
+::selection {
+  background: rgba(79, 110, 247, 0.32);
+  color: #F5F7FA;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Quiet dark scrollbar (WebKit + Firefox) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(79, 110, 247, 0.5);
+  background-clip: content-box;
+}
+
+/* Visible focus for keyboard users — one consistent indigo ring */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid rgba(79, 110, 247, 0.75);
+  outline-offset: 2px;
+}
+
+/* ---------- 1. TYPE SCALE — hero presence + section consistency ------------- */
+
+.gy-h1 {
+  font-size: clamp(2.75rem, 6.2vw, 4.75rem);
+  line-height: 1.04;
+  letter-spacing: -0.035em;
+}
+
+.gy-h2 {
+  font-size: clamp(1.9rem, 3.7vw, 2.9rem);
+  line-height: 1.1;
+  letter-spacing: -0.032em;
+}
+
+/* The one quiet accent in the type system: a soft light-to-indigo wash on
+   the accent spans only. Deliberate, single-hue, not a bright gradient. */
+.gy-h1-accent {
+  background: linear-gradient(94deg, #F2F5FA 24%, #93A8FF 86%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+.gy-hero-sub {
+  max-width: 56ch;
+}
+
+.gy-section-header-split {
+  margin-bottom: clamp(44px, 5vw, 64px);
+}
+
+.gy-section-header-centered .gy-body-lead {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ---------- 2. SECTION RHYTHM — fluid, breathing, consistent ---------------- */
+
+.gy-section {
+  padding: clamp(88px, 10.5vw, 148px) 0;
+}
+
+@media (max-width: 768px) {
+  .gy-section {
+    padding: clamp(64px, 9vw, 84px) 0;
+  }
+}
+
+.gy-hero {
+  padding-top: clamp(120px, 14vw, 168px);
+  padding-bottom: clamp(64px, 7vw, 88px);
+}
+
+/* ---------- 3. SURFACE SYSTEM — one radius family, one border language ------ */
+
+/* Large surfaces: 24 · medium: 16 · the workbench/voice keep their own */
+.gy-meta-card {
+  border-radius: 24px;
+  transition: border-color 0.25s ease, background-color 0.25s ease;
+}
+@media (max-width: 520px) {
+  .gy-meta-card {
+    border-radius: 20px;
+  }
+}
+
+.gy-door-card {
+  border-radius: 16px;
+}
+
+.gy-price-card {
+  border-radius: 22px;
+}
+
+.gy-faq-card {
+  border-radius: 16px;
+}
+
+/* Quiet hover language: borders brighten, accents glow — never bounce */
+.gy-meta-card:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.gy-door-card:hover {
+  box-shadow: 0 16px 42px -20px rgba(79, 110, 247, 0.35);
+}
+
+.gy-price-card-featured:hover {
+  border-color: rgba(79, 110, 247, 0.55);
+}
+
+/* ---------- 4. NAV — legible before it scrolls ------------------------------ */
+
+.gy-nav {
+  background: linear-gradient(180deg, rgba(11, 12, 16, 0.52) 0%, rgba(11, 12, 16, 0) 100%);
+}
+
+/* ---------- 5. COMPOSER — the hero object, given real presence -------------- */
+
+.gy-omni-box {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 26px 70px -18px rgba(0, 0, 0, 0.66);
+}
+
+.gy-omni-box-focused {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 26px 70px -18px rgba(0, 0, 0, 0.7), 0 0 0 3px rgba(79, 110, 247, 0.16), 0 0 60px -18px rgba(79, 110, 247, 0.4);
+}
+
+/* ---------- 6. BUTTONS — one glow language ---------------------------------- */
+
+.gy-btn-primary:hover:not(:disabled) {
+  box-shadow: var(--gy-specular-inset), 0 10px 30px -10px rgba(79, 110, 247, 0.55);
+}
+
+.gy-btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.gy-btn-secondary:hover:not(:disabled) {
+  border-color: rgba(79, 110, 247, 0.45);
+}
+
+/* ---------- 7. CLOSING — final banner + footer ------------------------------ */
+
+.gy-final-banner {
+  border-color: rgba(79, 110, 247, 0.28);
+}
+
+.gy-footer-col a:hover,
+.gy-footer-social a:hover {
+  color: #FFFFFF;
+}
+
+/* ---------- 8. SCROLL REVEALS — pure CSS scroll-driven animation ------------
+ * Progressive enhancement: only where animation-timeline is supported, only
+ * where the user allows motion. Opacity + 24px rise, nothing more. Elements
+ * fully in the viewport always render at final state — no layout shift,
+ * no scroll effects, no JS.
+ * -------------------------------------------------------------------------- */
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .gy-section > .gy-container > :where(div, article, section, p) {
+      animation: gy-rise-in linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 42%;
+    }
+
+    .gy-meta-cards-grid > .gy-meta-card {
+      animation: gy-rise-in linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 46%;
+    }
+
+    .gy-door-cards-grid > .gy-door-card {
+      animation: gy-rise-in linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 46%;
+    }
+  }
+}
+
+@keyframes gy-rise-in {
+  from {
+    opacity: 0.001;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Reduced motion: guarantee final state even where the timeline exists */
+@media (prefers-reduced-motion: reduce) {
+  .gy-section > .gy-container > *,
+  .gy-meta-cards-grid > .gy-meta-card,
+  .gy-door-cards-grid > .gy-door-card {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* ============================================================================
+ * END ROUND 5M
+ * ============================================================================ */

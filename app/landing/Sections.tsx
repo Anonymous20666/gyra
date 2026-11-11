@@ -82,7 +82,7 @@ const API_SNIPPETS: Record<string, { label: string; code: string }> = {
   -H "Authorization: Bearer $GYRA_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
-    "model": "gyra-1",
+    "model": "gyra-1.0",
     "messages": [
       { "role": "system", "content": "You are a precise research analyst." },
       { "role": "user", "content": "Summarize key risks in solid-state battery scaling." }
@@ -100,7 +100,7 @@ const gyra = new OpenAI({
 });
 
 const response = await gyra.chat.completions.create({
-  model: "gyra-1",
+  model: "gyra-1.0",
   messages: [
     { role: "user", content: "Design a resilient webhook retry queue in TypeScript." }
   ],
@@ -119,7 +119,7 @@ client = OpenAI(
 )
 
 stream = client.chat.completions.create(
-    model="gyra-1",
+    model="gyra-1.0",
     messages=[{"role": "user", "content": "Extract structured entities from this clinical report."}],
     stream=True,
 )
@@ -466,7 +466,7 @@ export function Footer() {
               <span className="gy-nav-word">GYRA</span>
             </Link>
             <p className="gy-footer-tagline">
-              Intelligence, simplified.
+              Intelligence, engineered to ship.
               <br />A flagship AI product built by <strong>Genvia AI Company</strong>.
             </p>
           </div>

@@ -22,8 +22,8 @@ export const revalidate = 0;
 
 export const metadata: Metadata = {
   title: "Gyra — Intelligence, engineered to ship · Built by Genvia AI Company",
-  description:
-    "Multimodal Chat & Autonomous Agent platform. Generate photorealistic studio imagery, 4K 60fps cinema video, production TypeScript applications, and autonomous multi-step workflows inside one tactile command center.",
+    description:
+      "Multimodal Chat & Autonomous Agent platform. Generate photorealistic studio imagery, camera-controlled video, production TypeScript applications, and autonomous multi-step workflows inside one tactile command center.",
   openGraph: {
     title: "Gyra — Intelligence, engineered to ship",
     description:

@@ -2,188 +2,35 @@
 
 import { useEffect, useRef, useState } from "react";
 
-interface CinemaClip {
-  id: string;
-  title: string;
-  src: string;
-  poster: string;
-  prompt: string;
-  camera: string;
-  duration: string;
-  aspectLabel: string;
-  tag: string;
-}
+/* ------------------------------------------------------------------ */
+/*  Spark icon (matches the chat thread language across the landing)   */
+/* ------------------------------------------------------------------ */
 
-const CINEMA_CLIPS: CinemaClip[] = [
-  {
-    id: "products-cinema",
-    title: "Volumetric Orbital Light Sculpture",
-    src: "/products-hero-bg.mp4",
-    poster: "/media/poster-api.png",
-    prompt:
-      "Slow orbital dolly around a luminous refractive light core in deep obsidian space, volumetric cyan caustics, 24fps cinema grade.",
-    camera: "35mm Anamorphic · Orbital Dolly",
-    duration: "08s Loop",
-    aspectLabel: "16:9 Cinema",
-    tag: "Sample output · Gyra Motion Engine",
-  },
-  {
-    id: "api-cinema",
-    title: "Neural Lattice Telemetry Horizon",
-    src: "/api-hero-bg.mp4",
-    poster: "/media/poster-api.png",
-    prompt:
-      "Precision macro sweep across an illuminated computational lattice with cobalt and cyan optical pulses travelling through glass conduits.",
-    camera: "50mm Macro · Tracking Glide",
-    duration: "06s Loop",
-    aspectLabel: "16:9 Widescreen",
-    tag: "Sample output · Gyra Motion Engine",
-  },
-  {
-    id: "docs-cinema",
-    title: "Vertical Refractive Monolith Study",
-    src: "/docs-hero-bg.mp4",
-    poster: "/media/poster-docs.png",
-    prompt:
-      "Atmospheric vertical pedestal crane up a dark glass monolith with subtle internal bioluminescent waves in deep blue.",
-    camera: "28mm Prime · Vertical Crane",
-    duration: "08s Loop",
-    aspectLabel: "Vertical Studio",
-    tag: "Sample output · Gyra Motion Engine",
-  },
-];
-
-export function VideoShowcaseSection() {
-  const [activeClipId, setActiveClipId] = useState<string>(CINEMA_CLIPS[0].id);
-  const sectionRef = useRef<HTMLElement>(null);
-  const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
-  const [inView, setInView] = useState(false);
-
-  const activeClip =
-    CINEMA_CLIPS.find((c) => c.id === activeClipId) || CINEMA_CLIPS[0];
-
-  useEffect(() => {
-    const el = sectionRef.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        const visible = entries[0]?.isIntersecting ?? false;
-        setInView(visible);
-      },
-      { threshold: 0.1 }
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-
-  useEffect(() => {
-    Object.entries(videoRefs.current).forEach(([, vid]) => {
-      if (!vid) return;
-      if (inView) {
-        vid.play().catch(() => {});
-      } else {
-        vid.pause();
-      }
-    });
-  }, [inView, activeClipId]);
-
+function GyraSparkIcon() {
   return (
-    <section id="video" ref={sectionRef} className="gy-section gy-showcase-section">
-      <div className="gy-container">
-        <div className="gy-section-header-split">
-          <div>
-            <p className="gy-cap-kicker">
-              <span className="gy-cap-kicker-num">04</span>
-              <span>CINEMATIC MOTION INTELLIGENCE</span>
-            </p>
-            <h2 className="gy-h2">Motion with temporal coherence.</h2>
-          </div>
-          <p className="gy-body-lead">
-            Direct camera trajectories, atmospheric lighting, and fluid physical
-            motion. Gyra synthesizes high-definition video sequences built for
-            product storytelling, concept films, and visual design.
-          </p>
-        </div>
-
-        <div className="gy-cinema-grid">
-          {CINEMA_CLIPS.map((clip) => {
-            const isSelected = clip.id === activeClip.id;
-            return (
-              <article
-                key={clip.id}
-                className={`gy-cinema-card ${isSelected ? "gy-cinema-card-active" : ""}`}
-                onClick={() => setActiveClipId(clip.id)}
-              >
-                <div className="gy-cinema-media">
-                  <video
-                    ref={(el) => {
-                      videoRefs.current[clip.id] = el;
-                    }}
-                    src={clip.src}
-                    poster={clip.poster}
-                    muted
-                    loop
-                    playsInline
-                    autoPlay
-                    preload="metadata"
-                    className="gy-cinema-video"
-                  />
-                  <div className="gy-cinema-overlay">
-                    <span className="gy-sample-tag">{clip.tag}</span>
-                    <span className="gy-cinema-duration">{clip.duration}</span>
-                  </div>
-                </div>
-
-                <div className="gy-cinema-body">
-                  <div className="gy-cinema-meta">
-                    <span>{clip.camera}</span>
-                    <span aria-hidden="true">·</span>
-                    <span>{clip.aspectLabel}</span>
-                  </div>
-                  <h3 className="gy-cinema-title">{clip.title}</h3>
-                  <p className="gy-cinema-prompt">“{clip.prompt}”</p>
-                </div>
-              </article>
-            );
-          })}
-        </div>
-
-        <div className="gy-cinema-footer">
-          <p className="gy-cinema-note">
-            Muted autoplay previews · Generated with the SuperGyra Motion Studio pipeline
-          </p>
-          <a href="https://gyra-tester.duckdns.org/studio" className="gy-btn-secondary gy-btn-sm">
-            Launch Video Studio →
-          </a>
-        </div>
-      </div>
-    </section>
+    <span className="gy-spark-avatar" aria-hidden="true">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="gy-spark-svg">
+        <path
+          d="M12 2.5L14.4 9.6L21.5 12L14.4 14.4L12 21.5L9.6 14.4L2.5 12L9.6 9.6L12 2.5Z"
+          fill="#4F6EF7"
+        />
+        <circle cx="12" cy="12" r="2.2" fill="#FFFFFF" />
+      </svg>
+    </span>
   );
 }
 
-const VOICE_PRESETS = [
-  {
-    id: "signature",
-    label: "Gyra Signature",
-    profile: "Deep · Confident · Natural Cadence",
-    transcript:
-      "I am Gyra. Bring me a rough question, a research brief, or a product idea—and we will turn it into finished work.",
-  },
-  {
-    id: "briefing",
-    label: "Executive Briefing",
-    profile: "Measured · Analytical · Studio Clarity",
-    transcript:
-      "Good morning. Across your four tracked markets, renewable grid storage capacity rose eighteen percent this quarter.",
-  },
-  {
-    id: "narrative",
-    label: "Editorial Narration",
-    profile: "Warm · Articulate · Documentary Pacing",
-    transcript:
-      "Beneath the dark surface of the northern fjord, coherent light travels in quiet geometric waves.",
-  },
-];
+/* ------------------------------------------------------------------ */
+/*  Voice Showcase — recorded signature line + REAL on-demand synth    */
+/* ------------------------------------------------------------------ */
+
+const VOICE_SIGNATURE = {
+  id: "signature",
+  label: "Gyra Signature Voice",
+  profile: "Deep · Confident · Natural Cadence",
+  transcript:
+    "I am Gyra. Bring me a rough question, a research brief, or a product idea—and we will turn it into finished work.",
+};
 
 export function VoiceShowcase() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -193,11 +40,11 @@ export function VoiceShowcase() {
   const signatureBufRef = useRef<AudioBuffer | null>(null);
 
   const [playing, setPlaying] = useState(false);
-  const [activePreset, setActivePreset] = useState(VOICE_PRESETS[0]);
+  const [playingCustom, setPlayingCustom] = useState(false);
   const [customText, setCustomText] = useState("");
   const [synthesizing, setSynthesizing] = useState(false);
   const [statusMessage, setStatusMessage] = useState(
-    "Muted visual preview active · Click Unmute & Listen to hear Gyra's real voice"
+    "Signature line is a recorded take · Speak Live synthesizes any sentence on demand"
   );
 
   useEffect(() => {
@@ -217,7 +64,7 @@ export function VoiceShowcase() {
         signatureBufRef.current = decoded;
       } catch {
         if (!cancelled) {
-          setStatusMessage("Acoustic visualizer active · Ready for neural synthesis");
+          setStatusMessage("Signature audio unavailable in this browser · Speak Live still works");
         }
       }
     })();
@@ -273,13 +120,14 @@ export function VoiceShowcase() {
 
         const grad = ctx2d.createLinearGradient(0, midY - barHeight / 2, 0, midY + barHeight / 2);
         if (playing) {
-          grad.addColorStop(0, "rgba(72, 220, 229, 0.95)");
-          grad.addColorStop(0.5, "rgba(113, 139, 255, 0.95)");
-          grad.addColorStop(1, "rgba(72, 220, 229, 0.95)");
+          // Accent palette: violet → indigo → violet (matches #4F6EF7 identity)
+          grad.addColorStop(0, "rgba(124, 146, 255, 0.95)");
+          grad.addColorStop(0.5, "rgba(79, 110, 247, 0.95)");
+          grad.addColorStop(1, "rgba(124, 146, 255, 0.95)");
         } else {
-          grad.addColorStop(0, "rgba(72, 220, 229, 0.45)");
-          grad.addColorStop(0.5, "rgba(65, 111, 234, 0.65)");
-          grad.addColorStop(1, "rgba(72, 220, 229, 0.45)");
+          grad.addColorStop(0, "rgba(124, 146, 255, 0.42)");
+          grad.addColorStop(0.5, "rgba(79, 110, 247, 0.6)");
+          grad.addColorStop(1, "rgba(124, 146, 255, 0.42)");
         }
 
         ctx2d.fillStyle = grad;
@@ -304,7 +152,7 @@ export function VoiceShowcase() {
     };
   }, [playing]);
 
-  const playBuffer = async (buf: AudioBuffer, label: string) => {
+  const playBuffer = async (buf: AudioBuffer, label: string, isCustom = false) => {
     const Ctx = window.AudioContext || (window as any).webkitAudioContext;
     if (!audioCtxRef.current) {
       audioCtxRef.current = new Ctx();
@@ -326,28 +174,37 @@ export function VoiceShowcase() {
     sourceRef.current = src;
 
     setPlaying(true);
-    setStatusMessage(`Playing live audio · ${label}`);
+    setPlayingCustom(isCustom);
+    setStatusMessage(`Playing · ${label}`);
 
     src.onended = () => {
       setPlaying(false);
-      setStatusMessage("Playback complete · Click Unmute & Listen to replay");
+      setStatusMessage(
+        isCustom
+          ? "Custom sentence finished · Speak Live again anytime"
+          : "Signature line complete · Play again or try Speak Live"
+      );
     };
 
     src.start();
   };
 
+  const stopPlayback = () => {
+    try {
+      sourceRef.current?.stop();
+    } catch {}
+    setPlaying(false);
+    setStatusMessage("Paused · Play again or try Speak Live");
+  };
+
   const toggleSignatureAudio = async () => {
     if (playing) {
-      try {
-        sourceRef.current?.stop();
-      } catch {}
-      setPlaying(false);
-      setStatusMessage("Audio paused · Click Unmute & Listen to resume");
+      stopPlayback();
       return;
     }
 
     if (signatureBufRef.current) {
-      await playBuffer(signatureBufRef.current, activePreset.label);
+      await playBuffer(signatureBufRef.current, "Recorded signature line");
       return;
     }
 
@@ -360,18 +217,42 @@ export function VoiceShowcase() {
       if (!audioCtxRef.current) audioCtxRef.current = new Ctx();
       const buf = await audioCtxRef.current!.decodeAudioData(arr);
       signatureBufRef.current = buf;
-      await playBuffer(buf, activePreset.label);
+      await playBuffer(buf, "Recorded signature line");
     } catch {
       setStatusMessage("Unable to decode audio in this browser environment.");
     }
   };
 
+  /* REAL on-demand synthesis: POST the typed text to /api/demo/voice,
+     decode the returned WAV, and play the actual synthesis. */
   const synthesizeCustomSpeech = async () => {
     const text = customText.trim();
     if (!text || synthesizing) return;
     setSynthesizing(true);
-    setStatusMessage("Preparing neural voice playback…");
-    await toggleSignatureAudio();
+    setStatusMessage("Synthesizing your sentence…");
+    try {
+      const res = await fetch("/api/demo/voice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) throw new Error(`Synthesis request failed (${res.status})`);
+      const arr = await res.arrayBuffer();
+      const Ctx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!audioCtxRef.current) audioCtxRef.current = new Ctx();
+      const buf = await audioCtxRef.current!.decodeAudioData(arr);
+      await playBuffer(buf, "Your sentence — synthesized live", true);
+    } catch {
+      // Honest fallback: never pretend — say what's actually happening
+      if (signatureBufRef.current) {
+        await playBuffer(signatureBufRef.current, "recorded sample (live synthesis unavailable)", true);
+        setStatusMessage(
+          "Live synthesis is unavailable right now — you heard the recorded sample instead."
+        );
+      } else {
+        setStatusMessage("Live synthesis is unavailable in this browser environment.");
+      }
+    }
     setSynthesizing(false);
   };
 
@@ -386,27 +267,16 @@ export function VoiceShowcase() {
             </p>
             <h2 className="gy-h2">A distinctive, confident voice.</h2>
             <p className="gy-body-lead gy-mx-auto">
-              Gyra speaks with deep, measured clarity. Listen to the real
-              signature recording or type any sentence below to synthesize live
-              neural audio.
+              Gyra speaks with deep, measured clarity. Play the recorded
+              signature line, or type any sentence below and Speak Live will
+              synthesize it on demand.
             </p>
           </div>
 
           <div className="gy-voice-studio">
-            <div className="gy-voice-presets" role="tablist" aria-label="Voice cadence presets">
-              {VOICE_PRESETS.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={activePreset.id === p.id}
-                  className={`gy-voice-preset ${activePreset.id === p.id ? "on" : ""}`}
-                  onClick={() => setActivePreset(p)}
-                >
-                  <span className="gy-vp-name">{p.label}</span>
-                  <span className="gy-vp-meta">{p.profile}</span>
-                </button>
-              ))}
+            <div className="gy-voice-profile-row">
+              <span className="gy-vp-name">{VOICE_SIGNATURE.label}</span>
+              <span className="gy-vp-meta">{VOICE_SIGNATURE.profile}</span>
             </div>
 
             <div className="gy-voice-stage">
@@ -414,7 +284,7 @@ export function VoiceShowcase() {
                 <canvas
                   ref={canvasRef}
                   className="gy-voice-canvas"
-                  aria-label="Real-time voice acoustic waveform visualizer"
+                  aria-label="Voice waveform visualizer — driven by real playback"
                 />
               </div>
 
@@ -423,7 +293,7 @@ export function VoiceShowcase() {
                   type="button"
                   className={`gy-voice-unmute-btn ${playing ? "is-playing" : ""}`}
                   onClick={toggleSignatureAudio}
-                  aria-label={playing ? "Pause Gyra voice playback" : "Unmute and listen to Gyra"}
+                  aria-label={playing ? "Pause voice playback" : "Play the recorded signature line"}
                 >
                   {playing ? (
                     <>
@@ -438,13 +308,15 @@ export function VoiceShowcase() {
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                         <path d="M8 5v14l11-7z" />
                       </svg>
-                      <span>Unmute &amp; Listen</span>
+                      <span>Play Signature Line</span>
                     </>
                   )}
                 </button>
 
                 <div className="gy-voice-Readout">
-                  <p className="gy-voice-quote">“{activePreset.transcript}”</p>
+                  <p className="gy-voice-quote">
+                    “{playingCustom ? "Your custom sentence (see the input below)" : VOICE_SIGNATURE.transcript}”
+                  </p>
                   <p className="gy-voice-status" role="status">
                     {statusMessage}
                   </p>
@@ -483,6 +355,10 @@ export function VoiceShowcase() {
   );
 }
 
+/* ------------------------------------------------------------------ */
+/*  Build Showcase — agent workbench with recorded real run            */
+/* ------------------------------------------------------------------ */
+
 interface AgentFile {
   name: string;
   lang: string;
@@ -517,7 +393,7 @@ export function OrbitalTelemetry({ nodes }: { nodes: SatelliteNode[] }) {
     <section className="grid grid-cols-12 gap-4 p-5 bg-[#080D15] text-[#F5F7FA]">
       <header className="col-span-12 flex items-center justify-between border-b border-slate-800 pb-3">
         <h2 className="text-sm font-semibold tracking-tight">{selected.name}</h2>
-        <span className="font-mono text-xs text-[#48DCE5]">
+        <span className="font-mono text-xs text-[#7C92FF]">
           Next Zenith Pass: {pass.minutesToAos}m · {selected.altitudeKm} km LEO
         </span>
       </header>
@@ -580,7 +456,7 @@ const DEMO_SATELLITES = [
 export function BuildShowcase() {
   const [activeFileIdx, setActiveFileIdx] = useState(0);
   const [selectedSatIdx, setSelectedSatIdx] = useState(0);
-  const [activeTab, setActiveTab] = useState<"split" | "code" | "preview">("split");
+  const [activeTab, setActiveTab] = useState<"split" | "code" | "preview" | "recorded">("split");
 
   const activeFile = AGENT_FILES[activeFileIdx];
   const activeSat = DEMO_SATELLITES[selectedSatIdx];
@@ -597,19 +473,43 @@ export function BuildShowcase() {
             <h2 className="gy-h2">Build real software with an agent team.</h2>
           </div>
           <p className="gy-body-lead">
-            Coding is one of Gyra&apos;s core capabilities—powered by coordinated
-            agents that plan architecture, write modular frontend and backend
-            code, verify builds, and render live interactive previews.
+            Coding is one of Gyra&apos;s core capabilities—coordinated agents
+            plan architecture, write modular frontend and backend code, verify
+            builds, and render live interactive previews.
           </p>
         </div>
 
         <div className="gy-workbench">
           <div className="gy-wb-head">
-            <div className="gy-wb-prompt">
-              <span className="gy-wb-prompt-tag">USER BRIEF</span>
-              <span className="gy-wb-prompt-text">
-                “Build an orbital satellite telemetry dashboard with live LEO orbital math, constellation selector, and signal telemetry.”
-              </span>
+            {/* Captured build thread (real conversation language) */}
+            <div className="gy-wb-thread" aria-label="Captured build thread">
+              <div className="gy-turn-user">
+                <div className="gy-thread-user-bubble">
+                  <p className="gy-thread-user-text">
+                    Build an orbital satellite telemetry dashboard with live
+                    LEO orbital math, a constellation selector, and signal
+                    telemetry.
+                  </p>
+                </div>
+                <span className="gy-turn-time">10:14</span>
+              </div>
+
+              <div className="gy-turn-gyra">
+                <GyraSparkIcon />
+                <div className="gy-thread-gyra-body">
+                  <div className="gy-gyra-meta-line">
+                    <span className="gy-gyra-name">Gyra</span>
+                    <span className="gy-gyra-chip">Omni 4.0 · code agent</span>
+                  </div>
+                  <p className="gy-gyra-prose">
+                    Planned it as three agents — Architect (orbital math + API
+                    schema), Frontend (telemetry UI), Backend (typed route).
+                    The interactive demo below is an illustration of that run;
+                    the <strong>Recorded Run</strong> tab plays an unedited
+                    take from the real product.
+                  </p>
+                </div>
+              </div>
             </div>
 
             <div className="gy-wb-view-switch" role="tablist" aria-label="Workbench layout view">
@@ -640,6 +540,16 @@ export function BuildShowcase() {
               >
                 Live App Preview
               </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === "recorded"}
+                className={activeTab === "recorded" ? "on" : ""}
+                onClick={() => setActiveTab("recorded")}
+                data-testid="workbench-recorded-tab"
+              >
+                Recorded Run
+              </button>
             </div>
           </div>
 
@@ -669,13 +579,13 @@ export function BuildShowcase() {
               <span className="gy-wb-check">✓</span>
               <div>
                 <strong>04 · QA &amp; Build</strong>
-                <span>Compiled cleanly · 0 errors</span>
+                <span>Demo build verified</span>
               </div>
             </div>
           </div>
 
           <div className={`gy-wb-body gy-wb-mode-${activeTab}`}>
-            {activeTab !== "preview" && (
+            {activeTab === "split" && (
               <div className="gy-wb-code-pane">
                 <div className="gy-wb-file-tabs" role="tablist" aria-label="Generated project files">
                   {AGENT_FILES.map((file, idx) => (
@@ -706,7 +616,7 @@ export function BuildShowcase() {
               </div>
             )}
 
-            {activeTab !== "code" && (
+            {(activeTab === "split" || activeTab === "preview") && (
               <div className="gy-wb-preview-pane">
                 <div className="gy-wb-preview-bar">
                   <div className="gy-window-dots" aria-hidden="true">
@@ -749,9 +659,9 @@ export function BuildShowcase() {
                     <svg viewBox="0 0 420 130" className="gy-orb-svg" aria-hidden="true">
                       <defs>
                         <linearGradient id="gyOrbLineLocal" x1="0" y1="0" x2="1" y2="0">
-                          <stop offset="0%" stopColor="rgba(65,111,234,0.15)" />
-                          <stop offset="50%" stopColor="rgba(72,220,229,0.9)" />
-                          <stop offset="100%" stopColor="rgba(143,133,239,0.2)" />
+                          <stop offset="0%" stopColor="rgba(79,110,247,0.15)" />
+                          <stop offset="50%" stopColor="rgba(124,146,255,0.9)" />
+                          <stop offset="100%" stopColor="rgba(124,146,255,0.2)" />
                         </linearGradient>
                       </defs>
                       <ellipse
@@ -779,7 +689,7 @@ export function BuildShowcase() {
                         cx={selectedSatIdx === 0 ? 210 : selectedSatIdx === 1 ? 165 : 255}
                         cy={selectedSatIdx === 0 ? 40 : selectedSatIdx === 1 ? 84 : 42}
                         r="6"
-                        fill="#48DCE5"
+                        fill="#4F6EF7"
                       />
                     </svg>
                   </div>
@@ -802,6 +712,32 @@ export function BuildShowcase() {
                       <strong>{activeSat.period}</strong>
                     </div>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === "recorded" && (
+              <div className="gy-wb-recorded-pane">
+                <div className="gy-wb-recorded-frame">
+                  <video
+                    src="/media/live-b.webm"
+                    poster="/media/poster-live-b.jpg"
+                    muted
+                    loop
+                    playsInline
+                    controls
+                    preload="metadata"
+                    className="gy-wb-recorded-video"
+                    aria-label="Recorded unedited run: Gyra building a countdown timer component in the real product"
+                  />
+                </div>
+                <div className="gy-wb-recorded-meta">
+                  <span className="gy-sample-tag">Recorded run · unedited · 0:56</span>
+                  <p>
+                    A straight take from the real product — Gyra planning, then
+                    the agent team building a countdown-timer React component.
+                    No cuts, no staging.
+                  </p>
                 </div>
               </div>
             )}

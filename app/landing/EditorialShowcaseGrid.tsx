@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import {
   calculateInteriorBundle,
   calculateSaasForecast,
@@ -27,6 +27,68 @@ function GyraSparkIcon() {
     </span>
   );
 }
+
+/* ------------------------------------------------------------------ */
+/*  Captured-thread chrome: header, user turn, gyra turn               */
+/* ------------------------------------------------------------------ */
+
+function ThreadHeader({ topic, stamp }: { topic: string; stamp: string }) {
+  return (
+    <div className="gy-thread-header">
+      <span className="gy-thread-dot" aria-hidden="true" />
+      <span className="gy-thread-topic">{topic}</span>
+      <span className="gy-thread-stamp">{stamp}</span>
+    </div>
+  );
+}
+
+function UserTurn({
+  text,
+  stamp,
+  thumbSrc,
+  thumbAlt,
+}: {
+  text: string;
+  stamp: string;
+  thumbSrc?: string;
+  thumbAlt?: string;
+}) {
+  return (
+    <div className="gy-turn-user">
+      <div className="gy-thread-user-bubble">
+        {thumbSrc && (
+          <img
+            src={thumbSrc}
+            alt={thumbAlt || "Attachment"}
+            referrerPolicy="no-referrer"
+            className="gy-user-Upload-thumb"
+          />
+        )}
+        <p className="gy-thread-user-text">{text}</p>
+      </div>
+      <span className="gy-turn-time">{stamp}</span>
+    </div>
+  );
+}
+
+function GyraTurn({ chip, children }: { chip: string; children: ReactNode }) {
+  return (
+    <div className="gy-turn-gyra">
+      <GyraSparkIcon />
+      <div className="gy-thread-gyra-body">
+        <div className="gy-gyra-meta-line">
+          <span className="gy-gyra-name">Gyra</span>
+          <span className="gy-gyra-chip">{chip}</span>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Data                                                               */
+/* ------------------------------------------------------------------ */
 
 interface FabricHotspot {
   id: string;
@@ -146,22 +208,22 @@ const DECK_SLIDES = [
   {
     num: "01",
     title: "Executive Summary & Margin Wedge",
-    bullet: "Gyra undercuts legacy per-seat SaaS by 41% at 100+ seats via unified compute pooling.",
+    bullet: "Unified compute pooling models a 41% lower per-seat cost at 100+ seats vs legacy SaaS (illustrative model).",
   },
   {
     num: "02",
     title: "Competitor A vs B vs C Pricing Matrix",
-    bullet: "14 live pricing endpoints audited: hidden overage multipliers identified on video & API tiers.",
+    bullet: "14 pricing pages compiled from the sample dataset: hidden overage multipliers flagged on video & API tiers.",
   },
   {
     num: "03",
     title: "Enterprise Gross Margin Sensitivity",
-    bullet: "78.4% blended gross margin maintained across multimodal text, vision, and code workloads.",
+    bullet: "Illustrative 78.4% blended gross margin held across multimodal text, vision, and code workloads.",
   },
   {
     num: "04",
     title: "Q4 Migration & Land-and-Expand Playbook",
-    bullet: "Zero-friction OpenAI SDK drop-in compatibility reduces enterprise switching time to <25 mins.",
+    bullet: "OpenAI SDK drop-in compatibility (live on /api/v1/chat) keeps enterprise switching friction minimal.",
   },
 ];
 
@@ -185,11 +247,11 @@ export default function EditorialShowcaseGrid() {
   const [nrr, setNrr] = useState<number>(118);
   const [codeCopied, setCodeCopied] = useState(false);
 
-  // Card 5 State: Cinema Video Extension & Camera Control
+  // Card 5 State: Cinema Video Extension & Camera Control (rig preview over still)
   const [cameraPreset, setCameraPreset] = useState<"orbit" | "dolly" | "crane">("orbit");
   const orbitCanvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Card 6 State: Autonomous Multi-Step Workflow Agent
+  // Card 6 State: Autonomous Multi-Step Workflow Agent (sample run)
   const [agentStep, setAgentStep] = useState<number>(3);
   const [activeSlideIdx, setActiveSlideIdx] = useState<number>(0);
   const [deckDownloaded, setDeckDownloaded] = useState(false);
@@ -221,7 +283,7 @@ export default function EditorialShowcaseGrid() {
     setSplitPercent(clampComparisonSlider(rawPct));
   };
 
-  // Card 5: Volumetric fog & 360° orbital camera trajectory overlay canvas
+  // Card 5: Volumetric fog & 360° orbital camera trajectory overlay canvas (rig preview)
   useEffect(() => {
     const canvas = orbitCanvasRef.current;
     if (!canvas) return;
@@ -244,7 +306,7 @@ export default function EditorialShowcaseGrid() {
 
       const t = now * 0.001;
 
-      // Volumetric fog layers drifting across frame
+      // Volumetric fog layers drifting across frame (rig preview, real-time canvas)
       for (let i = 0; i < 4; i++) {
         const fx = ((t * (18 + i * 7) + i * 110) % (w + 180)) - 90;
         const fy = h * (0.45 + i * 0.12);
@@ -294,11 +356,13 @@ export default function EditorialShowcaseGrid() {
 
   const handleDownloadDeckBrief = () => {
     const content = [
-      "# Gyra Autonomous Agent — Competitor Pricing & Margin Matrix Deck",
+      "# Gyra Autonomous Agent — Competitor Pricing & Margin Matrix (Sample Run)",
+      "",
+      "> Demo dataset — figures are illustrative. Live Deep Research runs scrape and cite every source.",
       "",
       "## Executive Summary",
-      "- Scraped 14 live pricing pages across top 3 competitors.",
-      "- Identified +18.4% gross margin advantage at 50+ enterprise seats.",
+      "- Compiled 14 pricing pages (sample dataset) across 3 competitor profiles.",
+      "- Modeled +18.4% gross margin advantage at 50+ enterprise seats (illustrative model).",
       "",
       "## Slide Breakdown",
       ...DECK_SLIDES.map((s) => `${s.num}. ${s.title}: ${s.bullet}`),
@@ -329,7 +393,7 @@ export default function EditorialShowcaseGrid() {
         <div className="gy-section-header-split">
           <div>
             <p className="gy-cap-kicker">
-              <span className="gy-cap-kicker-num">LIVE THREADS</span>
+              <span className="gy-cap-kicker-num">CAPTURED THREADS</span>
               <span>NATIVE MULTIMODAL WORKFLOWS</span>
             </p>
             <h2 className="gy-h2">
@@ -337,14 +401,13 @@ export default function EditorialShowcaseGrid() {
             </h2>
           </div>
           <p className="gy-body-lead">
-            Every card below is an interactive thread showing how Gyra restyles
-            studio photography, generates editorial flat-lays, curates interior
-            budgets, compiles live React components, extends cinema video, and
-            executes multi-step research workflows.
+            Six captured conversations, left live on purpose. Everything inside
+            them is real and testable: drag the compare, toggle the bundle,
+            move the sliders, preview the camera rig, and export the deck.
           </p>
         </div>
 
-        {/* 6 META AI STYLE EDITORIAL CONVERSATION SHOWCASE CARDS */}
+        {/* 6 CAPTURED CONVERSATION SHOWCASE CARDS */}
         <div className="gy-meta-cards-grid">
           {/* ==========================================================
               CARD 1 — PRECISION PHOTO RESTYLING (BEFORE / AFTER SLIDER)
@@ -355,123 +418,131 @@ export default function EditorialShowcaseGrid() {
             data-testid="showcase-card-1"
           >
             <span id="image" aria-hidden="true" />
-            {/* Top-Right User Bubble (#262932) with Small Square Ramen Thumbnail */}
-            <div className="gy-thread-user-row">
-              <div className="gy-thread-user-bubble">
-                <img
-                  src="/media/showcase/ramen-before-rustic.jpg"
-                  alt="Original rustic wooden-table ramen bowl thumbnail"
-                  referrerPolicy="no-referrer"
-                  className="gy-user-Upload-thumb"
-                />
-                <p className="gy-thread-user-text">
-                  Change the background to a clean studio neutral blue and
-                  enhance steam lighting
-                </p>
-              </div>
-            </div>
+            <ThreadHeader topic="Ramen shot · studio restyle" stamp="Today" />
 
-            {/* Gyra Left-Aligned Response with Animated Spark Icon + Interactive Drag Slider */}
-            <div className="gy-thread-gyra-row">
-              <GyraSparkIcon />
-              <div className="gy-thread-gyra-body">
+            <UserTurn
+              thumbSrc="/media/showcase/ramen-before-rustic.jpg"
+              thumbAlt="Original rustic wooden-table ramen bowl attachment"
+              text="Here&apos;s the shoot — can you move this to a clean studio backdrop? Keep the steam dramatic."
+              stamp="14:02"
+            />
+
+            <GyraTurn chip="Omni 4.0 · image-edit">
+              <p className="gy-gyra-prose">
+                Done. I kept the bowl, chopsticks and steam untouched and
+                rebuilt the background as a slate-blue studio surface with a
+                soft backlight so the steam reads. Drag the split to compare.
+              </p>
+
+              <div
+                ref={compareStageRef}
+                className="gy-compare-stage"
+                onMouseMove={(e) => {
+                  if (draggingSplit) updateSplitFromClientX(e.clientX);
+                }}
+                onMouseDown={(e) => {
+                  setDraggingSplit(true);
+                  updateSplitFromClientX(e.clientX);
+                }}
+                onMouseUp={() => setDraggingSplit(false)}
+                onMouseLeave={() => setDraggingSplit(false)}
+                onTouchMove={(e) => {
+                  const touch = e.touches[0];
+                  if (touch) updateSplitFromClientX(touch.clientX);
+                }}
+              >
+                {/* Base Layer: AFTER (Studio Neutral Blue + Enhanced Steam Lighting) */}
+                <img
+                  src="/media/showcase/ramen-after-studio.jpg"
+                  alt="After restyling: artisanal ramen on clean studio neutral slate-blue surface with backlit volumetric steam"
+                  referrerPolicy="no-referrer"
+                  className="gy-compare-img"
+                  draggable={false}
+                />
+
+                {/* Clipped Layer: BEFORE (Rustic Wooden Table) */}
                 <div
-                  ref={compareStageRef}
-                  className="gy-compare-stage"
-                  onMouseMove={(e) => {
-                    if (draggingSplit) updateSplitFromClientX(e.clientX);
-                  }}
-                  onMouseDown={(e) => {
-                    setDraggingSplit(true);
-                    updateSplitFromClientX(e.clientX);
-                  }}
-                  onMouseUp={() => setDraggingSplit(false)}
-                  onMouseLeave={() => setDraggingSplit(false)}
-                  onTouchMove={(e) => {
-                    const touch = e.touches[0];
-                    if (touch) updateSplitFromClientX(touch.clientX);
-                  }}
+                  className="gy-compare-before-clip"
+                  style={{ clipPath: `inset(0 ${100 - splitPercent}% 0 0)` }}
                 >
-                  {/* Base Layer: AFTER (Studio Neutral Blue + Enhanced Steam Lighting) */}
                   <img
-                    src="/media/showcase/ramen-after-studio.jpg"
-                    alt="After restyling: artisanal ramen on clean studio neutral slate-blue surface with backlit volumetric steam"
+                    src="/media/showcase/ramen-before-rustic.jpg"
+                    alt="Before restyling: ramen bowl on rustic wooden table"
                     referrerPolicy="no-referrer"
                     className="gy-compare-img"
                     draggable={false}
                   />
-
-                  {/* Clipped Layer: BEFORE (Rustic Wooden Table) */}
-                  <div
-                    className="gy-compare-before-clip"
-                    style={{ clipPath: `inset(0 ${100 - splitPercent}% 0 0)` }}
-                  >
-                    <img
-                      src="/media/showcase/ramen-before-rustic.jpg"
-                      alt="Before restyling: ramen bowl on rustic wooden table"
-                      referrerPolicy="no-referrer"
-                      className="gy-compare-img"
-                      draggable={false}
-                    />
-                  </div>
-
-                  {/* Interactive Divider Line & Handle */}
-                  <div
-                    className="gy-compare-divider"
-                    style={{ left: `${splitPercent}%` }}
-                    aria-hidden="true"
-                  >
-                    <span className="gy-compare-handle">⇄</span>
-                  </div>
-
-                  <span className="gy-compare-tag gy-compare-tag-left">
-                    Before · Rustic Wood
-                  </span>
-                  <span className="gy-compare-tag gy-compare-tag-right">
-                    After · Studio Slate Blue ({100 - splitPercent}% view)
-                  </span>
-
-                  <input
-                    type="range"
-                    min={4}
-                    max={96}
-                    value={splitPercent}
-                    aria-label="Compare Before and After photo restyling"
-                    className="gy-compare-range-input"
-                    onChange={(e) =>
-                      setSplitPercent(clampComparisonSlider(Number(e.target.value)))
-                    }
-                  />
                 </div>
 
-                <div className="gy-compare-quick-bar">
-                  <span>Drag slider to inspect lighting &amp; steam</span>
-                  <div className="gy-compare-quick-btns">
-                    <button
-                      type="button"
-                      onClick={() => setSplitPercent(85)}
-                      className={splitPercent > 70 ? "on" : ""}
-                    >
-                      Before
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSplitPercent(50)}
-                      className={splitPercent >= 35 && splitPercent <= 65 ? "on" : ""}
-                    >
-                      50 / 50
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSplitPercent(14)}
-                      className={splitPercent < 30 ? "on" : ""}
-                    >
-                      After
-                    </button>
-                  </div>
+                {/* Interactive Divider Line & Handle */}
+                <div
+                  className="gy-compare-divider"
+                  style={{ left: `${splitPercent}%` }}
+                  aria-hidden="true"
+                >
+                  <span className="gy-compare-handle">⇄</span>
+                </div>
+
+                <span className="gy-compare-tag gy-compare-tag-left">
+                  Before · Rustic Wood
+                </span>
+                <span className="gy-compare-tag gy-compare-tag-right">
+                  After · Studio Slate Blue ({100 - splitPercent}% view)
+                </span>
+
+                <input
+                  type="range"
+                  min={4}
+                  max={96}
+                  value={splitPercent}
+                  aria-label="Compare Before and After photo restyling"
+                  className="gy-compare-range-input"
+                  onChange={(e) =>
+                    setSplitPercent(clampComparisonSlider(Number(e.target.value)))
+                  }
+                />
+              </div>
+
+              <div className="gy-compare-quick-bar">
+                <span>Drag slider to inspect lighting &amp; steam</span>
+                <div className="gy-compare-quick-btns">
+                  <button
+                    type="button"
+                    onClick={() => setSplitPercent(85)}
+                    className={splitPercent > 70 ? "on" : ""}
+                  >
+                    Before
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSplitPercent(50)}
+                    className={splitPercent >= 35 && splitPercent <= 65 ? "on" : ""}
+                  >
+                    50 / 50
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSplitPercent(14)}
+                    className={splitPercent < 30 ? "on" : ""}
+                  >
+                    After
+                  </button>
                 </div>
               </div>
-            </div>
+            </GyraTurn>
+
+            <UserTurn
+              text="Push the steam a touch more — it should almost kiss the bowl rim."
+              stamp="14:04"
+            />
+
+            <GyraTurn chip="Omni 4.0 · image-edit">
+              <p className="gy-gyra-prose">
+                Agreed — I lifted the steam highlights so it trails right to
+                the rim. If it gets too heavy for print, one word and I&apos;ll
+                dial it back a stop.
+              </p>
+            </GyraTurn>
 
             {/* Bottom Caption + Pill CTA */}
             <div className="gy-meta-card-footer">
@@ -502,55 +573,69 @@ export default function EditorialShowcaseGrid() {
             id="card-studio-flatlay"
             data-testid="showcase-card-2"
           >
-            <div className="gy-thread-user-row">
-              <div className="gy-thread-user-bubble">
-                <p className="gy-thread-user-text">
-                  A capsule wardrobe of neutral autumn clothing laid out flat,
-                  photographed from above on a warm linen backdrop, soft studio
-                  light
-                </p>
+            <ThreadHeader topic="Autumn capsule · flat-lay" stamp="Today" />
+
+            <UserTurn
+              text="Put together a neutral autumn capsule wardrobe — flat lay on warm linen, overhead, soft studio light."
+              stamp="11:21"
+            />
+
+            <GyraTurn chip="Omni 4.0 · image-gen">
+              <p className="gy-gyra-prose">
+                Here&apos;s the board — four core pieces in a camel / oat /
+                charcoal palette. Tap any pin to inspect the weave the
+                generator rendered on that panel.
+              </p>
+
+              <div className="gy-flatlay-stage">
+                <img
+                  src="/media/showcase/autumn-flatlay-wardrobe.jpg"
+                  alt="Capsule wardrobe of neutral autumn clothing laid out flat on a warm linen backdrop"
+                  referrerPolicy="no-referrer"
+                  className="gy-flatlay-img"
+                />
+
+                {FLATLAY_HOTSPOTS.map((spot) => {
+                  const isSelected = spot.id === activeHotspot.id;
+                  return (
+                    <button
+                      key={spot.id}
+                      type="button"
+                      style={{ left: `${spot.xPct}%`, top: `${spot.yPct}%` }}
+                      className={`gy-hotspot-pin ${isSelected ? "on" : ""}`}
+                      aria-label={`Inspect texture: ${spot.title}`}
+                      onMouseEnter={() => setActiveHotspotId(spot.id)}
+                      onClick={() => setActiveHotspotId(spot.id)}
+                    >
+                      <span className="gy-hotspot-core" />
+                    </button>
+                  );
+                })}
               </div>
-            </div>
 
-            <div className="gy-thread-gyra-row">
-              <GyraSparkIcon />
-              <div className="gy-thread-gyra-body">
-                <div className="gy-flatlay-stage">
-                  <img
-                    src="/media/showcase/autumn-flatlay-wardrobe.jpg"
-                    alt="Capsule wardrobe of neutral autumn clothing laid out flat on a warm linen backdrop"
-                    referrerPolicy="no-referrer"
-                    className="gy-flatlay-img"
-                  />
-
-                  {FLATLAY_HOTSPOTS.map((spot) => {
-                    const isSelected = spot.id === activeHotspot.id;
-                    return (
-                      <button
-                        key={spot.id}
-                        type="button"
-                        style={{ left: `${spot.xPct}%`, top: `${spot.yPct}%` }}
-                        className={`gy-hotspot-pin ${isSelected ? "on" : ""}`}
-                        aria-label={`Inspect texture: ${spot.title}`}
-                        onMouseEnter={() => setActiveHotspotId(spot.id)}
-                        onClick={() => setActiveHotspotId(spot.id)}
-                      >
-                        <span className="gy-hotspot-core" />
-                      </button>
-                    );
-                  })}
+              {/* Live Texture Inspector Callout */}
+              <div className="gy-hotspot-readout" data-testid="flatlay-hotspot-readout">
+                <div className="gy-hotspot-readout-top">
+                  <strong>{activeHotspot.title}</strong>
+                  <span>{activeHotspot.material}</span>
                 </div>
-
-                {/* Live Texture Inspector Callout */}
-                <div className="gy-hotspot-readout" data-testid="flatlay-hotspot-readout">
-                  <div className="gy-hotspot-readout-top">
-                    <strong>{activeHotspot.title}</strong>
-                    <span>{activeHotspot.material}</span>
-                  </div>
-                  <p>{activeHotspot.spec}</p>
-                </div>
+                <p>{activeHotspot.spec}</p>
               </div>
-            </div>
+            </GyraTurn>
+
+            <UserTurn
+              text="That merino knit — is the texture real?"
+              stamp="11:24"
+            />
+
+            <GyraTurn chip="Omni 4.0 · image-gen">
+              <p className="gy-gyra-prose">
+                It&apos;s a rendered approximation — the generator reproduces
+                rib geometry and self-shadowing well at this resolution, but
+                for final QC I&apos;d still check it against a physical
+                swatch. Want a tighter macro of that panel?
+              </p>
+            </GyraTurn>
 
             <div className="gy-meta-card-footer">
               <div className="gy-meta-card-caption">
@@ -581,131 +666,139 @@ export default function EditorialShowcaseGrid() {
             data-testid="showcase-card-3"
           >
             <span id="chat" aria-hidden="true" />
-            <div className="gy-thread-user-row">
-              <div className="gy-thread-user-bubble">
-                <p className="gy-thread-user-text">
-                  Help me furnish my new studio with mid-century finds under
-                  $1,200. Show me how people style these spaces.
+            <ThreadHeader topic="Studio furniture · under $1,200" stamp="Today" />
+
+            <UserTurn
+              text="Help me furnish my new studio with mid-century finds under $1,200. Show me how people style these spaces."
+              stamp="09:47"
+            />
+
+            <GyraTurn chip="Omni 4.0 · shopping agent">
+              <div className="gy-interior-reply-bubble">
+                <p className="gy-interior-advice">
+                  Anchor the main wall with a low-profile walnut-framed sofa
+                  in olive velvet, then pair a curved cream bouclé swivel
+                  chair by the window to keep sightlines open. Here is your
+                  styled room concept and curated bundle under{" "}
+                  <strong>$1,200</strong>:
                 </p>
-              </div>
-            </div>
 
-            <div className="gy-thread-gyra-row">
-              <GyraSparkIcon />
-              <div className="gy-thread-gyra-body">
-                <div className="gy-interior-reply-bubble">
-                  <p className="gy-interior-advice">
-                    Anchor the main wall with a low-profile walnut-framed sofa
-                    in olive velvet, then pair a curved cream bouclé swivel
-                    chair by the window to keep sightlines open. Here is your
-                    styled room concept and curated bundle under{" "}
-                    <strong>$1,200</strong>:
-                  </p>
-
-                  <div className="gy-interior-room-preview">
-                    <img
-                      src="/media/showcase/mcm-interior-studio.jpg"
-                      alt="Mid-century modern studio living space with olive velvet sofa and cream bouclé chair"
-                      referrerPolicy="no-referrer"
-                      className="gy-interior-room-img"
-                    />
-                    <div className="gy-interior-budget-bar">
-                      <span>
-                        Selected Bundle:{" "}
-                        <strong data-testid="interior-bundle-total">
-                          ${bundleStats.total.toLocaleString()}
-                        </strong>{" "}
-                        / $1,200
-                      </span>
-                      <span
-                        className={`gy-budget-status ${
-                          bundleStats.withinBudget ? "ok" : "over"
-                        }`}
-                      >
-                        {bundleStats.withinBudget
-                          ? `$${bundleStats.remaining} under budget`
-                          : `$${Math.abs(bundleStats.remaining)} over budget`}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Horizontal Swipeable Multi-Card Product Carousel */}
-                  <div className="gy-product-carousel-head">
-                    <span>SWIPE OR TOGGLE FINDS ({selectedItemIds.length} SELECTED)</span>
-                    <div className="gy-carousel-nav-btns">
-                      <button
-                        type="button"
-                        aria-label="Scroll product carousel left"
-                        onClick={() =>
-                          carouselRef.current?.scrollBy({ left: -220, behavior: "smooth" })
-                        }
-                      >
-                        ←
-                      </button>
-                      <button
-                        type="button"
-                        aria-label="Scroll product carousel right"
-                        onClick={() =>
-                          carouselRef.current?.scrollBy({ left: 220, behavior: "smooth" })
-                        }
-                      >
-                        →
-                      </button>
-                    </div>
-                  </div>
-
-                  <div
-                    ref={carouselRef}
-                    className="gy-product-carousel"
-                    role="region"
-                    aria-label="Mid-century furniture recommendations carousel"
-                  >
-                    {INTERIOR_PRODUCTS.map((item) => {
-                      const included = selectedItemIds.includes(item.id);
-                      return (
-                        <div
-                          key={item.id}
-                          className={`gy-product-mini-card ${included ? "is-selected" : ""}`}
-                        >
-                          <div className="gy-product-mini-top">
-                            <span className="gy-product-mini-tag">{item.tag}</span>
-                            <strong className="gy-product-mini-price">
-                              ${item.price}
-                            </strong>
-                          </div>
-                          <h4 className="gy-product-mini-title">
-                            {item.name} • ${item.price}
-                          </h4>
-                          <p className="gy-product-mini-spec">{item.finish}</p>
-                          <div className="gy-product-mini-actions">
-                            <button
-                              type="button"
-                              className="gy-product-toggle-btn"
-                              onClick={() =>
-                                setSelectedItemIds((prev) =>
-                                  prev.includes(item.id)
-                                    ? prev.filter((id) => id !== item.id)
-                                    : [...prev, item.id]
-                                )
-                              }
-                            >
-                              {included ? "✓ In Studio Bundle" : "+ Add to Bundle"}
-                            </button>
-                            <a
-                              href={item.href}
-                              className="gy-product-link"
-                              aria-label={`View ${item.name} details`}
-                            >
-                              View ↗
-                            </a>
-                          </div>
-                        </div>
-                      );
-                    })}
+                <div className="gy-interior-room-preview">
+                  <img
+                    src="/media/showcase/mcm-interior-studio.jpg"
+                    alt="Mid-century modern studio living space with olive velvet sofa and cream bouclé chair"
+                    referrerPolicy="no-referrer"
+                    className="gy-interior-room-img"
+                  />
+                  <div className="gy-interior-budget-bar">
+                    <span>
+                      Selected Bundle:{" "}
+                      <strong data-testid="interior-bundle-total">
+                        ${bundleStats.total.toLocaleString()}
+                      </strong>{" "}
+                      / $1,200
+                    </span>
+                    <span
+                      className={`gy-budget-status ${
+                        bundleStats.withinBudget ? "ok" : "over"
+                      }`}
+                    >
+                      {bundleStats.withinBudget
+                        ? `$${bundleStats.remaining} under budget`
+                        : `$${Math.abs(bundleStats.remaining)} over budget`}
+                    </span>
                   </div>
                 </div>
+
+                {/* Horizontal Swipeable Multi-Card Product Carousel */}
+                <div className="gy-product-carousel-head">
+                  <span>SWIPE OR TOGGLE FINDS ({selectedItemIds.length} SELECTED)</span>
+                  <div className="gy-carousel-nav-btns">
+                    <button
+                      type="button"
+                      aria-label="Scroll product carousel left"
+                      onClick={() =>
+                        carouselRef.current?.scrollBy({ left: -220, behavior: "smooth" })
+                      }
+                    >
+                      ←
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Scroll product carousel right"
+                      onClick={() =>
+                        carouselRef.current?.scrollBy({ left: 220, behavior: "smooth" })
+                      }
+                    >
+                      →
+                    </button>
+                  </div>
+                </div>
+
+                <div
+                  ref={carouselRef}
+                  className="gy-product-carousel"
+                  role="region"
+                  aria-label="Mid-century furniture recommendations carousel"
+                >
+                  {INTERIOR_PRODUCTS.map((item) => {
+                    const included = selectedItemIds.includes(item.id);
+                    return (
+                      <div
+                        key={item.id}
+                        className={`gy-product-mini-card ${included ? "is-selected" : ""}`}
+                      >
+                        <div className="gy-product-mini-top">
+                          <span className="gy-product-mini-tag">{item.tag}</span>
+                          <strong className="gy-product-mini-price">
+                            ${item.price}
+                          </strong>
+                        </div>
+                        <h4 className="gy-product-mini-title">
+                          {item.name} • ${item.price}
+                        </h4>
+                        <p className="gy-product-mini-spec">{item.finish}</p>
+                        <div className="gy-product-mini-actions">
+                          <button
+                            type="button"
+                            className="gy-product-toggle-btn"
+                            onClick={() =>
+                              setSelectedItemIds((prev) =>
+                                prev.includes(item.id)
+                                  ? prev.filter((id) => id !== item.id)
+                                  : [...prev, item.id]
+                              )
+                            }
+                          >
+                            {included ? "✓ In Studio Bundle" : "+ Add to Bundle"}
+                          </button>
+                          <a
+                            href={item.href}
+                            className="gy-product-link"
+                            aria-label={`View ${item.name} details`}
+                          >
+                            View ↗
+                          </a>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            </GyraTurn>
+
+            <UserTurn
+              text="Add the lamp — does it still fit the budget?"
+              stamp="09:52"
+            />
+
+            <GyraTurn chip="Omni 4.0 · shopping agent">
+              <p className="gy-gyra-prose">
+                {bundleStats.withinBudget
+                  ? `All ${selectedItemIds.length} pieces in, $${bundleStats.total.toLocaleString()} total — $${bundleStats.remaining} under your cap. There's room for a rug if you want one.`
+                  : `That puts the bundle at $${bundleStats.total.toLocaleString()} — $${Math.abs(bundleStats.remaining)} over. Drop the lamp, or I can scout a cheaper arc.`}
+              </p>
+            </GyraTurn>
 
             <div className="gy-meta-card-footer">
               <div className="gy-meta-card-caption">
@@ -735,149 +828,160 @@ export default function EditorialShowcaseGrid() {
             id="card-code-artifact"
             data-testid="showcase-card-4"
           >
-            <div className="gy-thread-user-row">
-              <div className="gy-thread-user-bubble">
-                <p className="gy-thread-user-text">
-                  Build an interactive SaaS revenue forecast slider with dark
-                  glassmorphism in React.
-                </p>
-              </div>
-            </div>
+            <ThreadHeader topic="Revenue forecast widget" stamp="Today" />
 
-            <div className="gy-thread-gyra-row">
-              <GyraSparkIcon />
-              <div className="gy-thread-gyra-body">
-                <div className="gy-artifact-shell">
-                  <div className="gy-artifact-tabs" role="tablist" aria-label="Code artifact view mode">
-                    <button
-                      type="button"
-                      role="tab"
-                      aria-selected={artifactTab === "preview"}
-                      className={`gy-artifact-tab ${artifactTab === "preview" ? "on" : ""}`}
-                      onClick={() => setArtifactTab("preview")}
-                    >
-                      Live Interactive Preview
-                    </button>
-                    <button
-                      type="button"
-                      role="tab"
-                      aria-selected={artifactTab === "code"}
-                      className={`gy-artifact-tab ${artifactTab === "code" ? "on" : ""}`}
-                      onClick={() => setArtifactTab("code")}
-                    >
-                      Clean TypeScript Code
-                    </button>
-                  </div>
+            <UserTurn
+              text="Build me an interactive SaaS revenue forecast card — React, dark, live sliders for seats, ARPU and NRR."
+              stamp="16:30"
+            />
 
-                  {artifactTab === "preview" ? (
-                    <div className="gy-saas-widget" data-testid="saas-forecast-widget">
-                      <div className="gy-saas-kpi-row">
-                        <div className="gy-saas-kpi">
-                          <span>12-MO PROJECTED ARR</span>
-                          <strong data-testid="saas-projected-arr">
-                            ${forecast.projectedArr.toLocaleString()}
-                          </strong>
-                        </div>
-                        <div className="gy-saas-kpi">
-                          <span>NET EXPANSION GAIN</span>
-                          <strong className="gy-saas-positive">
-                            {forecast.expansionGainArr >= 0 ? "+" : ""}$
-                            {forecast.expansionGainArr.toLocaleString()}
-                          </strong>
-                        </div>
-                      </div>
+            <GyraTurn chip="Omni 4.0 · code agent">
+              <p className="gy-gyra-prose">
+                Here it is, running live — drag any slider and every KPI plus
+                the 12-month curve recalculates instantly. Clean TypeScript
+                is in the second tab.
+              </p>
 
-                      {/* Interactive Sliders right on the Landing Page */}
-                      <div className="gy-saas-sliders">
-                        <label className="gy-saas-slider-row">
-                          <div className="gy-saas-slider-label">
-                            <span>Active Enterprise Seats</span>
-                            <strong>{customers} seats</strong>
-                          </div>
-                          <input
-                            type="range"
-                            min={50}
-                            max={1500}
-                            step={10}
-                            value={customers}
-                            aria-label="Active Enterprise Seats"
-                            onChange={(e) => setCustomers(Number(e.target.value))}
-                          />
-                        </label>
-
-                        <label className="gy-saas-slider-row">
-                          <div className="gy-saas-slider-label">
-                            <span>Monthly ARPU ($/seat)</span>
-                            <strong>${arpu}/mo</strong>
-                          </div>
-                          <input
-                            type="range"
-                            min={25}
-                            max={250}
-                            step={5}
-                            value={arpu}
-                            aria-label="Monthly ARPU"
-                            onChange={(e) => setArpu(Number(e.target.value))}
-                          />
-                        </label>
-
-                        <label className="gy-saas-slider-row">
-                          <div className="gy-saas-slider-label">
-                            <span>Net Dollar Retention (NRR)</span>
-                            <strong>{nrr}%</strong>
-                          </div>
-                          <input
-                            type="range"
-                            min={90}
-                            max={145}
-                            step={1}
-                            value={nrr}
-                            aria-label="Net Dollar Retention percentage"
-                            onChange={(e) => setNrr(Number(e.target.value))}
-                          />
-                        </label>
-                      </div>
-
-                      {/* 12-Month Compound Trajectory Bars */}
-                      <div className="gy-saas-bars" aria-label="12-month MRR trajectory chart">
-                        {forecast.monthlySeries.map((mVal, i) => {
-                          const hPct = Math.max(16, Math.round((mVal / maxMonthMrr) * 100));
-                          return (
-                            <div key={i} className="gy-saas-bar-col">
-                              <div
-                                className="gy-saas-bar-fill"
-                                style={{ height: `${hPct}%` }}
-                                title={`Month ${i + 1}: $${mVal.toLocaleString()} MRR`}
-                              />
-                              <span className="gy-saas-bar-m">M{i + 1}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="gy-artifact-code-box">
-                      <div className="gy-artifact-code-bar">
-                        <span>SaasRevenueForecastCard.tsx</span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            navigator.clipboard?.writeText(SAAS_SLIDER_TS_CODE).catch(() => {});
-                            setCodeCopied(true);
-                            setTimeout(() => setCodeCopied(false), 1800);
-                          }}
-                        >
-                          {codeCopied ? "Copied ✓" : "Copy TypeScript"}
-                        </button>
-                      </div>
-                      <pre className="gy-artifact-pre">
-                        <code>{SAAS_SLIDER_TS_CODE}</code>
-                      </pre>
-                    </div>
-                  )}
+              <div className="gy-artifact-shell">
+                <div className="gy-artifact-tabs" role="tablist" aria-label="Code artifact view mode">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={artifactTab === "preview"}
+                    className={`gy-artifact-tab ${artifactTab === "preview" ? "on" : ""}`}
+                    onClick={() => setArtifactTab("preview")}
+                  >
+                    Live Interactive Preview
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={artifactTab === "code"}
+                    className={`gy-artifact-tab ${artifactTab === "code" ? "on" : ""}`}
+                    onClick={() => setArtifactTab("code")}
+                  >
+                    Clean TypeScript Code
+                  </button>
                 </div>
+
+                {artifactTab === "preview" ? (
+                  <div className="gy-saas-widget" data-testid="saas-forecast-widget">
+                    <div className="gy-saas-kpi-row">
+                      <div className="gy-saas-kpi">
+                        <span>12-MO PROJECTED ARR</span>
+                        <strong data-testid="saas-projected-arr">
+                          ${forecast.projectedArr.toLocaleString()}
+                        </strong>
+                      </div>
+                      <div className="gy-saas-kpi">
+                        <span>NET EXPANSION GAIN</span>
+                        <strong className="gy-saas-positive">
+                          {forecast.expansionGainArr >= 0 ? "+" : ""}$
+                          {forecast.expansionGainArr.toLocaleString()}
+                        </strong>
+                      </div>
+                    </div>
+
+                    {/* Interactive Sliders right on the Landing Page */}
+                    <div className="gy-saas-sliders">
+                      <label className="gy-saas-slider-row">
+                        <div className="gy-saas-slider-label">
+                          <span>Active Enterprise Seats</span>
+                          <strong>{customers} seats</strong>
+                        </div>
+                        <input
+                          type="range"
+                          min={50}
+                          max={1500}
+                          step={10}
+                          value={customers}
+                          aria-label="Active Enterprise Seats"
+                          onChange={(e) => setCustomers(Number(e.target.value))}
+                        />
+                      </label>
+
+                      <label className="gy-saas-slider-row">
+                        <div className="gy-saas-slider-label">
+                          <span>Monthly ARPU ($/seat)</span>
+                          <strong>${arpu}/mo</strong>
+                        </div>
+                        <input
+                          type="range"
+                          min={25}
+                          max={250}
+                          step={5}
+                          value={arpu}
+                          aria-label="Monthly ARPU"
+                          onChange={(e) => setArpu(Number(e.target.value))}
+                        />
+                      </label>
+
+                      <label className="gy-saas-slider-row">
+                        <div className="gy-saas-slider-label">
+                          <span>Net Dollar Retention (NRR)</span>
+                          <strong>{nrr}%</strong>
+                        </div>
+                        <input
+                          type="range"
+                          min={90}
+                          max={145}
+                          step={1}
+                          value={nrr}
+                          aria-label="Net Dollar Retention percentage"
+                          onChange={(e) => setNrr(Number(e.target.value))}
+                        />
+                      </label>
+                    </div>
+
+                    {/* 12-Month Compound Trajectory Bars */}
+                    <div className="gy-saas-bars" aria-label="12-month MRR trajectory chart">
+                      {forecast.monthlySeries.map((mVal, i) => {
+                        const hPct = Math.max(16, Math.round((mVal / maxMonthMrr) * 100));
+                        return (
+                          <div key={i} className="gy-saas-bar-col">
+                            <div
+                              className="gy-saas-bar-fill"
+                              style={{ height: `${hPct}%` }}
+                              title={`Month ${i + 1}: $${mVal.toLocaleString()} MRR`}
+                            />
+                            <span className="gy-saas-bar-m">M{i + 1}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="gy-artifact-code-box">
+                    <div className="gy-artifact-code-bar">
+                      <span>SaasRevenueForecastCard.tsx</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard?.writeText(SAAS_SLIDER_TS_CODE).catch(() => {});
+                          setCodeCopied(true);
+                          setTimeout(() => setCodeCopied(false), 1800);
+                        }}
+                      >
+                        {codeCopied ? "Copied ✓" : "Copy TypeScript"}
+                      </button>
+                    </div>
+                    <pre className="gy-artifact-pre">
+                      <code>{SAAS_SLIDER_TS_CODE}</code>
+                    </pre>
+                  </div>
+                )}
               </div>
-            </div>
+            </GyraTurn>
+
+            <UserTurn text="Ship it." stamp="16:33" />
+
+            <GyraTurn chip="Omni 4.0 · code agent">
+              <p className="gy-gyra-prose">
+                Pushed to your workspace as <code> SaasRevenueForecastCard.tsx</code> —
+                drop it in and it mounts standalone. Want a light theme
+                variant too?
+              </p>
+            </GyraTurn>
 
             <div className="gy-meta-card-footer">
               <div className="gy-meta-card-caption">
@@ -900,7 +1004,7 @@ export default function EditorialShowcaseGrid() {
           </article>
 
           {/* ==========================================================
-              CARD 5 — CINEMA VIDEO EXTENSION & CAMERA CONTROL
+              CARD 5 — CINEMA CAMERA RIG PREVIEW (STILL PLATE + RIG)
               ========================================================== */}
           <article
             className="gy-meta-card"
@@ -908,101 +1012,112 @@ export default function EditorialShowcaseGrid() {
             data-testid="showcase-card-5"
           >
             <span id="video" aria-hidden="true" />
-            <div className="gy-thread-user-row">
-              <div className="gy-thread-user-bubble">
+            <ThreadHeader topic="Hypercar · camera rig" stamp="Today" />
+
+            <UserTurn
+              thumbSrc="/media/showcase/hypercar-tokyo-photoreal.jpg"
+              thumbAlt="Static hypercar reference attachment"
+              text="Static shot of the car in Tokyo — can you move a camera around it with some fog?"
+              stamp="18:12"
+            />
+
+            <GyraTurn chip="Omni 4.0 · video studio">
+              <p className="gy-gyra-prose">
+                Camera rig preview below — I set a 3D orbit path around the
+                plate with drifting volumetric fog. Pick a trajectory; this
+                previews the move on the still. Full-frame renders launch in
+                Video Studio with your chosen rig and length.
+              </p>
+
+              <div className="gy-camera-video-stage">
                 <img
                   src="/media/showcase/hypercar-tokyo-photoreal.jpg"
-                  alt="Static car input reference"
+                  alt="Still plate: matte-black hypercar on a Tokyo street at night, with live camera-rig overlay"
                   referrerPolicy="no-referrer"
-                  className="gy-user-Upload-thumb"
+                  className={`gy-camera-motion-img gy-cam-mode-${cameraPreset}`}
                 />
-                <p className="gy-thread-user-text">
-                  Take this static car photo and animate a slow 360° orbital
-                  camera pan with volumetric fog.
-                </p>
-              </div>
-            </div>
+                <canvas
+                  ref={orbitCanvasRef}
+                  className="gy-camera-orbit-canvas"
+                  aria-hidden="true"
+                />
 
-            <div className="gy-thread-gyra-row">
-              <GyraSparkIcon />
-              <div className="gy-thread-gyra-body">
-                <div className="gy-camera-video-stage">
-                  <img
-                    src="/media/showcase/hypercar-tokyo-photoreal.jpg"
-                    alt="Animated orbital camera pan over matte-black hypercar with volumetric fog"
-                    referrerPolicy="no-referrer"
-                    className={`gy-camera-motion-img gy-cam-mode-${cameraPreset}`}
-                  />
-                  <canvas
-                    ref={orbitCanvasRef}
-                    className="gy-camera-orbit-canvas"
-                    aria-hidden="true"
-                  />
-
-                  <div className="gy-camera-badge-top">
-                    <span className="gy-camera-path-badge">
-                      {cameraPreset === "orbit"
-                        ? "Orbit Left • +4s Extended"
-                        : cameraPreset === "dolly"
-                        ? "Anamorphic Dolly • +6s Extended"
-                        : "Low Crane Rise • +4s Extended"}
-                    </span>
-                    <span className="gy-camera-fps-pill">60 FPS LOOP</span>
-                  </div>
+                <div className="gy-camera-badge-top">
+                  <span className="gy-camera-path-badge">
+                    {cameraPreset === "orbit"
+                      ? "Orbit Left · rig preview"
+                      : cameraPreset === "dolly"
+                      ? "Push Dolly · rig preview"
+                      : "Crane Rise · rig preview"}
+                  </span>
+                  <span className="gy-camera-fps-pill">RIG PREVIEW</span>
                 </div>
+              </div>
 
-                <div
-                  className="gy-camera-preset-bar"
-                  role="group"
-                  aria-label="Select camera motion trajectory"
+              <div
+                className="gy-camera-preset-bar"
+                role="group"
+                aria-label="Select camera motion trajectory preview"
+              >
+                <button
+                  type="button"
+                  className={`gy-cam-preset-btn ${cameraPreset === "orbit" ? "on" : ""}`}
+                  onClick={() => setCameraPreset("orbit")}
                 >
-                  <button
-                    type="button"
-                    className={`gy-cam-preset-btn ${cameraPreset === "orbit" ? "on" : ""}`}
-                    onClick={() => setCameraPreset("orbit")}
-                  >
-                    Orbit Left • +4s
-                  </button>
-                  <button
-                    type="button"
-                    className={`gy-cam-preset-btn ${cameraPreset === "dolly" ? "on" : ""}`}
-                    onClick={() => setCameraPreset("dolly")}
-                  >
-                    Push Dolly • +6s
-                  </button>
-                  <button
-                    type="button"
-                    className={`gy-cam-preset-btn ${cameraPreset === "crane" ? "on" : ""}`}
-                    onClick={() => setCameraPreset("crane")}
-                  >
-                    Crane Rise • +4s
-                  </button>
-                </div>
+                  Orbit Left
+                </button>
+                <button
+                  type="button"
+                  className={`gy-cam-preset-btn ${cameraPreset === "dolly" ? "on" : ""}`}
+                  onClick={() => setCameraPreset("dolly")}
+                >
+                  Push Dolly
+                </button>
+                <button
+                  type="button"
+                  className={`gy-cam-preset-btn ${cameraPreset === "crane" ? "on" : ""}`}
+                  onClick={() => setCameraPreset("crane")}
+                >
+                  Crane Rise
+                </button>
               </div>
-            </div>
+            </GyraTurn>
+
+            <UserTurn
+              text="Orbit looks right. Can you queue the render from here?"
+              stamp="18:15"
+            />
+
+            <GyraTurn chip="Omni 4.0 · video studio">
+              <p className="gy-gyra-prose">
+                Not from this thread — renders launch in Video Studio with the
+                rig and length attached. The button below hands that exact
+                brief over with the orbit preset.
+              </p>
+            </GyraTurn>
 
             <div className="gy-meta-card-footer">
               <div className="gy-meta-card-caption">
-                <strong>Cinema Video Extension &amp; Camera Control</strong>
-                <span>Image-to-video synthesis with 3D camera rig trajectories</span>
+                <strong>Cinema Camera Rig Preview</strong>
+                <span>3D trajectory preview over the plate · renders run in Studio</span>
               </div>
               <button
                 type="button"
                 className="gy-meta-pill-cta"
                 onClick={() =>
                   dispatchRemixToComposer(
-                    "Take this static car photo and animate a slow 360° orbital camera pan with volumetric fog.",
+                    "Take this static car photo and set up a slow orbital camera move with volumetric fog in Video Studio.",
                     "Video Studio"
                   )
                 }
               >
-                Generate Video
+                Open in Video Studio
               </button>
             </div>
           </article>
 
           {/* ==========================================================
-              CARD 6 — AUTONOMOUS MULTI-STEP WORKFLOW AGENT
+              CARD 6 — AUTONOMOUS WORKFLOW AGENT (SAMPLE RUN)
               ========================================================== */}
           <article
             className="gy-meta-card"
@@ -1010,119 +1125,135 @@ export default function EditorialShowcaseGrid() {
             data-testid="showcase-card-6"
           >
             <span id="research" aria-hidden="true" />
-            <div className="gy-thread-user-row">
-              <div className="gy-thread-user-bubble">
-                <p className="gy-thread-user-text">
-                  Research our top 3 competitors&apos; pricing, build a
-                  comparison matrix, and export a pitch deck.
-                </p>
-              </div>
-            </div>
+            <ThreadHeader topic="Competitor pricing · research" stamp="Today" />
 
-            <div className="gy-thread-gyra-row">
-              <GyraSparkIcon />
-              <div className="gy-thread-gyra-body">
-                <div className="gy-workflow-box">
-                  <div className="gy-workflow-log-head">
-                    <span>AUTONOMOUS AGENT EXECUTION LOG</span>
+            <UserTurn
+              text="Research our top 3 competitors&apos; pricing, build a comparison matrix, and export a pitch deck."
+              stamp="08:05"
+            />
+
+            <GyraTurn chip="Omni 4.0 · deep research">
+              <p className="gy-gyra-prose">
+                Here&apos;s a <strong>sample run</strong> of the full
+                workflow on a demo dataset — the shape of a real Deep
+                Research run, with nothing invented. Live runs scrape and
+                cite every page. Replay the steps, flip the slides, or
+                export the deck — the .md download is a real file.
+              </p>
+
+              <div className="gy-workflow-box">
+                <div className="gy-workflow-log-head">
+                  <span>AGENT WORKFLOW · SAMPLE RUN</span>
+                  <button
+                    type="button"
+                    className="gy-workflow-replay-btn"
+                    onClick={replayWorkflowAgent}
+                  >
+                    ↻ Replay Steps
+                  </button>
+                </div>
+
+                <ul className="gy-workflow-steps">
+                  <li className={agentStep >= 1 ? "done" : "pending"}>
+                    <span className="gy-wf-icon">✓</span>
+                    <div className="gy-wf-copy">
+                      <strong>Compiled 14 pricing pages</strong>
+                      <span>Sample dataset · self-serve, enterprise seat &amp; API token tiers</span>
+                    </div>
+                  </li>
+                  <li className={agentStep >= 2 ? "done" : "pending"}>
+                    <span className="gy-wf-icon">✓</span>
+                    <div className="gy-wf-copy">
+                      <strong>Synthesized margin table</strong>
+                      <span>Illustrative margin model at 50+ seats (demo data)</span>
+                    </div>
+                  </li>
+                  <li className={agentStep >= 3 ? "done" : "pending"}>
+                    <span className="gy-wf-icon">✓</span>
+                    <div className="gy-wf-copy">
+                      <strong>Generated 8-slide deck</strong>
+                      <span>Real .md export — try the button</span>
+                    </div>
+                  </li>
+                </ul>
+
+                {/* Compact Comparison Matrix + Interactive 8-Slide Deck Preview Card */}
+                <div className="gy-workflow-matrix">
+                  <div className="gy-wf-matrix-row gy-wf-matrix-head">
+                    <span>Platform</span>
+                    <span>50-Seat TCO</span>
+                    <span>Video / Code</span>
+                  </div>
+                  <div className="gy-wf-matrix-row gy-wf-matrix-highlight">
+                    <strong>Gyra</strong>
+                    <span>SuperGyra ₦10,000 / mo (≈$12)</span>
+                    <span>Included</span>
+                  </div>
+                  <div className="gy-wf-matrix-row">
+                    <span>Competitor A <em className="gy-wf-sample-tag">sample</em></span>
+                    <span>$3,000 / mo</span>
+                    <span>+$240 add-on</span>
+                  </div>
+                  <div className="gy-wf-matrix-row">
+                    <span>Competitor B <em className="gy-wf-sample-tag">sample</em></span>
+                    <span>$2,450 / mo</span>
+                    <span>Text only</span>
+                  </div>
+                </div>
+
+                {/* Interactive Downloadable Deck Preview */}
+                <div className="gy-deck-preview-card">
+                  <div className="gy-deck-preview-top">
+                    <div>
+                      <span className="gy-deck-badge">8-SLIDE PITCH DECK · SAMPLE RUN</span>
+                      <h4 className="gy-deck-title">
+                        {DECK_SLIDES[activeSlideIdx].num} · {DECK_SLIDES[activeSlideIdx].title}
+                      </h4>
+                    </div>
                     <button
                       type="button"
-                      className="gy-workflow-replay-btn"
-                      onClick={replayWorkflowAgent}
+                      className="gy-deck-download-btn"
+                      onClick={handleDownloadDeckBrief}
                     >
-                      ↻ Replay Steps
+                      {deckDownloaded ? "Downloaded ✓" : "Export Deck (.md)"}
                     </button>
                   </div>
-
-                  <ul className="gy-workflow-steps">
-                    <li className={agentStep >= 1 ? "done" : "pending"}>
-                      <span className="gy-wf-icon">✓</span>
-                      <div className="gy-wf-copy">
-                        <strong>Scraped 14 live pricing pages</strong>
-                        <span>Verified self-serve, enterprise seat, and API token tiers</span>
-                      </div>
-                    </li>
-                    <li className={agentStep >= 2 ? "done" : "pending"}>
-                      <span className="gy-wf-icon">✓</span>
-                      <div className="gy-wf-copy">
-                        <strong>Synthesized margin table</strong>
-                        <span>+18.4% gross margin advantage modeled at 50+ seats</span>
-                      </div>
-                    </li>
-                    <li className={agentStep >= 3 ? "done" : "pending"}>
-                      <span className="gy-wf-icon">✓</span>
-                      <div className="gy-wf-copy">
-                        <strong>Generated 8-slide deck</strong>
-                        <span>Board-ready competitive matrix &amp; GTM positioning</span>
-                      </div>
-                    </li>
-                  </ul>
-
-                  {/* Compact Comparison Matrix + Interactive 8-Slide Deck Preview Card */}
-                  <div className="gy-workflow-matrix">
-                    <div className="gy-wf-matrix-row gy-wf-matrix-head">
-                      <span>Platform</span>
-                      <span>50-Seat TCO</span>
-                      <span>Video / Code</span>
-                    </div>
-                    <div className="gy-wf-matrix-row gy-wf-matrix-highlight">
-                      <strong>Gyra Omni 4.0</strong>
-                      <span>$1,450 / mo</span>
-                      <span>Included</span>
-                    </div>
-                    <div className="gy-wf-matrix-row">
-                      <span>Competitor A</span>
-                      <span>$3,000 / mo</span>
-                      <span>+$240 add-on</span>
-                    </div>
-                    <div className="gy-wf-matrix-row">
-                      <span>Competitor B</span>
-                      <span>$2,450 / mo</span>
-                      <span>Text only</span>
-                    </div>
-                  </div>
-
-                  {/* Interactive Downloadable Deck Preview */}
-                  <div className="gy-deck-preview-card">
-                    <div className="gy-deck-preview-top">
-                      <div>
-                        <span className="gy-deck-badge">8-SLIDE PITCH DECK ARTIFACT</span>
-                        <h4 className="gy-deck-title">
-                          {DECK_SLIDES[activeSlideIdx].num} · {DECK_SLIDES[activeSlideIdx].title}
-                        </h4>
-                      </div>
+                  <p className="gy-deck-bullet">{DECK_SLIDES[activeSlideIdx].bullet}</p>
+                  <div className="gy-deck-slide-pills" role="tablist" aria-label="Inspect pitch deck slides">
+                    {DECK_SLIDES.map((s, idx) => (
                       <button
+                        key={s.num}
                         type="button"
-                        className="gy-deck-download-btn"
-                        onClick={handleDownloadDeckBrief}
+                        role="tab"
+                        aria-selected={idx === activeSlideIdx}
+                        className={idx === activeSlideIdx ? "on" : ""}
+                        onClick={() => setActiveSlideIdx(idx)}
                       >
-                        {deckDownloaded ? "Downloaded ✓" : "Export Deck (.md)"}
+                        Slide {s.num}
                       </button>
-                    </div>
-                    <p className="gy-deck-bullet">{DECK_SLIDES[activeSlideIdx].bullet}</p>
-                    <div className="gy-deck-slide-pills" role="tablist" aria-label="Inspect pitch deck slides">
-                      {DECK_SLIDES.map((s, idx) => (
-                        <button
-                          key={s.num}
-                          type="button"
-                          role="tab"
-                          aria-selected={idx === activeSlideIdx}
-                          className={idx === activeSlideIdx ? "on" : ""}
-                          onClick={() => setActiveSlideIdx(idx)}
-                        >
-                          Slide {s.num}
-                        </button>
-                      ))}
-                    </div>
+                    ))}
                   </div>
                 </div>
               </div>
-            </div>
+            </GyraTurn>
+
+            <UserTurn
+              text="Run it live on the real three?"
+              stamp="08:09"
+            />
+
+            <GyraTurn chip="Omni 4.0 · deep research">
+              <p className="gy-gyra-prose">
+                Yes — hit <strong>Deploy Agent</strong> below and it opens
+                Deep Research with this exact brief. Live runs log every step
+                and cite each source, and the deck exports at the end.
+              </p>
+            </GyraTurn>
 
             <div className="gy-meta-card-footer">
               <div className="gy-meta-card-caption">
                 <strong>Autonomous Multi-Step Workflow Agent</strong>
-                <span>Web scraping, financial synthesis &amp; deck generation</span>
+                <span>Sample run shown · live runs scrape &amp; cite each source</span>
               </div>
               <button
                 type="button"
