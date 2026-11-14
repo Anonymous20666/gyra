@@ -102,7 +102,7 @@ export default function DeleteAccount() {
             <p className="text-zinc-400 text-sm">
               We have sent a confirmation link to <strong className="text-white">{email}</strong>. Please click the link inside to finalize the deletion.
             </p>
-          </div>
+          </div> 
         )}
 
         <p className="text-center text-xs text-zinc-500 mt-8">
