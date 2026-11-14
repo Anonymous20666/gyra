@@ -51,12 +51,12 @@ const CHANGELOG: YearBlock[] = [
                 bold: ["SuperGyra 2.0"],
               },
               {
-                text: "Routed SuperGyra 2.0 to DeepSeek Reasoner for elite logic, deep reasoning, and unlimited streaming.",
-                bold: ["DeepSeek Reasoner"],
+                text: "Routed SuperGyra 2.0 to Gyra Reasoner for elite logic, deep reasoning, and unlimited streaming.",
+                bold: ["Gyra Reasoner"],
               },
               {
-                text: "Unlocked advanced Image-to-Image editing (Grok-style) using Flux Pro Ultra, allowing users to edit specific elements in screenshots and UI designs.",
-                bold: ["Image-to-Image editing", "Flux Pro Ultra"],
+                text: "Unlocked advanced Image-to-Image editing using Gyra Pro Ultra, allowing users to edit specific elements in screenshots and UI designs.",
+                bold: ["Image-to-Image editing", "Gyra Pro Ultra"],
               },
             ],
           },
