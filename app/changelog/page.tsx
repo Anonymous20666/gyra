@@ -309,11 +309,17 @@ export default function ChangelogPage() {
       <nav className="relative z-50 border-b border-white/5 bg-black/40 backdrop-blur-xl">
         <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-8 h-8 relative flex items-center justify-center">
-              <div className="absolute inset-0 bg-blue-500/20 blur-md rounded-full group-hover:bg-blue-500/40 transition-all" />
-              <Logo size={24} animated={false} />
-            </div>
-            <span className="font-bold tracking-widest text-sm">GYRA</span>
+  <div className="w-9 h-9 relative flex items-center justify-center">
+    {/* Glow effect behind the image */}
+    <div className="absolute inset-0 bg-blue-500/30 blur-md rounded-full group-hover:bg-blue-500/50 transition-all" />
+    {/* The real Gyra Logo */}
+    <img 
+      src="/gyra-logo.png" 
+      alt="Gyra" 
+      className="w-full h-full object-contain relative z-10 rounded-lg" 
+    />
+  </div>
+  <span className="font-bold tracking-widest text-sm">GYRA</span>
             <span className="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wider ml-2">CHANGELOG</span>
           </Link>
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-zinc-400">
