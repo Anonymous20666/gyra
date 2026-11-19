@@ -1,136 +1,152 @@
 "use client";
 
-import { useState } from "react";
-import { ArrowUpRight, Menu, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Menu, X } from "lucide-react";
 import { resolveGyraRoute } from "../../lib/landingSimulations";
 
-interface NavbarProps {
-  routeBase?: string;
+export interface NavbarProps {
   isAuthenticated?: boolean;
+  routeBase?: string;
 }
 
 const NAV_ITEMS = [
   { label: "Chat", href: "#chat" },
   { label: "Image", href: "#image" },
   { label: "Video", href: "#video" },
-  { label: "Architecture", href: "#architecture" },
+  { label: "Platform", href: "#architecture" },
   { label: "API", href: "#developers" },
-  { label: "Docs", href: "/docs" },
-  { label: "About", href: "/about" },
 ] as const;
 
-export function Navbar({ routeBase = "", isAuthenticated = false }: NavbarProps) {
-  const [menuOpen, setMenuOpen] = useState(false);
+export function Navbar({ isAuthenticated = false, routeBase = "" }: NavbarProps) {
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMobileOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [mobileOpen]);
+
+  const primaryHref = resolveGyraRoute("/dashboard", routeBase);
+  const loginHref = resolveGyraRoute("/login", routeBase);
+  const docsHref = resolveGyraRoute("/docs", routeBase);
 
   return (
-    <header className="sticky top-0 z-50 bg-[#050608] border-b border-white/[0.08]">
-      <div className="max-w-[1280px] mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
+    <header className="sticky top-0 z-50 h-16 border-b border-[#1F1F1F] bg-black">
+      <div className="mx-auto flex h-full max-w-[1380px] items-center justify-between gap-8 px-5 sm:px-8">
+        {/* Zone 1: Clean single-element Brand mark */}
         <a
           href={resolveGyraRoute("/", routeBase)}
-          className="flex items-center gap-2.5 group focus-visible:outline-2"
+          className="flex shrink-0 items-center gap-2.5 whitespace-nowrap focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#FF3D00]"
           aria-label="Gyra Home"
         >
           <img
             src="/gyra-logo.png"
             alt="Gyra"
-            width={26}
-            height={26}
-            className="w-[26px] h-[26px] object-contain"
+            width={24}
+            height={24}
+            className="h-6 w-6 object-contain"
           />
-          <span className="font-display font-semibold tracking-[-0.02em] text-[15px] text-[#F5F7FA]">
+          <span className="font-display text-[20px] font-bold tracking-[0.06em] text-white uppercase">
             Gyra
-          </span>
-          <span className="hidden sm:inline-block text-[11px] font-mono uppercase tracking-[0.12em] text-[#667085] border-l border-white/[0.1] pl-2.5">
-            Genvia AI
           </span>
         </a>
 
-        <nav aria-label="Primary" className="hidden lg:flex items-center gap-7">
+        {/* Zone 2: 5 concise single-line monospace navigation links */}
+        <nav aria-label="Primary" className="hidden items-center gap-7 lg:flex">
           {NAV_ITEMS.map((item) => (
             <a
               key={item.label}
-              href={resolveGyraRoute(item.href, routeBase)}
-              className="text-[13px] font-medium text-[#A0A8B8] hover:text-[#F5F7FA] transition-colors"
+              href={item.href}
+              className="font-mono-tech shrink-0 whitespace-nowrap text-[12px] tracking-[0.1em] text-[#A3A3A3] uppercase transition-colors duration-150 hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#FF3D00]"
             >
               {item.label}
             </a>
           ))}
+          <a
+            href={docsHref}
+            className="font-mono-tech shrink-0 whitespace-nowrap text-[12px] tracking-[0.1em] text-[#A3A3A3] uppercase transition-colors duration-150 hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#FF3D00]"
+          >
+            Docs
+          </a>
         </nav>
 
-        <div className="hidden lg:flex items-center gap-3">
-          {isAuthenticated ? (
+        {/* Zone 3: Crisp 0px-radius action zone */}
+        <div className="hidden shrink-0 items-center gap-3 lg:flex">
+          {!isAuthenticated && (
             <a
-              href={resolveGyraRoute("/dashboard", routeBase)}
-              className="inline-flex items-center gap-1.5 bg-[#F1F5F9] text-[#050608] hover:bg-white px-4 py-2 rounded-[4px] text-[13px] font-medium transition-colors"
+              href={loginHref}
+              className="font-mono-tech shrink-0 whitespace-nowrap px-3 py-2 text-[12px] tracking-[0.08em] text-[#CCCCCC] uppercase transition-colors duration-150 hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#FF3D00]"
             >
-              Open Dashboard
-              <ArrowUpRight className="w-3.5 h-3.5" aria-hidden="true" />
+              Sign in
             </a>
-          ) : (
-            <>
-              <a
-                href={resolveGyraRoute("/login", routeBase)}
-                className="text-[13px] font-medium text-[#A0A8B8] hover:text-[#F5F7FA] px-3 py-2 transition-colors"
-              >
-                Sign in
-              </a>
-              <a
-                href={resolveGyraRoute("/dashboard", routeBase)}
-                className="inline-flex items-center gap-1.5 bg-[#F1F5F9] text-[#050608] hover:bg-white px-4 py-2 rounded-[4px] text-[13px] font-medium transition-colors"
-              >
-                Open Gyra
-                <ArrowUpRight className="w-3.5 h-3.5" aria-hidden="true" />
-              </a>
-            </>
           )}
+          <a
+            href={primaryHref}
+            className="font-mono-tech inline-flex shrink-0 items-center justify-center whitespace-nowrap bg-white px-4 py-2 text-[12px] font-medium tracking-[0.08em] text-black uppercase transition-colors duration-150 hover:bg-[#E5E5E5] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#FF3D00]"
+          >
+            {isAuthenticated ? "Dashboard" : "Open Gyra"}
+          </a>
         </div>
 
+        {/* Mobile menu trigger */}
         <button
           type="button"
-          onClick={() => setMenuOpen((prev) => !prev)}
-          aria-expanded={menuOpen}
-          aria-controls="mobile-nav-drawer"
-          aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
-          className="lg:hidden inline-flex items-center justify-center w-10 h-10 rounded-[4px] border border-white/[0.1] text-[#F5F7FA] hover:bg-[#101319] transition-colors"
+          onClick={() => setMobileOpen((open) => !open)}
+          aria-expanded={mobileOpen}
+          aria-controls="gyra-mobile-nav"
+          aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
+          className="inline-flex h-10 w-10 items-center justify-center border border-[#262626] bg-black text-white transition-colors hover:border-[#444] lg:hidden focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#FF3D00]"
         >
-          {menuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+          {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
         </button>
       </div>
 
-      {menuOpen && (
+      {mobileOpen && (
         <div
-          id="mobile-nav-drawer"
-          className="lg:hidden bg-[#0B0D11] border-t border-white/[0.08] px-5 py-5"
+          id="gyra-mobile-nav"
+          className="border-b border-[#1F1F1F] bg-black px-5 pb-6 pt-4 lg:hidden"
         >
-          <nav aria-label="Mobile" className="flex flex-col divide-y divide-white/[0.06]">
+          <nav aria-label="Mobile" className="flex flex-col border-t border-[#1F1F1F]">
             {NAV_ITEMS.map((item) => (
               <a
                 key={item.label}
-                href={resolveGyraRoute(item.href, routeBase)}
-                onClick={() => setMenuOpen(false)}
-                className="py-3 text-[15px] font-medium text-[#D0D5DD] hover:text-[#F5F7FA] transition-colors"
+                href={item.href}
+                onClick={() => setMobileOpen(false)}
+                className="font-mono-tech border-b border-[#161616] py-3.5 text-[12px] tracking-[0.12em] text-[#D4D4D4] uppercase hover:text-white"
               >
                 {item.label}
               </a>
             ))}
+            <a
+              href={docsHref}
+              onClick={() => setMobileOpen(false)}
+              className="font-mono-tech border-b border-[#161616] py-3.5 text-[12px] tracking-[0.12em] text-[#D4D4D4] uppercase hover:text-white"
+            >
+              Docs
+            </a>
           </nav>
-          <div className="mt-5 pt-5 border-t border-white/[0.08] flex flex-col gap-2.5">
+
+          <div className="mt-5 grid grid-cols-2 gap-3">
             {!isAuthenticated && (
               <a
-                href={resolveGyraRoute("/login", routeBase)}
-                onClick={() => setMenuOpen(false)}
-                className="w-full text-center py-2.5 rounded-[4px] border border-white/[0.12] text-[14px] font-medium text-[#F5F7FA] hover:bg-[#161A22] transition-colors"
+                href={loginHref}
+                onClick={() => setMobileOpen(false)}
+                className="font-mono-tech inline-flex min-h-[44px] items-center justify-center border border-[#303030] bg-black px-4 text-[12px] tracking-[0.08em] text-white uppercase"
               >
                 Sign in
               </a>
             )}
             <a
-              href={resolveGyraRoute("/dashboard", routeBase)}
-              onClick={() => setMenuOpen(false)}
-              className="w-full inline-flex items-center justify-center gap-1.5 py-2.5 rounded-[4px] bg-[#F1F5F9] text-[#050608] text-[14px] font-medium hover:bg-white transition-colors"
+              href={primaryHref}
+              onClick={() => setMobileOpen(false)}
+              className={`font-mono-tech inline-flex min-h-[44px] items-center justify-center bg-[#FF3D00] px-4 text-[12px] font-medium tracking-[0.08em] text-white uppercase ${
+                isAuthenticated ? "col-span-2" : ""
+              }`}
             >
-              {isAuthenticated ? "Open Dashboard" : "Open Gyra"}
-              <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
+              {isAuthenticated ? "Dashboard" : "Open Gyra"}
             </a>
           </div>
         </div>

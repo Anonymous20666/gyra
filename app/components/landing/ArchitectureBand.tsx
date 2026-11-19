@@ -1,157 +1,432 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowUpRight } from "lucide-react";
-import { GYRA_COMPANY } from "../../lib/gyraCatalog";
-import { ARCHITECTURE_LAYERS, resolveGyraRoute } from "../../lib/landingSimulations";
+import { resolveGyraRoute } from "../../lib/landingSimulations";
 
-interface ArchitectureBandProps {
+export interface ArchitectureBandProps {
   routeBase?: string;
 }
 
+interface StackLayerSpec {
+  id: "surfaces" | "core" | "boundary" | "platform";
+  tabNum: string;
+  tabLabel: string;
+  tag: string;
+  headline: string;
+  summary: string;
+  specs: { label: string; value: string }[];
+}
+
+const STACK_LAYERS: StackLayerSpec[] = [
+  {
+    id: "surfaces",
+    tabNum: "01",
+    tabLabel: "Surfaces",
+    tag: "[ PRODUCT SURFACES ]",
+    headline: "Every workspace on one account.",
+    summary:
+      "Web chat, visual editing, cinematic video studio, Projects RAG, Journal, Forge Coding preview, and Telegram share one identity.",
+    specs: [
+      { label: "Flagship", value: "Gyra Chat · Gyra Image · Gyra Video" },
+      { label: "Workspaces", value: "Projects RAG · Journal · Forge (Preview)" },
+      { label: "Mobile", value: "Web · Android Capacitor · @Gyra_AiBot" },
+      { label: "Identity", value: "Single Supabase Auth session" },
+    ],
+  },
+  {
+    id: "core",
+    tabNum: "02",
+    tabLabel: "Gyra Core",
+    tag: "[ GYRA · THE INTELLIGENCE LAYER ]",
+    headline: "One core orchestrating every modality.",
+    summary:
+      "Requests route dynamically across fast everyday inference, deep reasoning, six-agent engineering pipelines, and media synthesis.",
+    specs: [
+      { label: "Reasoning", value: "Gyra 1.0 (fast) · SuperGyra 2.0 (deep)" },
+      { label: "Agents", value: "Atlas · Orion · Architect · Forge · Sentinel · Mentor" },
+      { label: "Image Engine", value: "Flux Dev · Gyra Pro Ultra I2I" },
+      { label: "Video Engine", value: "LTX-Video 13B · 720p · 24 fps · 121 frames" },
+    ],
+  },
+  {
+    id: "boundary",
+    tabNum: "03",
+    tabLabel: "I/O Boundary",
+    tag: "[ THROUGH THE BOUNDARY ]",
+    headline: "Your files, prompts, and keys under policy.",
+    summary:
+      "Documents, reference frames, voice streams, and scoped API keys pass through server-verified boundaries with rate limiting.",
+    specs: [
+      { label: "Inputs", value: "Text · Images · PDFs · Source files · Voice" },
+      { label: "Outputs", value: "SSE streams · Edited stills · MP4 · JSON" },
+      { label: "Auth", value: "Category-scoped Bearer API keys" },
+      { label: "Proxy Policy", value: "Strict endpoint allowlist & auth guard" },
+    ],
+  },
+  {
+    id: "platform",
+    tabNum: "04",
+    tabLabel: "Platform",
+    tag: "[ THE DEVELOPER PLATFORM ]",
+    headline: "Same intelligence, programmable over REST.",
+    summary:
+      "Build directly on OpenAI-compatible chat endpoints, async video queues, voice synthesis, and media extraction APIs.",
+    specs: [
+      { label: "AI API", value: "/api/v1/chat · /api/v1/voice · /api/v1/transcribe" },
+      { label: "Video API", value: "/api/v1/video/generate · /status/[id]" },
+      { label: "Media API", value: "YouTube transcripts · TikTok · Spotify" },
+      { label: "Billing", value: "Unified wallets & category credits" },
+    ],
+  },
+];
+
 export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
-  const [selectedLayerId, setSelectedLayerId] = useState<string>(ARCHITECTURE_LAYERS[1].id);
-  const activeLayer =
-    ARCHITECTURE_LAYERS.find((l) => l.id === selectedLayerId) ?? ARCHITECTURE_LAYERS[0];
+  const [activeId, setActiveId] = useState<StackLayerSpec["id"]>("core");
+  const active = STACK_LAYERS.find((l) => l.id === activeId) ?? STACK_LAYERS[1];
+
+  const topOffset = activeId === "surfaces" ? -16 : activeId === "boundary" ? -10 : 0;
+  const midOffset = activeId === "core" ? 0 : activeId === "surfaces" ? 8 : 4;
+  const botOffset = activeId === "platform" ? 16 : activeId === "boundary" ? 10 : 0;
 
   return (
-    <section
-      id="architecture"
-      aria-labelledby="architecture-heading"
-      className="bg-[#F4F5F7] text-[#0A0D12] border-b border-[#D8DCE3] scroll-mt-16"
-    >
-      <div className="max-w-[1280px] mx-auto gyra-grid-rail-light px-5 sm:px-8 py-20 lg:py-24">
-        {/* Editorial Header */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-end mb-14">
-          <div className="lg:col-span-7">
-            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-[#525B6B] mb-3">
-              04 / Unified Architecture
-            </p>
-            <h2
-              id="architecture-heading"
-              className="font-display font-semibold text-[30px] sm:text-[38px] lg:text-[44px] tracking-[-0.035em] leading-[1.06] text-[#0A0D12] [text-wrap:balance]"
-            >
-              One intelligence layer, engineered as a coherent company platform.
-            </h2>
-          </div>
-          <div className="lg:col-span-5 lg:pl-6">
-            <p className="text-[15px] text-[#3F4756] leading-[1.65] mb-4">
-              Built by {GYRA_COMPANY.parentCompany}, Gyra is designed from the ground up as a
-              multi-product AI ecosystem — sharing authentication, reasoning models, media queues,
-              and developer billing across every surface.
-            </p>
-            <a
-              href={resolveGyraRoute("/about", routeBase)}
-              className="inline-flex items-center gap-1.5 text-[14px] font-medium text-[#0A0D12] hover:text-[#3F4756] transition-colors"
-            >
-              Read about {GYRA_COMPANY.parentCompany}
-              <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
-            </a>
-          </div>
+    <section id="architecture" className="border-b border-[#1F1F1F] bg-black py-24 lg:py-32">
+      <div className="mx-auto max-w-[1380px] px-5 sm:px-8">
+        {/* Section Heading — E2B Architectural Monumental Scale */}
+        <div className="max-w-3xl">
+          <p className="font-mono-tech text-[12px] tracking-[0.14em] text-[#8A8A8A] uppercase">
+            [ Where Gyra Fits ]
+          </p>
+          <h2 className="font-display mt-4 text-[clamp(2.5rem,4.4vw,4rem)] font-bold leading-[0.96] tracking-[-0.02em] text-white uppercase [text-wrap:balance]">
+            One intelligence core.
+            <br />
+            Every product runs on it.
+          </h2>
+          <p className="mt-5 max-w-[58ch] text-[16px] leading-[1.6] text-[#9A9A9A]">
+            Built by Genvia AI Company as a unified AI ecosystem — sharing reasoning models,
+            multi-agent execution, media synthesis queues, and developer APIs across every surface.
+          </p>
         </div>
 
-        {/* Interactive 3-Layer System Schematic */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 border border-[#D4D9E2] bg-white rounded-[6px] overflow-hidden">
-          {/* Left Layer Selector Stack */}
-          <div
-            className="lg:col-span-5 divide-y divide-[#E2E6EE] border-b lg:border-b-0 lg:border-r border-[#D4D9E2]"
-            role="tablist"
-            aria-label="Gyra platform architecture layers"
-          >
-            {ARCHITECTURE_LAYERS.map((layer) => {
-              const active = layer.id === activeLayer.id;
-              return (
-                <button
-                  key={layer.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={active}
-                  onClick={() => setSelectedLayerId(layer.id)}
-                  className={`w-full text-left p-6 transition-colors ${
-                    active ? "bg-[#0A0D12] text-[#F5F7FA]" : "bg-white text-[#0A0D12] hover:bg-[#F7F8FA]"
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span
-                      className={`font-mono text-[11px] uppercase tracking-[0.12em] ${
-                        active ? "text-[#67E8F9]" : "text-[#667085]"
-                      }`}
-                    >
-                      Layer {layer.index}
-                    </span>
-                    <span
-                      className={`font-mono text-[10px] uppercase tracking-[0.08em] ${
-                        active ? "text-[#A0A8B8]" : "text-[#667085]"
-                      }`}
-                    >
-                      {layer.nodes.length} modules
-                    </span>
-                  </div>
-                  <h3 className="font-display text-[19px] font-semibold tracking-[-0.02em]">
-                    {layer.title}
-                  </h3>
-                  <p
-                    className={`text-[13px] mt-1 leading-[1.5] ${
-                      active ? "text-[#A0A8B8]" : "text-[#525B6B]"
-                    }`}
+        {/* Interactive Isometric Hardware Stack + Hairline Spec Inspector */}
+        <div className="mt-14 grid grid-cols-1 items-center gap-12 lg:grid-cols-12 lg:gap-10">
+          {/* Left 7 cols: Hand-Crafted 3-Layer Exploded Isometric SVG Architecture */}
+          <div className="lg:col-span-7">
+            <div className="relative mx-auto w-full max-w-[660px]">
+              <svg
+                viewBox="0 0 700 460"
+                className="h-auto w-full select-none"
+                role="img"
+                aria-label="Three-layer isometric architecture of Gyra: Product Surfaces on top, Gyra Core Intelligence in vermilion middle slab, and Developer Platform baseplate below."
+              >
+                {/* Orbital Boundary Ring (highlights on I/O Boundary) */}
+                <ellipse
+                  cx="350"
+                  cy="236"
+                  rx="282"
+                  ry="148"
+                  fill="none"
+                  stroke={activeId === "boundary" ? "#FF3D00" : "#262626"}
+                  strokeWidth={activeId === "boundary" ? "1.4" : "1"}
+                  strokeDasharray="3 5"
+                  style={{ transition: "stroke 250ms ease" }}
+                />
+
+                {/* Orbital Satellite Nodes */}
+                {[
+                  { x: 24, y: 174, label: "PROMPTS · IN", active: activeId === "boundary" },
+                  { x: 544, y: 140, label: "FILES & PDFS · IN", active: activeId === "boundary" },
+                  { x: 46, y: 322, label: "MEDIA · OUT", active: activeId === "boundary" },
+                  { x: 532, y: 344, label: "REST API · OUT", active: activeId === "boundary" },
+                ].map((node) => (
+                  <g
+                    key={node.label}
+                    opacity={activeId === "boundary" ? 1 : 0.55}
+                    style={{ transition: "opacity 220ms ease" }}
                   >
-                    {layer.subtitle}
-                  </p>
-                </button>
-              );
-            })}
+                    <polygon
+                      points={`${node.x + 26},${node.y} ${node.x + 64},${node.y + 16} ${node.x + 38},${node.y + 30} ${node.x},${node.y + 14}`}
+                      fill="#0A0A0A"
+                      stroke={node.active ? "#FF3D00" : "#3A3A3A"}
+                      strokeWidth="1.2"
+                    />
+                    <text
+                      x={node.x}
+                      y={node.y + 46}
+                      fill={node.active ? "#FFFFFF" : "#7A7A7A"}
+                      fontSize="9.5"
+                      fontFamily="JetBrains Mono, monospace"
+                      letterSpacing="0.08em"
+                    >
+                      {node.label}
+                    </text>
+                  </g>
+                ))}
+
+                {/* LAYER 3 (BOTTOM): Developer Platform Baseplate */}
+                <g
+                  transform={`translate(10, ${botOffset})`}
+                  style={{ transition: "transform 360ms cubic-bezier(0.16, 1, 0.3, 1)" }}
+                  onClick={() => setActiveId("platform")}
+                  className="cursor-pointer"
+                >
+                  {/* Base extrusion thickness */}
+                  <polygon
+                    points="130,300 340,400 550,300 550,312 340,412 130,312"
+                    fill="#080808"
+                    stroke={activeId === "platform" ? "#FF3D00" : "#282828"}
+                    strokeWidth="1.2"
+                  />
+                  {/* Base top face */}
+                  <polygon
+                    points="340,200 550,300 340,400 130,300"
+                    fill={activeId === "platform" ? "#111111" : "#050505"}
+                    stroke={activeId === "platform" ? "#FF3D00" : "#2D2D2D"}
+                    strokeWidth="1.2"
+                  />
+                  {/* Platform etched grid lines */}
+                  <line x1="235" y1="250" x2="445" y2="350" stroke="#1E1E1E" strokeWidth="1" />
+                  <line x1="445" y1="250" x2="235" y2="350" stroke="#1E1E1E" strokeWidth="1" />
+                  <text
+                    x="340"
+                    y="366"
+                    textAnchor="middle"
+                    fill={activeId === "platform" ? "#FFFFFF" : "#666666"}
+                    fontSize="10"
+                    fontFamily="JetBrains Mono, monospace"
+                    letterSpacing="0.14em"
+                  >
+                    PLATFORM · REST API · CREDITS
+                  </text>
+                </g>
+
+                {/* LAYER 2 (MIDDLE — SIGNATURE SOLID VERMILION GYRA CORE SLAB) */}
+                <g
+                  transform={`translate(10, ${midOffset})`}
+                  style={{ transition: "transform 360ms cubic-bezier(0.16, 1, 0.3, 1)" }}
+                  onClick={() => setActiveId("core")}
+                  className="cursor-pointer"
+                >
+                  {/* Left bevel thickness */}
+                  <polygon
+                    points="130,225 340,325 340,341 130,241"
+                    fill="#C92F00"
+                    stroke="#000000"
+                    strokeWidth="1"
+                  />
+                  {/* Right bevel thickness */}
+                  <polygon
+                    points="340,325 550,225 550,241 340,341"
+                    fill="#9E2400"
+                    stroke="#000000"
+                    strokeWidth="1"
+                  />
+                  {/* Top glowing matte vermilion hardware slab */}
+                  <polygon
+                    points="340,125 550,225 340,325 130,225"
+                    fill={activeId === "core" ? "#FF3D00" : "#D93400"}
+                    stroke="#000000"
+                    strokeWidth="1.4"
+                  />
+
+                  {/* Etched architectural bay dividers across the vermilion slab */}
+                  <line x1="182" y1="200" x2="392" y2="300" stroke="#000000" strokeWidth="1.2" opacity="0.65" />
+                  <line x1="235" y1="175" x2="445" y2="275" stroke="#000000" strokeWidth="1.2" opacity="0.65" />
+                  <line x1="288" y1="150" x2="498" y2="250" stroke="#000000" strokeWidth="1.2" opacity="0.65" />
+
+                  {/* Etched Bay Labels aligned cleanly inside each isometric channel */}
+                  <text
+                    x="208"
+                    y="236"
+                    transform="rotate(25.5 208 236)"
+                    fill="#000000"
+                    fontSize="11"
+                    fontWeight="700"
+                    fontFamily="JetBrains Mono, monospace"
+                    letterSpacing="0.12em"
+                  >
+                    GYRA
+                  </text>
+                  <text
+                    x="264"
+                    y="262"
+                    transform="rotate(25.5 264 262)"
+                    fill="#000000"
+                    fontSize="9.5"
+                    fontWeight="600"
+                    fontFamily="JetBrains Mono, monospace"
+                    letterSpacing="0.1em"
+                  >
+                    CHAT
+                  </text>
+                  <text
+                    x="318"
+                    y="288"
+                    transform="rotate(25.5 318 288)"
+                    fill="#000000"
+                    fontSize="9.5"
+                    fontWeight="600"
+                    fontFamily="JetBrains Mono, monospace"
+                    letterSpacing="0.1em"
+                  >
+                    IMAGE
+                  </text>
+                  <text
+                    x="412"
+                    y="258"
+                    transform="rotate(25.5 412 258)"
+                    fill="#000000"
+                    fontSize="9.5"
+                    fontWeight="600"
+                    fontFamily="JetBrains Mono, monospace"
+                    letterSpacing="0.1em"
+                  >
+                    VIDEO
+                  </text>
+                  <text
+                    x="456"
+                    y="232"
+                    transform="rotate(25.5 456 232)"
+                    fill="#000000"
+                    fontSize="9.5"
+                    fontWeight="600"
+                    fontFamily="JetBrains Mono, monospace"
+                    letterSpacing="0.1em"
+                  >
+                    AGENTS
+                  </text>
+                </g>
+
+                {/* LAYER 1 (TOP): Matte Black Matrix Grid (Product Surfaces) */}
+                <g
+                  transform={`translate(10, ${topOffset})`}
+                  style={{ transition: "transform 360ms cubic-bezier(0.16, 1, 0.3, 1)" }}
+                  onClick={() => setActiveId("surfaces")}
+                  className="cursor-pointer"
+                >
+                  {/* Top slab edge thickness */}
+                  <polygon
+                    points="130,148 340,248 550,148 550,158 340,258 130,158"
+                    fill="#0A0A0A"
+                    stroke={activeId === "surfaces" ? "#FF3D00" : "#262626"}
+                    strokeWidth="1.2"
+                  />
+                  {/* Top slab main plane */}
+                  <polygon
+                    points="340,48 550,148 340,248 130,148"
+                    fill="#070707"
+                    stroke={activeId === "surfaces" ? "#FF3D00" : "#303030"}
+                    strokeWidth="1.3"
+                  />
+                  {/* Precision 4x4 isometric surface matrix */}
+                  {[1, 2, 3].map((step) => {
+                    const t = step / 4;
+                    const x1 = 340 + (550 - 340) * t;
+                    const y1 = 48 + (148 - 48) * t;
+                    const x2 = 130 + (340 - 130) * t;
+                    const y2 = 148 + (248 - 148) * t;
+
+                    const bx1 = 340 - (340 - 130) * t;
+                    const by1 = 48 + (148 - 48) * t;
+                    const bx2 = 550 - (550 - 340) * t;
+                    const by2 = 148 + (248 - 148) * t;
+                    return (
+                      <g key={step}>
+                        <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="#1F1F1F" strokeWidth="1" />
+                        <line x1={bx1} y1={by1} x2={bx2} y2={by2} stroke="#1F1F1F" strokeWidth="1" />
+                      </g>
+                    );
+                  })}
+
+                  {/* Active illuminated micro-cells on top surface */}
+                  {[
+                    { cx: 340, cy: 112, accent: true },
+                    { cx: 288, cy: 148, accent: false },
+                    { cx: 392, cy: 148, accent: true },
+                    { cx: 340, cy: 184, accent: false },
+                  ].map((pt, idx) => (
+                    <rect
+                      key={idx}
+                      x={pt.cx - 3}
+                      y={pt.cy - 3}
+                      width="6"
+                      height="6"
+                      fill={
+                        pt.accent && activeId === "surfaces"
+                          ? "#FF3D00"
+                          : pt.accent
+                            ? "#FFFFFF"
+                            : "#4A4A4A"
+                      }
+                    />
+                  ))}
+                </g>
+              </svg>
+            </div>
           </div>
 
-          {/* Right Layer Inspection Diagram */}
-          <div className="lg:col-span-7 p-6 sm:p-8 bg-[#FAFBFD] flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between pb-5 mb-6 border-b border-[#E2E6EE]">
-                <div>
-                  <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#525B6B]">
-                    Inspecting Layer {activeLayer.index}
-                  </span>
-                  <h3 className="font-display text-[24px] font-semibold tracking-[-0.02em] text-[#0A0D12] mt-1">
-                    {activeLayer.title}
-                  </h3>
-                </div>
-                <span className="font-mono text-[11px] px-2.5 py-1 rounded-[3px] border border-[#D4D9E2] bg-white text-[#3F4756]">
-                  GYRA CORE
-                </span>
-              </div>
-
-              <p className="text-[15px] text-[#3F4756] leading-[1.65] mb-8 max-w-[58ch]">
-                {activeLayer.description}
-              </p>
-
-              {/* Architectural Module Nodes */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {activeLayer.nodes.map((node, i) => (
-                  <div
-                    key={node.label}
-                    className="bg-white border border-[#D4D9E2] rounded-[4px] p-4"
+          {/* Right 5 cols: Interactive Layer Switcher + Razor Hairline Key-Value Spec Table */}
+          <div className="lg:col-span-5">
+            {/* Sharp 0px Layer Selector Tabs */}
+            <div
+              role="tablist"
+              aria-label="Gyra architecture layers"
+              className="grid grid-cols-4 border border-[#1F1F1F] bg-black"
+            >
+              {STACK_LAYERS.map((layer) => {
+                const selected = layer.id === activeId;
+                return (
+                  <button
+                    key={layer.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={selected}
+                    onClick={() => setActiveId(layer.id)}
+                    className={`font-mono-tech border-r border-[#1F1F1F] px-2 py-2.5 text-[11px] tracking-[0.06em] uppercase transition-colors last:border-r-0 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#FF3D00] ${
+                      selected
+                        ? "bg-[#FF3D00] font-medium text-white"
+                        : "bg-black text-[#808080] hover:bg-[#0A0A0A] hover:text-white"
+                    }`}
                   >
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-[#667085]">
-                        {activeLayer.index}.{i + 1}
-                      </span>
-                      <span className="w-1.5 h-1.5 bg-[#0A0D12]" aria-hidden="true" />
-                    </div>
-                    <p className="font-display text-[15px] font-semibold text-[#0A0D12]">
-                      {node.label}
-                    </p>
-                    <p className="font-mono text-[12px] text-[#525B6B] mt-1 leading-[1.45]">
-                      {node.detail}
-                    </p>
-                  </div>
-                ))}
-              </div>
+                    {layer.tabNum}
+                  </button>
+                );
+              })}
             </div>
 
-            {/* Bottom Architectural Continuity Bar */}
-            <div className="mt-8 pt-5 border-t border-[#E2E6EE] flex flex-wrap items-center justify-between gap-4 font-mono text-[11px] text-[#525B6B]">
-              <span>Single Account · Supabase Auth</span>
-              <span>OpenAI-Compatible REST Contract</span>
-              <span>Unified Credits & Rate Limits</span>
+            <div className="mt-7">
+              <p className="font-mono-tech text-[12px] tracking-[0.12em] text-[#FF3D00] uppercase">
+                {active.tag}
+              </p>
+              <h3 className="font-display mt-3 text-[30px] font-bold leading-[1.06] tracking-[-0.015em] text-white">
+                {active.headline}
+              </h3>
+              <p className="mt-3 text-[15px] leading-[1.6] text-[#9A9A9A]">{active.summary}</p>
+            </div>
+
+            {/* E2B-style Hairline Specification Rows */}
+            <dl className="mt-7 divide-y divide-[#1F1F1F] border-y border-[#1F1F1F]">
+              {active.specs.map((spec) => (
+                <div
+                  key={spec.label}
+                  className="grid grid-cols-12 items-baseline gap-4 py-3.5"
+                >
+                  <dt className="col-span-4 text-[14px] font-medium text-white">
+                    {spec.label}
+                  </dt>
+                  <dd className="font-mono-tech col-span-8 text-[12px] leading-[1.55] text-[#9A9A9A]">
+                    {spec.value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+
+            <div className="mt-6">
+              <a
+                href={resolveGyraRoute("/about", routeBase)}
+                className="font-mono-tech inline-flex items-center gap-2 text-[12px] tracking-[0.1em] text-white uppercase underline decoration-[#FF3D00] underline-offset-4 transition-colors hover:text-[#FF3D00]"
+              >
+                About Genvia AI Company →
+              </a>
             </div>
           </div>
         </div>

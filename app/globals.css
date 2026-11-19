@@ -186,3 +186,82 @@ body {
     display: none;
   }
 }
+
+/* GYRA_LANDING_V3_TOKENS */
+.font-display {
+  font-family: var(--font-display), "Barlow Semi Condensed", sans-serif;
+}
+.font-mono-tech {
+  font-family: var(--font-mono), "JetBrains Mono", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+.gyra-dither-sweep {
+  background-image:
+    radial-gradient(circle, rgba(255, 61, 0, 0.92) 1.15px, transparent 1.35px),
+    radial-gradient(circle, rgba(255, 61, 0, 0.45) 1px, transparent 1.25px);
+  background-size: 6px 6px, 6px 6px;
+  background-position: 0 0, 3px 3px;
+  mask-image: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.9) 35%, #000 72%, transparent 100%);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.9) 35%, #000 72%, transparent 100%);
+}
+.gyra-dither-backdrop {
+  background-image:
+    radial-gradient(rgba(255, 255, 255, 0.14) 1px, transparent 1px),
+    radial-gradient(rgba(255, 61, 0, 0.22) 1px, transparent 1px);
+  background-size: 16px 16px, 32px 32px;
+  background-position: 0 0, 8px 8px;
+}
+@keyframes gyra-cursor-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+.gyra-cursor {
+  display: inline-block;
+  width: 7px;
+  height: 13px;
+  background-color: #FF3D00;
+  vertical-align: -2px;
+  animation: gyra-cursor-blink 1.05s steps(1, end) infinite;
+}
+@keyframes gyra-dither-scan {
+  0% { transform: translateX(-110%); opacity: 0.9; }
+  70% { opacity: 0.95; }
+  100% { transform: translateX(130%); opacity: 0; }
+}
+.gyra-scan-motion {
+  animation: gyra-dither-scan 2.8s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+input[type="range"].gyra-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+}
+input[type="range"].gyra-slider::-webkit-slider-runnable-track {
+  height: 2px;
+  background: #262626;
+}
+input[type="range"].gyra-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  background: #FF3D00;
+  border: 2px solid #000000;
+  margin-top: -6px;
+  cursor: ew-resize;
+}
+input[type="range"].gyra-slider::-moz-range-track {
+  height: 2px;
+  background: #262626;
+}
+input[type="range"].gyra-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 0;
+  background: #FF3D00;
+  border: 2px solid #000000;
+  cursor: ew-resize;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gyra-cursor, .gyra-scan-motion { animation: none !important; }
+}

@@ -1,402 +1,522 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { ArrowRight, ArrowUpRight, Pause, Play } from "lucide-react";
-import { CORE_PRODUCTS } from "../../lib/gyraCatalog";
-import {
-  CHAT_SCENARIOS,
-  IMAGE_EDIT_SHOWCASE,
-  VIDEO_TEMPLATES,
-  clampSplitPercent,
-  resolveGyraRoute,
-  type ChatModelId,
-  type HeroModality,
-} from "../../lib/landingSimulations";
-import { usePointerBorder } from "./usePointerBorder";
+import { useEffect, useState } from "react";
+import { Check, Copy, Pause, Play, RotateCcw, Terminal } from "lucide-react";
+import { resolveGyraRoute } from "../../lib/landingSimulations";
 
-interface HeroWorkbenchProps {
+export interface HeroWorkbenchProps {
+  isAuthenticated?: boolean;
   routeBase?: string;
 }
 
-export function HeroWorkbench({ routeBase = "" }: HeroWorkbenchProps) {
-  const [modality, setModality] = useState<HeroModality>("chat");
-  const [heroModel, setHeroModel] = useState<ChatModelId>("gyra-super2.0");
-  const [heroSplit, setHeroSplit] = useState<number>(52);
-  const [videoPlaying, setVideoPlaying] = useState<boolean>(true);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const framePointer = usePointerBorder<HTMLDivElement>();
+type HeroSceneId = "chat" | "image" | "video" | "api";
 
-  const activeProduct = CORE_PRODUCTS.find((p) => p.id === modality) ?? CORE_PRODUCTS[0];
-  const heroChat = CHAT_SCENARIOS[0];
-  const heroVideo = VIDEO_TEMPLATES[0];
+interface HeroScene {
+  id: HeroSceneId;
+  tabLabel: string;
+  sessionTitle: string;
+  hostTag: string;
+  runtimeLabel: string;
+  footerLeft: string;
+  lines: {
+    prefix: string;
+    text: string;
+    accent?: "vermilion" | "white" | "muted";
+  }[];
+}
+
+const HERO_SCENES: HeroScene[] = [
+  {
+    id: "chat",
+    tabLabel: "Chat",
+    sessionTitle: "gyra-chat",
+    hostTag: "@ super-2.0",
+    runtimeLabel: "super-2.0",
+    footerLeft: "6-AGENT BUILD PIPELINE",
+    lines: [
+      { prefix: "$", text: "gyra chat --model super-2.0", accent: "vermilion" },
+      { prefix: "✓", text: "atlas · spec & threat check", accent: "white" },
+      { prefix: "agent>", text: "architect: webhook route + limiter", accent: "muted" },
+      { prefix: "agent>", text: "forge: write webhook.ts +86", accent: "white" },
+      { prefix: "agent>", text: "sentinel: verify timingSafeEqual", accent: "muted" },
+      { prefix: "✓", text: "hmac + replay guard passed — 3.4s", accent: "vermilion" },
+    ],
+  },
+  {
+    id: "image",
+    tabLabel: "Image",
+    sessionTitle: "gyra-image",
+    hostTag: "@ pro-ultra",
+    runtimeLabel: "pro-ultra",
+    footerLeft: "GEOMETRY-LOCKED I2I EDIT",
+    lines: [
+      { prefix: "$", text: "gyra image edit --pro-ultra", accent: "vermilion" },
+      { prefix: "✓", text: "source frame loaded · 1440×1080", accent: "white" },
+      { prefix: "edit>", text: "shift sky → blue-hour dusk", accent: "muted" },
+      { prefix: "edit>", text: "lamp emitter → 2700K tungsten", accent: "white" },
+      { prefix: "edit>", text: "geometry preservation · 100%", accent: "muted" },
+      { prefix: "✓", text: "render complete — 2.6s", accent: "vermilion" },
+    ],
+  },
+  {
+    id: "video",
+    tabLabel: "Video",
+    sessionTitle: "gyra-studio",
+    hostTag: "@ ltx-13b",
+    runtimeLabel: "720p · 24fps",
+    footerLeft: "TEXT & IMAGE-TO-VIDEO STUDIO",
+    lines: [
+      { prefix: "$", text: "gyra video render --aspect 16:9", accent: "vermilion" },
+      { prefix: "✓", text: "reference frame attached (001)", accent: "white" },
+      { prefix: "motion>", text: "slow aerial glide · lagos bridge", accent: "muted" },
+      { prefix: "motion>", text: "synthesizing 121 frames @ 24fps", accent: "white" },
+      { prefix: "queue>", text: "async worker · $2.00 / render", accent: "muted" },
+      { prefix: "✓", text: "mp4 stream ready", accent: "vermilion" },
+    ],
+  },
+  {
+    id: "api",
+    tabLabel: "API",
+    sessionTitle: "gyra-api",
+    hostTag: "@ v1/rest",
+    runtimeLabel: "openai-compat",
+    footerLeft: "OPENAI-COMPATIBLE ENDPOINTS",
+    lines: [
+      { prefix: "$", text: "POST https://gyra.ng/api/v1/chat", accent: "vermilion" },
+      { prefix: "✓", text: "auth: scoped bearer key ok", accent: "white" },
+      { prefix: "route>", text: "model: gyra-super2.0", accent: "muted" },
+      { prefix: "route>", text: "stream: sse · rate limit ok", accent: "white" },
+      { prefix: "200>", text: "choices[0].finish_reason: stop", accent: "muted" },
+      { prefix: "✓", text: "response delivered — 410ms", accent: "vermilion" },
+    ],
+  },
+];
+
+const CAPABILITY_STRIP = [
+  "GYRA 1.0 & SUPER 2.0",
+  "6-AGENT PIPELINE",
+  "PRO ULTRA IMAGE EDIT",
+  "LTX-VIDEO 720P STUDIO",
+  "OPENAI-COMPAT V1 API",
+  "WEB · MOBILE · TELEGRAM",
+];
+
+function formatClock(seconds: number): string {
+  const hrs = String(Math.floor(seconds / 3600)).padStart(2, "0");
+  const mins = String(Math.floor((seconds % 3600) / 60)).padStart(2, "0");
+  const secs = String(seconds % 60).padStart(2, "0");
+  return `${hrs}:${mins}:${secs}`;
+}
+
+export function HeroWorkbench({
+  isAuthenticated = false,
+  routeBase = "",
+}: HeroWorkbenchProps) {
+  const [sceneIndex, setSceneIndex] = useState(0);
+  const [visibleLines, setVisibleLines] = useState(HERO_SCENES[0].lines.length);
+  const [isPaused, setIsPaused] = useState(false);
+  const [uptimeSec, setUptimeSec] = useState(147);
+  const [copiedCmd, setCopiedCmd] = useState(false);
+
+  const activeScene = HERO_SCENES[sceneIndex];
 
   useEffect(() => {
-    const vid = videoRef.current;
-    if (!vid) return;
     const prefersReduced =
       typeof window !== "undefined" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReduced || isPaused) return;
+
+    const tick = window.setInterval(() => {
+      setUptimeSec((s) => s + 1);
+    }, 1000);
+    return () => window.clearInterval(tick);
+  }, [isPaused]);
+
+  useEffect(() => {
+    const prefersReduced =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
     if (prefersReduced) {
-      vid.pause();
-      setVideoPlaying(false);
+      setVisibleLines(activeScene.lines.length);
       return;
     }
-    if (modality === "video" && videoPlaying) {
-      vid.play().catch(() => setVideoPlaying(false));
-    } else {
-      vid.pause();
+
+    if (isPaused) return;
+
+    setVisibleLines(1);
+    let current = 1;
+    const lineTimer = window.setInterval(() => {
+      current += 1;
+      if (current <= activeScene.lines.length) {
+        setVisibleLines(current);
+      } else {
+        window.clearInterval(lineTimer);
+      }
+    }, 460);
+
+    const cycleTimer = window.setTimeout(() => {
+      setSceneIndex((prev) => (prev + 1) % HERO_SCENES.length);
+    }, 6400);
+
+    return () => {
+      window.clearInterval(lineTimer);
+      window.clearTimeout(cycleTimer);
+    };
+  }, [sceneIndex, isPaused, activeScene.lines.length]);
+
+  const selectScene = (idx: number) => {
+    setSceneIndex(idx);
+    setVisibleLines(HERO_SCENES[idx].lines.length);
+    setIsPaused(true);
+  };
+
+  const replayScene = () => {
+    setIsPaused(false);
+    setVisibleLines(1);
+    setSceneIndex((prev) => prev);
+    // Force step restart even on same index
+    let current = 1;
+    const timer = window.setInterval(() => {
+      current += 1;
+      if (current <= activeScene.lines.length) {
+        setVisibleLines(current);
+      } else {
+        window.clearInterval(timer);
+      }
+    }, 320);
+  };
+
+  const copyQuickCurl = async () => {
+    const cmd = `curl -X POST https://gyra.ng/api/v1/chat -H "Authorization: Bearer $GYRA_API_KEY" -H "Content-Type: application/json" -d '{"model":"gyra-super2.0","messages":[{"role":"user","content":"Hello Gyra"}]}'`;
+    try {
+      await navigator.clipboard.writeText(cmd);
+    } catch {
+      // Clipboard fallback ignored in restricted frames
     }
-  }, [modality, videoPlaying]);
+    setCopiedCmd(true);
+    window.setTimeout(() => setCopiedCmd(false), 1800);
+  };
 
   return (
-    <section
-      aria-labelledby="hero-heading"
-      className="relative bg-[#050608] border-b border-white/[0.08]"
-    >
-      <div className="max-w-[1280px] mx-auto gyra-grid-rail px-5 sm:px-8 py-12 sm:py-16 lg:py-20">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-10 items-start">
-          {/* Left Editorial Column */}
-          <div className="lg:col-span-5 flex flex-col justify-between">
-            <div>
-              <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-[#667085] mb-5">
-                Genvia AI Company · Intelligence Systems
-              </p>
+    <section className="border-b border-[#1F1F1F] bg-black">
+      <div className="mx-auto max-w-[1380px] px-5 pb-16 pt-12 sm:px-8 lg:pb-24 lg:pt-20">
+        <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-12 lg:gap-10">
+          {/* Left 5 cols — Bold Industrial Typography & Crisp 0px CTAs */}
+          <div className="flex flex-col lg:col-span-5">
+            <p className="font-mono-tech text-[12px] tracking-[0.14em] text-[#8A8A8A] uppercase">
+              [ Genvia AI Company ]
+            </p>
 
-              <h1
-                id="hero-heading"
-                className="font-display font-semibold text-[#F5F7FA] tracking-[-0.035em] leading-[1.03] text-[38px] sm:text-[48px] lg:text-[56px] mb-5 [text-wrap:balance]"
+            <h1 className="font-display mt-5 text-[clamp(3.15rem,5.4vw,4.85rem)] font-bold leading-[0.94] tracking-[-0.02em] text-white uppercase [text-wrap:balance]">
+              One intelligence.
+              <br />
+              Every medium.
+            </h1>
+
+            <p className="mt-6 max-w-[46ch] text-[16px] leading-[1.6] text-[#A3A3A3] sm:text-[17px]">
+              Gyra unites conversational reasoning, precision image generation and editing,
+              cinematic video studio workflows, and OpenAI-compatible APIs on one engineered
+              platform.
+            </p>
+
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <a
+                href={resolveGyraRoute("/dashboard", routeBase)}
+                className="font-mono-tech inline-flex min-h-[46px] shrink-0 items-center justify-center whitespace-nowrap bg-[#FF3D00] px-6 text-[13px] font-medium tracking-[0.1em] text-white uppercase transition-colors duration-150 hover:bg-[#FF551F] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white"
               >
-                Intelligence built across every medium.
-              </h1>
-
-              <p className="text-[15px] sm:text-[16px] text-[#A0A8B8] leading-[1.65] max-w-[44ch] mb-8">
-                Gyra brings conversational reasoning, precision image generation and editing,
-                cinematic video, and OpenAI-compatible developer APIs into one unified platform.
-              </p>
-
-              <div className="flex flex-wrap items-center gap-3 mb-10">
-                <a
-                  href={resolveGyraRoute("/dashboard", routeBase)}
-                  className="inline-flex items-center justify-center gap-2 bg-[#F1F5F9] text-[#050608] hover:bg-white px-5 py-2.5 rounded-[4px] text-[14px] font-medium transition-colors"
-                >
-                  Launch Gyra
-                  <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
-                </a>
-                <a
-                  href={resolveGyraRoute("/api", routeBase)}
-                  className="inline-flex items-center justify-center gap-2 bg-[#0B0D11] text-[#F5F7FA] border border-white/[0.12] hover:border-white/[0.24] hover:bg-[#101319] px-5 py-2.5 rounded-[4px] text-[14px] font-medium transition-colors"
-                >
-                  Explore Developer API
-                  <ArrowRight className="w-4 h-4 text-[#A0A8B8]" aria-hidden="true" />
-                </a>
-              </div>
+                {isAuthenticated ? "Open Dashboard" : "Start with Gyra"}
+              </a>
+              <a
+                href={resolveGyraRoute("/api", routeBase)}
+                className="font-mono-tech inline-flex min-h-[46px] shrink-0 items-center justify-center whitespace-nowrap border border-[#3A3A3A] bg-black px-6 text-[13px] font-medium tracking-[0.1em] text-white uppercase transition-colors duration-150 hover:border-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#FF3D00]"
+              >
+                Explore API
+              </a>
             </div>
 
-            {/* Synchronized 3-Product Modality Ledger */}
-            <div
-              className="border border-white/[0.08] rounded-[4px] divide-y divide-white/[0.08] bg-[#07090D] overflow-hidden"
-              role="tablist"
-              aria-label="Core Gyra Products"
-            >
-              {CORE_PRODUCTS.map((product) => {
-                const isSelected = modality === product.id;
-                return (
-                  <button
-                    key={product.id}
-                    type="button"
-                    role="tab"
-                    id={`hero-tab-${product.id}`}
-                    aria-selected={isSelected}
-                    aria-controls={`hero-panel-${product.id}`}
-                    onClick={() => setModality(product.id)}
-                    style={{
-                      borderLeftColor: isSelected ? product.accentHex : "transparent",
-                    }}
-                    className={`w-full text-left px-4 py-3.5 border-l-2 flex items-start justify-between gap-4 transition-colors group ${
-                      isSelected ? "bg-[#0F131A]" : "hover:bg-[#0B0E14]"
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <span
-                        className="font-mono text-[11px] pt-0.5 transition-colors"
-                        style={{ color: isSelected ? product.accentHex : "#667085" }}
-                      >
-                        {product.index}
-                      </span>
-                      <div>
-                        <span
-                          className={`font-display text-[15px] font-semibold tracking-[-0.01em] block ${
-                            isSelected ? "text-[#F5F7FA]" : "text-[#C5CBD6] group-hover:text-[#F5F7FA]"
-                          }`}
-                        >
-                          {product.name}
-                        </span>
-                        <p className="text-[13px] text-[#8B94A6] leading-[1.45] mt-0.5">
-                          {product.tagline}
-                        </p>
-                      </div>
-                    </div>
-                    <span
-                      className={`font-mono text-[10px] uppercase tracking-[0.1em] pt-1 shrink-0 ${
-                        isSelected ? "text-[#F5F7FA]" : "text-[#667085]"
-                      }`}
-                    >
-                      {isSelected ? "Active" : "Inspect"}
-                    </span>
-                  </button>
-                );
-              })}
+            <div className="mt-6">
+              <button
+                type="button"
+                onClick={copyQuickCurl}
+                className="font-mono-tech inline-flex items-center gap-2.5 text-[12px] tracking-[0.1em] text-[#7A7A7A] uppercase transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#FF3D00]"
+              >
+                {copiedCmd ? (
+                  <Check className="h-3.5 w-3.5 text-[#FF3D00]" />
+                ) : (
+                  <Terminal className="h-3.5 w-3.5 text-[#7A7A7A]" />
+                )}
+                <span>
+                  {copiedCmd ? "Copied /api/v1/chat cURL snippet" : "Copy quickstart API command"}
+                </span>
+                <Copy className="h-3 w-3 opacity-60" />
+              </button>
             </div>
           </div>
 
-          {/* Right Live Interactive Workbench */}
+          {/* Right 7 cols — Live Dual-Pane Industrial Execution Machine */}
           <div className="lg:col-span-7">
-            <div
-              {...framePointer}
-              className="gyra-frame gyra-frame-interactive rounded-[6px] overflow-hidden"
+            <figure
+              aria-label="Live interactive preview of Gyra Chat, Gyra Image, Gyra Video, and Gyra API"
+              className="border border-[#262626] bg-black"
             >
-              {/* Console Top Bar */}
-              <div className="flex items-center justify-between gap-3 px-4 py-3 bg-[#0E1117] border-b border-white/[0.08]">
-                <div className="flex items-center gap-1" role="tablist" aria-label="Workbench mode">
-                  {CORE_PRODUCTS.map((product) => {
-                    const active = modality === product.id;
-                    return (
-                      <button
-                        key={product.id}
-                        type="button"
-                        role="tab"
-                        aria-selected={active}
-                        onClick={() => setModality(product.id)}
-                        className={`px-3 py-1.5 rounded-[3px] font-mono text-[11px] uppercase tracking-[0.08em] transition-colors ${
-                          active
-                            ? "bg-[#181D27] text-[#F5F7FA] border border-white/[0.12]"
-                            : "text-[#8B94A6] hover:text-[#F5F7FA] border border-transparent"
-                        }`}
-                      >
-                        {product.shortLabel}
-                      </button>
-                    );
-                  })}
+              {/* Hardware Console Header Bar */}
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#1F1F1F] bg-[#050505] px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <span className="h-2.5 w-5 border-y border-[#4A4A4A]" aria-hidden="true" />
+                  <span className="font-mono-tech text-[12px] text-white">
+                    {activeScene.sessionTitle}
+                  </span>
+                  <span className="font-mono-tech text-[12px] text-[#6E6E6E]">
+                    {activeScene.hostTag}
+                  </span>
                 </div>
 
-                <a
-                  href={`#${activeProduct.id}`}
-                  className="font-mono text-[11px] text-[#8B94A6] hover:text-[#F5F7FA] inline-flex items-center gap-1 transition-colors"
-                >
-                  Full {activeProduct.shortLabel} Showcase
-                  <ArrowRight className="w-3 h-3" aria-hidden="true" />
-                </a>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsPaused((p) => !p)}
+                    aria-label={isPaused ? "Resume live demo" : "Pause live demo"}
+                    className="inline-flex h-7 w-7 items-center justify-center border border-[#262626] bg-black text-[#A3A3A3] transition-colors hover:border-[#4A4A4A] hover:text-white"
+                  >
+                    {isPaused ? (
+                      <Play className="h-3 w-3" />
+                    ) : (
+                      <Pause className="h-3 w-3" />
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={replayScene}
+                    aria-label="Replay current modality trace"
+                    className="inline-flex h-7 w-7 items-center justify-center border border-[#262626] bg-black text-[#A3A3A3] transition-colors hover:border-[#4A4A4A] hover:text-white"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                  </button>
+                  <span className="font-mono-tech border border-[#2A2A2A] bg-black px-2.5 py-1 text-[11px] text-[#CCCCCC]">
+                    {activeScene.runtimeLabel}
+                  </span>
+                </div>
               </div>
 
-              {/* Panel: CHAT */}
-              {modality === "chat" && (
-                <div
-                  id="hero-panel-chat"
-                  role="tabpanel"
-                  aria-labelledby="hero-tab-chat"
-                  className="p-5 sm:p-6 bg-[#0B0D11]"
-                >
-                  <div className="pb-4 mb-4 border-b border-white/[0.07]">
-                    <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                      <p className="font-mono text-[11px] uppercase tracking-[0.1em] text-[#667085]">
-                        Prompt · Multi-Agent Route
-                      </p>
-                      <div className="inline-flex border border-white/[0.1] rounded-[4px] bg-[#050608] p-0.5 shrink-0">
-                        {(["gyra-1.0", "gyra-super2.0"] as ChatModelId[]).map((m) => (
-                          <button
-                            key={m}
-                            type="button"
-                            onClick={() => setHeroModel(m)}
-                            className={`px-2.5 py-0.5 rounded-[3px] font-mono text-[11px] transition-colors ${
-                              heroModel === m
-                                ? "bg-[#181D27] text-[#67E8F9]"
-                                : "text-[#8B94A6] hover:text-[#F5F7FA]"
+              {/* Dual-Pane Live Execution Stage */}
+              <div className="grid min-h-[310px] grid-cols-1 divide-y divide-[#1F1F1F] sm:grid-cols-12 sm:divide-x sm:divide-y-0">
+                {/* Left 5 cols: Live Streaming Terminal */}
+                <div className="flex flex-col justify-between bg-black p-5 sm:col-span-5">
+                  <div className="space-y-2.5 font-mono-tech text-[12px] leading-[1.65]">
+                    {activeScene.lines.slice(0, visibleLines).map((line, index) => {
+                      const isLast = index === visibleLines - 1;
+                      return (
+                        <div key={`${activeScene.id}-${index}`} className="flex gap-2">
+                          <span
+                            className={`shrink-0 ${
+                              line.accent === "vermilion"
+                                ? "text-[#FF3D00]"
+                                : line.accent === "white"
+                                  ? "text-white"
+                                  : "text-[#666666]"
                             }`}
                           >
-                            {m === "gyra-1.0" ? "Gyra 1.0" : "SuperGyra 2.0"}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <p className="text-[14px] text-[#F5F7FA] font-medium leading-[1.5]">
-                      {heroChat.prompt}
-                    </p>
-                  </div>
-
-                  {/* Compact 6-Agent Pipeline Bar */}
-                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 mb-4">
-                    {heroChat.agents.map((agent) => (
-                      <div
-                        key={agent.id}
-                        className="bg-[#101319] border border-white/[0.07] rounded-[3px] px-2.5 py-2"
-                      >
-                        <div className="flex items-center justify-between font-mono text-[10px] text-[#667085]">
-                          <span>{agent.order}</span>
-                          <span>{agent.durationSec}s</span>
+                            {line.prefix}
+                          </span>
+                          <span
+                            className={
+                              line.accent === "vermilion"
+                                ? "text-[#F5F5F5]"
+                                : line.accent === "white"
+                                  ? "text-[#D4D4D4]"
+                                  : "text-[#7A7A7A]"
+                            }
+                          >
+                            {line.text}
+                            {isLast && <span className="gyra-cursor ml-1.5" aria-hidden="true" />}
+                          </span>
                         </div>
-                        <p className="text-[12px] font-medium text-[#E5E9F0] mt-0.5">{agent.name}</p>
-                        <p className="text-[10px] text-[#667085] truncate">{agent.role}</p>
+                      );
+                    })}
+                  </div>
+
+                  <div className="mt-6 flex items-center justify-between border-t border-[#161616] pt-3 font-mono-tech text-[11px] text-[#666666]">
+                    <span>PIPELINE STATE</span>
+                    <span className="text-[#FF3D00]">
+                      {visibleLines >= activeScene.lines.length ? "READY" : "EXECUTING"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Right 7 cols: Live Modality Output Viewport + Vermilion Halftone Dither Reveal */}
+                <div className="relative flex items-center justify-center overflow-hidden bg-[#030303] p-5 sm:col-span-7">
+                  {activeScene.id === "chat" && (
+                    <div className="relative w-full border border-[#242424] bg-black">
+                      <div className="flex items-center justify-between border-b border-[#1A1A1A] px-3 py-2 font-mono-tech text-[10px] text-[#808080]">
+                        <span className="text-[#CCCCCC]">webhook-handler.ts</span>
+                        <span className="text-[#FF3D00]">SENTINEL VERIFIED</span>
                       </div>
-                    ))}
-                  </div>
-
-                  {/* Reasoning Note */}
-                  <div className="bg-[#101319] border-l-2 border-[#67E8F9] px-3.5 py-2.5 mb-4 text-[12px] text-[#A0A8B8] leading-[1.5]">
-                    <span className="font-mono text-[11px] text-[#67E8F9] mr-2">
-                      {heroModel === "gyra-super2.0" ? "REASONER" : "STANDARD"}
-                    </span>
-                    {heroChat.responseByModel[heroModel].reasoningNote}
-                  </div>
-
-                  {/* Output Code Window */}
-                  <div className="bg-[#050608] border border-white/[0.08] rounded-[4px] overflow-hidden">
-                    <div className="flex items-center justify-between px-3.5 py-2 border-b border-white/[0.06] font-mono text-[11px] text-[#667085]">
-                      <span>webhook-handler.ts</span>
-                      <span>{heroChat.responseByModel[heroModel].latencyLabel}</span>
+                      <pre className="overflow-hidden px-3.5 py-3 font-mono-tech text-[11px] leading-[1.6] text-[#C8C8C8]">
+                        <code>{`export async function POST(req: Request) {
+  const sig = req.headers.get("x-hmac-256");
+  const raw = await req.text();
+  const mac = createHmac("sha256", SECRET)
+    .update(raw).digest();
+  if (!timingSafeEqual(buf(sig), mac)) {
+    return Response.json(
+      { error: "unauthorized" },
+      { status: 401 }
+    );
+  }
+  return Response.json({ ok: true });
+}`}</code>
+                      </pre>
+                      {!isPaused && (
+                        <div
+                          aria-hidden="true"
+                          className="gyra-dither-sweep gyra-scan-motion pointer-events-none absolute inset-y-0 w-24"
+                        />
+                      )}
                     </div>
-                    <pre className="p-4 text-[12px] leading-[1.6] font-mono text-[#D6DCE6] overflow-x-auto max-h-[225px] gyra-scroll">
-                      <code>{heroChat.responseByModel[heroModel].output}</code>
-                    </pre>
-                  </div>
-                </div>
-              )}
+                  )}
 
-              {/* Panel: IMAGE */}
-              {modality === "image" && (
-                <div
-                  id="hero-panel-image"
-                  role="tabpanel"
-                  aria-labelledby="hero-tab-image"
-                  className="p-5 sm:p-6 bg-[#0B0D11]"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-2 pb-4 mb-4 border-b border-white/[0.07]">
-                    <div>
-                      <p className="font-mono text-[11px] uppercase tracking-[0.1em] text-[#E5B975]">
-                        Gyra Pro Ultra · Image-to-Image Edit
-                      </p>
-                      <p className="text-[13px] text-[#C5CBD6] mt-1">
-                        Preserve exact architectural geometry while transforming scene lighting to warm tungsten dusk.
-                      </p>
-                    </div>
-                    <span className="font-mono text-[11px] text-[#8B94A6]">
-                      Split {heroSplit}%
-                    </span>
-                  </div>
-
-                  <div className="relative aspect-[4/3] w-full bg-[#050608] border border-white/[0.08] rounded-[4px] overflow-hidden select-none">
-                    <img
-                      src={IMAGE_EDIT_SHOWCASE.afterSrc}
-                      alt={IMAGE_EDIT_SHOWCASE.afterLabel}
-                      className="w-full h-full object-cover"
-                    />
-                    <div
-                      className="absolute inset-0 overflow-hidden"
-                      style={{ clipPath: `inset(0 ${100 - heroSplit}% 0 0)` }}
-                    >
+                  {activeScene.id === "image" && (
+                    <div className="relative aspect-[4/3] w-full overflow-hidden border border-[#242424] bg-black">
                       <img
-                        src={IMAGE_EDIT_SHOWCASE.beforeSrc}
-                        alt={IMAGE_EDIT_SHOWCASE.beforeLabel}
-                        className="w-full h-full object-cover"
+                        src="/showcase/edit-after.jpg"
+                        alt="Gyra Pro Ultra tungsten dusk studio transformation"
+                        referrerPolicy="no-referrer"
+                        className="h-full w-full object-cover"
                       />
+                      <div
+                        className="absolute inset-0 overflow-hidden"
+                        style={{ clipPath: "inset(0 54% 0 0)" }}
+                      >
+                        <img
+                          src="/showcase/edit-before.jpg"
+                          alt="Original daylight studio interior"
+                          referrerPolicy="no-referrer"
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                      <div
+                        aria-hidden="true"
+                        className="pointer-events-none absolute inset-y-0 left-[46%] w-[2px] bg-[#FF3D00]"
+                      />
+                      <div
+                        aria-hidden="true"
+                        className="gyra-dither-sweep pointer-events-none absolute inset-y-0 left-[46%] w-16 opacity-85"
+                      />
+                      <div className="font-mono-tech absolute bottom-2 left-2 bg-black/90 px-2 py-0.5 text-[10px] text-[#CCCCCC] uppercase">
+                        Original
+                      </div>
+                      <div className="font-mono-tech absolute bottom-2 right-2 bg-[#FF3D00] px-2 py-0.5 text-[10px] font-medium text-white uppercase">
+                        Pro Ultra
+                      </div>
                     </div>
-                    <div
-                      className="absolute top-0 bottom-0 w-px bg-[#F5F7FA] pointer-events-none"
-                      style={{ left: `${heroSplit}%` }}
-                    />
-                    <div className="absolute top-3 left-3 bg-[#050608]/90 border border-white/[0.12] px-2.5 py-1 rounded-[3px] font-mono text-[10px] uppercase tracking-[0.08em] text-[#D0D5DD]">
-                      Original
-                    </div>
-                    <div className="absolute top-3 right-3 bg-[#050608]/90 border border-[#E5B975]/40 px-2.5 py-1 rounded-[3px] font-mono text-[10px] uppercase tracking-[0.08em] text-[#E5B975]">
-                      Gyra Pro Ultra
-                    </div>
-                  </div>
+                  )}
 
-                  <div className="mt-4 flex items-center gap-4">
-                    <label
-                      htmlFor="hero-image-split"
-                      className="font-mono text-[11px] uppercase tracking-[0.08em] text-[#8B94A6] shrink-0"
-                    >
-                      Compare
-                    </label>
-                    <input
-                      id="hero-image-split"
-                      type="range"
-                      min={0}
-                      max={100}
-                      value={heroSplit}
-                      onChange={(e) => setHeroSplit(clampSplitPercent(Number(e.target.value)))}
-                      aria-label="Hero before and after image comparison"
-                      className="w-full accent-[#E5B975] cursor-pointer"
-                    />
-                    <a
-                      href="#image"
-                      className="font-mono text-[11px] text-[#F5F7FA] hover:text-[#E5B975] shrink-0 transition-colors"
-                    >
-                      Full Studio →
-                    </a>
-                  </div>
+                  {activeScene.id === "video" && (
+                    <div className="relative aspect-[16/10] w-full overflow-hidden border border-[#242424] bg-black">
+                      <video
+                        src="/products-hero-bg.mp4"
+                        poster="/products-hero-poster.jpg"
+                        autoPlay
+                        muted
+                        loop
+                        playsInline
+                        className="h-full w-full object-cover"
+                      />
+                      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/30" />
+                      <div className="font-mono-tech absolute left-2.5 top-2.5 border border-[#FF3D00]/70 bg-black/85 px-2 py-0.5 text-[10px] text-white uppercase">
+                        LTX-13B · 16:9
+                      </div>
+                      <div className="font-mono-tech absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between text-[10px] text-[#D4D4D4]">
+                        <span>720P · 24 FPS · 121 FRAMES</span>
+                        <span className="text-[#FF3D00]">GYRA STUDIO</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeScene.id === "api" && (
+                    <div className="relative w-full border border-[#242424] bg-black">
+                      <div className="flex items-center justify-between border-b border-[#1A1A1A] px-3 py-2 font-mono-tech text-[10px] text-[#808080]">
+                        <span className="text-white">POST /api/v1/chat</span>
+                        <span className="text-[#FF3D00]">200 OK</span>
+                      </div>
+                      <pre className="overflow-hidden px-3.5 py-3 font-mono-tech text-[11px] leading-[1.6] text-[#C8C8C8]">
+                        <code>{`{
+  "id": "chatcmpl-gyra-9041",
+  "object": "chat.completion",
+  "model": "gyra-super2.0",
+  "choices": [{
+    "message": {
+      "role": "assistant",
+      "content": "Idempotency key verified..."
+    },
+    "finish_reason": "stop"
+  }]
+}`}</code>
+                      </pre>
+                      {!isPaused && (
+                        <div
+                          aria-hidden="true"
+                          className="gyra-dither-sweep gyra-scan-motion pointer-events-none absolute inset-y-0 w-24"
+                        />
+                      )}
+                    </div>
+                  )}
                 </div>
-              )}
-
-              {/* Panel: VIDEO */}
-              {modality === "video" && (
-                <div
-                  id="hero-panel-video"
-                  role="tabpanel"
-                  aria-labelledby="hero-tab-video"
-                  className="p-5 sm:p-6 bg-[#0B0D11]"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-2 pb-4 mb-4 border-b border-white/[0.07]">
-                    <div>
-                      <p className="font-mono text-[11px] uppercase tracking-[0.1em] text-[#5EEAD4]">
-                        Gyra Studio · {heroVideo.specs}
-                      </p>
-                      <p className="text-[13px] text-[#C5CBD6] mt-1">{heroVideo.prompt}</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setVideoPlaying((p) => !p)}
-                      aria-label={videoPlaying ? "Pause video preview" : "Play video preview"}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] border border-white/[0.12] bg-[#101319] text-[#F5F7FA] font-mono text-[11px] hover:border-white/[0.24] transition-colors shrink-0"
-                    >
-                      {videoPlaying ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
-                      {videoPlaying ? "Pause" : "Play"}
-                    </button>
-                  </div>
-
-                  <div className="relative aspect-video w-full bg-[#050608] border border-white/[0.08] rounded-[4px] overflow-hidden">
-                    <video
-                      ref={videoRef}
-                      src={heroVideo.videoSrc}
-                      poster={heroVideo.posterSrc}
-                      muted
-                      loop
-                      playsInline
-                      preload="metadata"
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between bg-[#050608]/90 border border-white/[0.1] px-3 py-1.5 rounded-[3px] font-mono text-[11px] text-[#C5CBD6]">
-                      <span>16:9 · {heroVideo.durationLabel}</span>
-                      <span className="text-[#5EEAD4]">Text & Image-to-Video</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Console Footer Spec Strip */}
-              <div className="grid grid-cols-3 divide-x divide-white/[0.08] border-t border-white/[0.08] bg-[#090B0F]">
-                {activeProduct.specs.map((spec) => (
-                  <div key={spec.label} className="px-4 py-3">
-                    <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-[#667085]">
-                      {spec.label}
-                    </p>
-                    <p className="text-[12px] font-medium text-[#E5E9F0] mt-0.5 truncate">
-                      {spec.value}
-                    </p>
-                  </div>
-                ))}
               </div>
-            </div>
+
+              {/* Console Telemetry Sub-Row */}
+              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#1F1F1F] bg-[#040404] px-4 py-2.5 font-mono-tech text-[11px] tracking-[0.08em] uppercase">
+                <span className="text-[#D4D4D4]">{activeScene.footerLeft}</span>
+                <span className="text-[#808080]">
+                  SESSION <span className="text-white">{formatClock(uptimeSec)}</span>
+                </span>
+              </div>
+
+              {/* Bottom 4-Tab Modality Selector (E2B Industrial Bar) */}
+              <div
+                role="tablist"
+                aria-label="Hero modality scenes"
+                className="grid grid-cols-4 border-t border-[#1F1F1F] bg-black p-1.5"
+              >
+                {HERO_SCENES.map((scene, idx) => {
+                  const active = idx === sceneIndex;
+                  return (
+                    <button
+                      key={scene.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={active}
+                      onClick={() => selectScene(idx)}
+                      className={`font-mono-tech min-h-[38px] px-2 text-[11px] tracking-[0.12em] uppercase transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#FF3D00] ${
+                        active
+                          ? "bg-[#1A1A1A] text-white ring-1 ring-inset ring-[#FF3D00]/60"
+                          : "bg-black text-[#737373] hover:text-[#D4D4D4]"
+                      }`}
+                    >
+                      {scene.tabLabel}
+                    </button>
+                  );
+                })}
+              </div>
+            </figure>
+          </div>
+        </div>
+      </div>
+
+      {/* Full-Width Architectural Capability Ledger Strip */}
+      <div className="border-t border-[#1F1F1F] bg-black">
+        <div className="mx-auto max-w-[1380px] px-5 py-5 sm:px-8">
+          <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+            {CAPABILITY_STRIP.map((item) => (
+              <div
+                key={item}
+                className="font-mono-tech flex shrink-0 items-center gap-2 whitespace-nowrap text-[11px] tracking-[0.09em] text-[#8E8E8E]"
+              >
+                <span className="h-1.5 w-1.5 shrink-0 bg-[#FF3D00]" aria-hidden="true" />
+                <span>{item}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>

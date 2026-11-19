@@ -1,16 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowUpRight, Check, Copy, Terminal } from "lucide-react";
+import { ArrowUpRight, Check, Copy } from "lucide-react";
 import {
   API_EXAMPLES,
   resolveGyraRoute,
-  type ApiEndpointId,
   type CodeLanguage,
 } from "../../lib/landingSimulations";
-import { usePointerBorder } from "./usePointerBorder";
 
-interface DeveloperQuickstartProps {
+export interface DeveloperQuickstartProps {
   routeBase?: string;
 }
 
@@ -21,127 +19,103 @@ const LANGUAGES: { id: CodeLanguage; label: string }[] = [
 ];
 
 export function DeveloperQuickstart({ routeBase = "" }: DeveloperQuickstartProps) {
-  const [endpointId, setEndpointId] = useState<ApiEndpointId>("chat");
+  const [endpointId, setEndpointId] = useState(API_EXAMPLES[0].id);
   const [language, setLanguage] = useState<CodeLanguage>("typescript");
-  const [copied, setCopied] = useState<boolean>(false);
-  const pointer = usePointerBorder<HTMLDivElement>();
+  const [copied, setCopied] = useState(false);
 
-  const activeExample = API_EXAMPLES.find((e) => e.id === endpointId) ?? API_EXAMPLES[0];
+  const activeExample =
+    API_EXAMPLES.find((ex) => ex.id === endpointId) ?? API_EXAMPLES[0];
   const activeCode = activeExample.snippets[language];
 
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(activeCode);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1800);
     } catch {
-      setCopied(false);
+      // Clipboard fallback ignored
     }
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1800);
   };
 
   return (
-    <section
-      id="developers"
-      aria-labelledby="developers-heading"
-      className="bg-[#0B0D11] border-b border-white/[0.08] scroll-mt-16"
-    >
-      <div className="max-w-[1280px] mx-auto gyra-grid-rail px-5 sm:px-8 py-20 lg:py-24">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-end mb-12">
+    <section id="developers" className="border-b border-[#1F1F1F] bg-black py-24 lg:py-32">
+      <div className="mx-auto max-w-[1380px] px-5 sm:px-8">
+        {/* Header Row */}
+        <div className="grid grid-cols-1 items-end gap-6 lg:grid-cols-12">
           <div className="lg:col-span-7">
-            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-[#67E8F9] mb-3">
-              05 / Developer Platform
+            <p className="font-mono-tech text-[12px] tracking-[0.14em] text-[#FF3D00] uppercase">
+              [ 04 · Developer Platform ]
             </p>
-            <h2
-              id="developers-heading"
-              className="font-display font-semibold text-[30px] sm:text-[38px] lg:text-[42px] tracking-[-0.03em] leading-[1.08] text-[#F5F7FA] [text-wrap:balance]"
-            >
+            <h2 className="font-display mt-3.5 text-[clamp(2.35rem,4.2vw,3.75rem)] font-bold leading-[0.98] tracking-[-0.02em] text-white uppercase [text-wrap:balance]">
               Drop-in endpoints for every Gyra capability.
             </h2>
           </div>
+
           <div className="lg:col-span-5 lg:pl-6">
-            <p className="text-[15px] text-[#A0A8B8] leading-[1.65] mb-4">
-              Integrate Gyra Chat, asynchronous video generation, voice synthesis, and media
-              intelligence with category-scoped keys, server-side rate limiting, and an interactive
-              Playground.
+            <p className="text-[15px] leading-[1.65] text-[#9A9A9A]">
+              Integrate Gyra Chat, async video generation, voice synthesis, and media extraction
+              using category-scoped keys, server-side rate limits, and a live Playground.
             </p>
-            <div className="flex flex-wrap items-center gap-5 text-[13px] font-medium">
-              <a
-                href={resolveGyraRoute("/docs", routeBase)}
-                className="inline-flex items-center gap-1 text-[#F5F7FA] hover:text-[#67E8F9] transition-colors"
-              >
-                Documentation
-                <ArrowUpRight className="w-3.5 h-3.5" aria-hidden="true" />
-              </a>
-              <a
-                href={resolveGyraRoute("/playground", routeBase)}
-                className="inline-flex items-center gap-1 text-[#A0A8B8] hover:text-[#F5F7FA] transition-colors"
-              >
-                Playground
-                <ArrowUpRight className="w-3.5 h-3.5" aria-hidden="true" />
-              </a>
-              <a
-                href={resolveGyraRoute("/api-keys", routeBase)}
-                className="inline-flex items-center gap-1 text-[#A0A8B8] hover:text-[#F5F7FA] transition-colors"
-              >
-                API Keys
-                <ArrowUpRight className="w-3.5 h-3.5" aria-hidden="true" />
-              </a>
-              <a
-                href={resolveGyraRoute("/console", routeBase)}
-                className="inline-flex items-center gap-1 text-[#A0A8B8] hover:text-[#F5F7FA] transition-colors"
-              >
-                Console
-                <ArrowUpRight className="w-3.5 h-3.5" aria-hidden="true" />
-              </a>
+            <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 font-mono-tech text-[11px] tracking-[0.08em] uppercase">
+              {[
+                { label: "Docs", href: "/docs" },
+                { label: "Playground", href: "/playground" },
+                { label: "API Keys", href: "/api-keys" },
+                { label: "Console", href: "/console" },
+              ].map((link) => (
+                <a
+                  key={link.label}
+                  href={resolveGyraRoute(link.href, routeBase)}
+                  className="inline-flex items-center gap-1 text-white underline decoration-[#303030] underline-offset-4 transition-colors hover:text-[#FF3D00] hover:decoration-[#FF3D00]"
+                >
+                  {link.label}
+                  <ArrowUpRight className="h-3 w-3" />
+                </a>
+              ))}
             </div>
           </div>
         </div>
 
-        {/* Code + Response Workbench */}
-        <div
-          {...pointer}
-          className="gyra-frame gyra-frame-interactive rounded-[6px] overflow-hidden bg-[#07090D]"
-        >
-          {/* Endpoint Selector & Language Switcher */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 px-5 py-3.5 bg-[#0E1117] border-b border-white/[0.08]">
-            <div className="flex flex-wrap items-center gap-1.5" role="tablist" aria-label="API Endpoints">
-              {API_EXAMPLES.map((example) => {
-                const active = example.id === activeExample.id;
+        {/* Pitch-Black API Console */}
+        <div className="mt-12 border border-[#1F1F1F] bg-black">
+          {/* Endpoint + Language Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#1F1F1F] bg-[#050505] px-4 py-3 sm:px-5">
+            <div role="tablist" aria-label="API Endpoints" className="flex flex-wrap gap-1.5">
+              {API_EXAMPLES.map((item) => {
+                const selected = item.id === activeExample.id;
                 return (
                   <button
-                    key={example.id}
+                    key={item.id}
                     type="button"
                     role="tab"
-                    aria-selected={active}
-                    onClick={() => setEndpointId(example.id)}
-                    className={`px-3 py-1.5 rounded-[4px] text-[12px] font-medium transition-colors ${
-                      active
-                        ? "bg-[#181D27] text-[#F5F7FA] border border-white/[0.14]"
-                        : "text-[#8B94A6] hover:text-[#F5F7FA] border border-transparent"
+                    aria-selected={selected}
+                    onClick={() => setEndpointId(item.id)}
+                    className={`font-mono-tech min-h-[34px] border px-3 text-[11px] tracking-[0.06em] uppercase transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#FF3D00] ${
+                      selected
+                        ? "border-[#FF3D00] bg-[#FF3D00] font-medium text-white"
+                        : "border-[#242424] bg-black text-[#8A8A8A] hover:border-[#444] hover:text-white"
                     }`}
                   >
-                    {example.label}
+                    {item.label}
                   </button>
                 );
               })}
             </div>
 
-            <div className="flex items-center gap-2">
-              <div
-                className="inline-flex bg-[#050608] border border-white/[0.1] rounded-[4px] p-0.5"
-                role="group"
-                aria-label="Code language"
-              >
-                {LANGUAGES.map((lang) => (
+            <div className="flex items-center gap-2.5">
+              <div role="group" aria-label="Code language" className="inline-flex border border-[#242424]">
+                {LANGUAGES.map((lang, idx) => (
                   <button
                     key={lang.id}
                     type="button"
                     aria-pressed={language === lang.id}
                     onClick={() => setLanguage(lang.id)}
-                    className={`px-2.5 py-1 rounded-[3px] font-mono text-[11px] transition-colors ${
+                    className={`font-mono-tech min-h-[32px] px-3 text-[11px] uppercase transition-colors ${
+                      idx > 0 ? "border-l border-[#242424]" : ""
+                    } ${
                       language === lang.id
-                        ? "bg-[#181D27] text-[#67E8F9]"
-                        : "text-[#8B94A6] hover:text-[#F5F7FA]"
+                        ? "bg-white font-medium text-black"
+                        : "bg-black text-[#8A8A8A] hover:text-white"
                     }`}
                   >
                     {lang.label}
@@ -152,16 +126,16 @@ export function DeveloperQuickstart({ routeBase = "" }: DeveloperQuickstartProps
               <button
                 type="button"
                 onClick={handleCopy}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] border border-white/[0.12] bg-[#0B0D11] font-mono text-[11px] text-[#C5CBD6] hover:text-[#F5F7FA] transition-colors"
+                className="font-mono-tech inline-flex min-h-[32px] items-center gap-1.5 border border-[#262626] bg-black px-3 text-[11px] tracking-[0.06em] text-[#D4D4D4] uppercase hover:border-white hover:text-white"
               >
                 {copied ? (
                   <>
-                    <Check className="w-3.5 h-3.5 text-[#5EEAD4]" />
+                    <Check className="h-3 w-3 text-[#FF3D00]" />
                     Copied
                   </>
                 ) : (
                   <>
-                    <Copy className="w-3.5 h-3.5" />
+                    <Copy className="h-3 w-3" />
                     Copy
                   </>
                 )}
@@ -169,48 +143,47 @@ export function DeveloperQuickstart({ routeBase = "" }: DeveloperQuickstartProps
             </div>
           </div>
 
-          {/* Endpoint Path Banner */}
-          <div className="px-5 py-2.5 bg-[#090B0F] border-b border-white/[0.06] flex flex-wrap items-center justify-between gap-2 font-mono text-[11px]">
+          {/* Endpoint Contract Strip */}
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#1A1A1A] bg-black px-5 py-3 font-mono-tech text-[12px]">
             <div className="flex items-center gap-2.5">
-              <span className="text-[#67E8F9] font-medium">{activeExample.method}</span>
-              <span className="text-[#F5F7FA]">{activeExample.endpoint}</span>
+              <span className="bg-[#FF3D00] px-2 py-0.5 text-[10px] font-medium text-white">
+                {activeExample.method}
+              </span>
+              <span className="text-white">{activeExample.endpoint}</span>
             </div>
-            <span className="text-[#667085]">{activeExample.authNote}</span>
+            <span className="text-[11px] text-[#737373]">{activeExample.authNote}</span>
           </div>
 
-          {/* Request & Response Split */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-white/[0.08]">
-            <div className="lg:col-span-7 bg-[#050608] p-5">
-              <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.12em] text-[#667085] mb-3">
-                <Terminal className="w-3.5 h-3.5" aria-hidden="true" />
+          {/* Split Code + Response */}
+          <div className="grid grid-cols-1 divide-y divide-[#1F1F1F] lg:grid-cols-12 lg:divide-x lg:divide-y-0">
+            <div className="bg-[#030303] p-5 sm:p-6 lg:col-span-7">
+              <p className="font-mono-tech mb-3 text-[10px] tracking-[0.12em] text-[#737373] uppercase">
                 Request ({language})
-              </div>
-              <pre className="text-[12px] sm:text-[13px] font-mono text-[#DCE2EC] leading-[1.65] overflow-x-auto gyra-scroll">
+              </p>
+              <pre className="overflow-x-auto font-mono-tech text-[12px] leading-[1.7] text-[#E5E5E5]">
                 <code>{activeCode}</code>
               </pre>
             </div>
 
-            <div className="lg:col-span-5 bg-[#080A0E] p-5 flex flex-col justify-between">
+            <div className="flex flex-col justify-between bg-black p-5 sm:p-6 lg:col-span-5">
               <div>
-                <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.12em] text-[#667085] mb-3">
-                  <span>Response Payload</span>
-                  <span className="text-[#5EEAD4]">200 OK · JSON</span>
+                <div className="mb-3 flex items-center justify-between font-mono-tech text-[10px] tracking-[0.12em] uppercase">
+                  <span className="text-[#737373]">Response Payload</span>
+                  <span className="text-[#FF3D00]">200 OK · JSON</span>
                 </div>
-                <pre className="text-[12px] font-mono text-[#A0A8B8] leading-[1.65] overflow-x-auto gyra-scroll">
+                <pre className="overflow-x-auto border border-[#1A1A1A] bg-[#040404] p-4 font-mono-tech text-[12px] leading-[1.65] text-[#CCCCCC]">
                   <code>{activeExample.sampleResponse}</code>
                 </pre>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-white/[0.08] flex items-center justify-between">
-                <span className="font-mono text-[11px] text-[#667085]">
-                  Test live requests in browser
-                </span>
+              <div className="mt-5 flex items-center justify-between border-t border-[#1A1A1A] pt-4 font-mono-tech text-[11px]">
+                <span className="text-[#737373] uppercase">Test live in browser</span>
                 <a
                   href={resolveGyraRoute("/playground", routeBase)}
-                  className="inline-flex items-center gap-1 font-mono text-[11px] text-[#F5F7FA] hover:text-[#67E8F9] transition-colors"
+                  className="inline-flex items-center gap-1 text-white uppercase hover:text-[#FF3D00]"
                 >
                   Open Playground
-                  <ArrowUpRight className="w-3.5 h-3.5" aria-hidden="true" />
+                  <ArrowUpRight className="h-3.5 w-3.5" />
                 </a>
               </div>
             </div>

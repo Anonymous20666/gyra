@@ -1,9 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import type React from "react";
 import { ArrowUpRight, MoveHorizontal } from "lucide-react";
-import { CORE_PRODUCTS } from "../../lib/gyraCatalog";
 import {
   IMAGE_EDIT_SHOWCASE,
   IMAGE_PRESETS,
@@ -11,361 +9,338 @@ import {
   resolveGyraRoute,
   type ImageWorkbenchMode,
 } from "../../lib/landingSimulations";
-import { usePointerBorder } from "./usePointerBorder";
 
-interface ImageShowcaseProps {
+export interface ImageShowcaseProps {
   routeBase?: string;
 }
 
 export function ImageShowcase({ routeBase = "" }: ImageShowcaseProps) {
   const [mode, setMode] = useState<ImageWorkbenchMode>("edit");
-  const [split, setSplit] = useState<number>(52);
-  const [dragging, setDragging] = useState<boolean>(false);
-  const [presetId, setPresetId] = useState<string>(IMAGE_PRESETS[0].id);
-  const stageRef = useRef<HTMLDivElement | null>(null);
-  const pointer = usePointerBorder<HTMLDivElement>();
+  const [splitPct, setSplitPct] = useState(52);
+  const [selectedId, setSelectedId] = useState(IMAGE_PRESETS[0].id);
+  const [isDragging, setIsDragging] = useState(false);
+  const stageRef = useRef<HTMLDivElement>(null);
 
-  const product = CORE_PRODUCTS[1];
-  const activePreset = IMAGE_PRESETS.find((p) => p.id === presetId) ?? IMAGE_PRESETS[0];
+  const selectedSpecimen =
+    IMAGE_PRESETS.find((item) => item.id === selectedId) ?? IMAGE_PRESETS[0];
 
-  const updateSplitFromClientX = (clientX: number) => {
+  const updateFromClientX = (clientX: number) => {
     const stage = stageRef.current;
     if (!stage) return;
     const rect = stage.getBoundingClientRect();
     if (rect.width <= 0) return;
     const pct = ((clientX - rect.left) / rect.width) * 100;
-    setSplit(clampSplitPercent(pct));
-  };
-
-  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    e.currentTarget.setPointerCapture(e.pointerId);
-    setDragging(true);
-    updateSplitFromClientX(e.clientX);
-  };
-
-  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!dragging) return;
-    updateSplitFromClientX(e.clientX);
-  };
-
-  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    }
-    setDragging(false);
+    setSplitPct(clampSplitPercent(pct, 6, 94));
   };
 
   return (
-    <section
-      id="image"
-      aria-labelledby="image-heading"
-      className="bg-[#0B0D11] border-b border-white/[0.08] scroll-mt-16"
-    >
-      <div className="max-w-[1280px] mx-auto gyra-grid-rail px-5 sm:px-8 py-20 lg:py-24">
-        {/* Section Header */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-end mb-12">
+    <section id="image" className="border-b border-[#1F1F1F] bg-black py-24 lg:py-32">
+      <div className="mx-auto max-w-[1380px] px-5 sm:px-8">
+        {/* Header Row */}
+        <div className="grid grid-cols-1 items-end gap-6 lg:grid-cols-12">
           <div className="lg:col-span-7">
-            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-[#E5B975] mb-3">
-              02 / Gyra Image
+            <p className="font-mono-tech text-[12px] tracking-[0.14em] text-[#FF3D00] uppercase">
+              [ 02 · Gyra Image ]
             </p>
-            <h2
-              id="image-heading"
-              className="font-display font-semibold text-[30px] sm:text-[38px] lg:text-[42px] tracking-[-0.03em] leading-[1.08] text-[#F5F7FA] [text-wrap:balance]"
-            >
-              Visual synthesis and precision image-to-image editing.
+            <h2 className="font-display mt-3.5 text-[clamp(2.35rem,4.2vw,3.75rem)] font-bold leading-[0.98] tracking-[-0.02em] text-white uppercase [text-wrap:balance]">
+              Visual synthesis and surgical image-to-image editing.
             </h2>
           </div>
           <div className="lg:col-span-5 lg:pl-6">
-            <p className="text-[15px] text-[#A0A8B8] leading-[1.65] mb-4">
-              {product.summary}
+            <p className="text-[15px] leading-[1.65] text-[#9A9A9A]">
+              Generate high-resolution visual concepts from natural language or upload scenes,
+              interfaces, and photographs for geometry-locked edits powered by Gyra Pro Ultra.
             </p>
             <a
-              href={resolveGyraRoute(product.route, routeBase)}
-              className="inline-flex items-center gap-1.5 text-[14px] font-medium text-[#F5F7FA] hover:text-[#E5B975] transition-colors"
+              href={resolveGyraRoute("/dashboard", routeBase)}
+              className="font-mono-tech mt-4 inline-flex items-center gap-1.5 text-[12px] tracking-[0.1em] text-white uppercase underline decoration-[#FF3D00] underline-offset-4 transition-colors hover:text-[#FF3D00]"
             >
-              {product.ctaLabel}
-              <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
+              Create with Gyra Image
+              <ArrowUpRight className="h-3.5 w-3.5" />
             </a>
           </div>
         </div>
 
-        {/* Darkroom Workbench Frame */}
-        <div
-          {...pointer}
-          className="gyra-frame gyra-frame-interactive rounded-[6px] overflow-hidden bg-[#07090D]"
-        >
+        {/* Pitch-Black Optical Darkroom */}
+        <div className="mt-12 border border-[#1F1F1F] bg-black">
           {/* Mode Bar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-3.5 bg-[#0E1117] border-b border-white/[0.08]">
-            <div className="inline-flex items-center gap-1.5" role="tablist" aria-label="Gyra Image modes">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#1F1F1F] bg-[#050505] px-4 py-3 sm:px-5">
+            <div role="tablist" aria-label="Gyra Image modes" className="flex flex-wrap gap-1.5">
               <button
                 type="button"
                 role="tab"
-                id="image-tab-edit"
                 aria-selected={mode === "edit"}
-                aria-controls="image-panel-edit"
                 onClick={() => setMode("edit")}
-                className={`px-3.5 py-1.5 rounded-[4px] text-[12px] font-medium transition-colors ${
+                className={`font-mono-tech min-h-[34px] border px-3.5 text-[11px] tracking-[0.08em] uppercase transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#FF3D00] ${
                   mode === "edit"
-                    ? "bg-[#181D27] text-[#F5F7FA] border border-white/[0.14]"
-                    : "text-[#8B94A6] hover:text-[#F5F7FA] border border-transparent"
+                    ? "border-[#FF3D00] bg-[#FF3D00] font-medium text-white"
+                    : "border-[#242424] bg-black text-[#8A8A8A] hover:border-[#444] hover:text-white"
                 }`}
               >
-                Image-to-Image Edit · Pro Ultra
+                Image-to-Image · Pro Ultra
               </button>
               <button
                 type="button"
                 role="tab"
-                id="image-tab-generate"
                 aria-selected={mode === "generate"}
-                aria-controls="image-panel-generate"
                 onClick={() => setMode("generate")}
-                className={`px-3.5 py-1.5 rounded-[4px] text-[12px] font-medium transition-colors ${
+                className={`font-mono-tech min-h-[34px] border px-3.5 text-[11px] tracking-[0.08em] uppercase transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#FF3D00] ${
                   mode === "generate"
-                    ? "bg-[#181D27] text-[#F5F7FA] border border-white/[0.14]"
-                    : "text-[#8B94A6] hover:text-[#F5F7FA] border border-transparent"
+                    ? "border-[#FF3D00] bg-[#FF3D00] font-medium text-white"
+                    : "border-[#242424] bg-black text-[#8A8A8A] hover:border-[#444] hover:text-white"
                 }`}
               >
                 Text-to-Image · Flux
               </button>
             </div>
 
-            <div className="font-mono text-[11px] text-[#8B94A6]">
+            <span className="font-mono-tech text-[11px] tracking-[0.06em] text-[#808080] uppercase">
               {mode === "edit"
                 ? `${IMAGE_EDIT_SHOWCASE.modelLabel} · ${IMAGE_EDIT_SHOWCASE.resolution}`
-                : `${activePreset.modelLabel} · ${activePreset.resolution}`}
-            </div>
+                : `${selectedSpecimen.modelLabel} · ${selectedSpecimen.resolution}`}
+            </span>
           </div>
 
-          {/* EDIT MODE: Pixel-Aligned Before / After Comparison Scrubber */}
-          {mode === "edit" && (
+          {mode === "edit" ? (
             <div
-              id="image-panel-edit"
               role="tabpanel"
-              aria-labelledby="image-tab-edit"
-              className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-white/[0.08]"
+              aria-label="Image-to-Image Edit · Pro Ultra"
+              className="grid grid-cols-1 divide-y divide-[#1F1F1F] lg:grid-cols-12 lg:divide-x lg:divide-y-0"
             >
-              <div className="lg:col-span-8 p-5 sm:p-6 bg-[#07090D]">
+              {/* Interactive Pixel-Registered Comparison Stage */}
+              <div className="bg-black p-5 sm:p-6 lg:col-span-8">
                 <div
                   ref={stageRef}
-                  data-testid="image-compare-stage"
-                  onPointerDown={handlePointerDown}
-                  onPointerMove={handlePointerMove}
-                  onPointerUp={handlePointerUp}
-                  onPointerCancel={handlePointerUp}
-                  className="relative aspect-[4/3] w-full bg-[#050608] border border-white/[0.08] rounded-[4px] overflow-hidden select-none touch-none cursor-ew-resize"
+                  onPointerDown={(event) => {
+                    event.currentTarget.setPointerCapture(event.pointerId);
+                    setIsDragging(true);
+                    updateFromClientX(event.clientX);
+                  }}
+                  onPointerMove={(event) => {
+                    if (!isDragging) return;
+                    updateFromClientX(event.clientX);
+                  }}
+                  onPointerUp={() => setIsDragging(false)}
+                  onPointerCancel={() => setIsDragging(false)}
+                  className="relative aspect-[4/3] w-full cursor-ew-resize select-none overflow-hidden border border-[#242424] bg-black touch-none"
                 >
-                  {/* Edited After Layer */}
                   <img
                     src={IMAGE_EDIT_SHOWCASE.afterSrc}
                     alt={IMAGE_EDIT_SHOWCASE.afterLabel}
                     draggable={false}
-                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                    className="h-full w-full object-cover"
                   />
 
-                  {/* Original Before Layer clipped cleanly */}
                   <div
                     className="absolute inset-0 overflow-hidden"
-                    style={{ clipPath: `inset(0 ${100 - split}% 0 0)` }}
+                    style={{ clipPath: `inset(0 ${100 - splitPct}% 0 0)` }}
                   >
                     <img
                       src={IMAGE_EDIT_SHOWCASE.beforeSrc}
                       alt={IMAGE_EDIT_SHOWCASE.beforeLabel}
                       draggable={false}
-                      className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                      className="h-full w-full object-cover"
                     />
                   </div>
 
-                  {/* Razor Split Handle */}
+                  {/* Razor Signal Vermilion Split Hairline + Square Hardware Handle */}
                   <div
-                    className="absolute top-0 bottom-0 w-px bg-[#F5F7FA] pointer-events-none"
-                    style={{ left: `${split}%` }}
+                    className="pointer-events-none absolute inset-y-0 z-10 w-[2px] bg-[#FF3D00]"
+                    style={{ left: `${splitPct}%` }}
+                    aria-hidden="true"
                   >
-                    <div className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-[4px] bg-[#050608] border border-[#F5F7FA] flex items-center justify-center text-[#F5F7FA]">
-                      <MoveHorizontal className="w-3.5 h-3.5" aria-hidden="true" />
+                    <div className="absolute left-1/2 top-1/2 flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center border border-[#FF3D00] bg-black text-white">
+                      <MoveHorizontal className="h-4 w-4" />
                     </div>
                   </div>
 
-                  {/* Corner Photographic Plates */}
-                  <div className="absolute top-3 left-3 bg-[#050608]/92 border border-white/[0.12] px-2.5 py-1 rounded-[3px] font-mono text-[10px] uppercase tracking-[0.08em] text-[#D0D5DD] pointer-events-none">
+                  <div className="font-mono-tech pointer-events-none absolute left-3 top-3 border border-[#303030] bg-black/90 px-2.5 py-1 text-[10px] tracking-[0.08em] text-[#D4D4D4] uppercase">
                     {IMAGE_EDIT_SHOWCASE.beforeLabel}
                   </div>
-                  <div className="absolute top-3 right-3 bg-[#050608]/92 border border-[#E5B975]/40 px-2.5 py-1 rounded-[3px] font-mono text-[10px] uppercase tracking-[0.08em] text-[#E5B975] pointer-events-none">
+                  <div className="font-mono-tech pointer-events-none absolute right-3 top-3 bg-[#FF3D00] px-2.5 py-1 text-[10px] font-medium tracking-[0.08em] text-white uppercase">
                     {IMAGE_EDIT_SHOWCASE.afterLabel}
                   </div>
                 </div>
 
-                {/* Accessible Slider + Snap Positions */}
+                {/* Accessible Range Control & Sharp Snap Buttons */}
                 <div className="mt-4 flex flex-wrap items-center gap-4">
                   <label
-                    htmlFor="gyra-image-scrubber"
-                    className="font-mono text-[11px] uppercase tracking-[0.1em] text-[#8B94A6] shrink-0"
+                    htmlFor="gyra-compare-slider"
+                    className="font-mono-tech text-[11px] tracking-[0.08em] text-[#808080] uppercase"
                   >
-                    Comparison ({split}%)
+                    Split ({Math.round(splitPct)}%)
                   </label>
                   <input
-                    id="gyra-image-scrubber"
+                    id="gyra-compare-slider"
                     type="range"
-                    min={0}
-                    max={100}
-                    value={split}
-                    onChange={(e) => setSplit(clampSplitPercent(Number(e.target.value)))}
+                    min={6}
+                    max={94}
+                    value={Math.round(splitPct)}
+                    onChange={(event) =>
+                      setSplitPct(clampSplitPercent(Number(event.target.value), 6, 94))
+                    }
                     aria-label="Before and after image comparison slider"
-                    className="flex-1 min-w-[160px] accent-[#E5B975] cursor-pointer"
+                    className="gyra-slider min-w-[140px] flex-1 cursor-pointer"
                   />
-                  <div className="inline-flex border border-white/[0.1] rounded-[4px] overflow-hidden bg-[#0B0D11]">
+                  <div className="inline-flex border border-[#242424]">
                     {[
-                      { label: "After", val: 0 },
-                      { label: "50 / 50", val: 50 },
-                      { label: "Original", val: 100 },
-                    ].map((snap) => (
+                      { label: "After", value: 12 },
+                      { label: "50 / 50", value: 50 },
+                      { label: "Original", value: 88 },
+                    ].map((preset, idx) => (
                       <button
-                        key={snap.label}
+                        key={preset.label}
                         type="button"
-                        onClick={() => setSplit(snap.val)}
-                        className={`px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.06em] transition-colors ${
-                          split === snap.val
-                            ? "bg-[#181D27] text-[#E5B975]"
-                            : "text-[#8B94A6] hover:text-[#F5F7FA]"
+                        onClick={() => setSplitPct(preset.value)}
+                        className={`font-mono-tech px-3 py-1.5 text-[10px] tracking-[0.08em] uppercase transition-colors ${
+                          idx > 0 ? "border-l border-[#242424]" : ""
+                        } ${
+                          Math.abs(splitPct - preset.value) < 6
+                            ? "bg-white font-medium text-black"
+                            : "bg-black text-[#8A8A8A] hover:text-white"
                         }`}
                       >
-                        {snap.label}
+                        {preset.label}
                       </button>
                     ))}
                   </div>
                 </div>
               </div>
 
-              {/* Right Inspection Panel */}
-              <div className="lg:col-span-4 p-5 sm:p-6 bg-[#0A0C10] flex flex-col justify-between">
+              {/* Right 4 cols: Edit Specification Ledger */}
+              <div className="flex flex-col justify-between bg-black p-5 sm:p-6 lg:col-span-4">
                 <div>
-                  <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#E5B975] mb-3">
+                  <p className="font-mono-tech text-[10px] tracking-[0.12em] text-[#FF3D00] uppercase">
                     Edit Instruction
                   </p>
-                  <p className="text-[14px] text-[#E5E9F0] leading-[1.65] bg-[#101319] border border-white/[0.08] rounded-[4px] p-4 mb-6">
-                    &ldquo;{IMAGE_EDIT_SHOWCASE.prompt}&rdquo;
+                  <p className="mt-2.5 text-[15px] leading-[1.65] text-white">
+                    “{IMAGE_EDIT_SHOWCASE.prompt}”
                   </p>
 
-                  <div className="border-t border-white/[0.08] divide-y divide-white/[0.08]">
-                    <div className="py-3 flex items-center justify-between text-[12px]">
-                      <span className="font-mono text-[#667085] uppercase tracking-[0.08em]">Engine</span>
-                      <span className="font-mono text-[#E5E9F0]">Gyra Pro Ultra</span>
+                  <dl className="mt-7 divide-y divide-[#1A1A1A] border-y border-[#1A1A1A] text-[13px]">
+                    <div className="flex items-center justify-between py-3">
+                      <dt className="text-[#808080]">Engine</dt>
+                      <dd className="font-mono-tech text-white">Gyra Pro Ultra</dd>
                     </div>
-                    <div className="py-3 flex items-center justify-between text-[12px]">
-                      <span className="font-mono text-[#667085] uppercase tracking-[0.08em]">Preservation</span>
-                      <span className="font-mono text-[#E5E9F0]">Geometry & Layout Locked</span>
+                    <div className="flex items-center justify-between py-3">
+                      <dt className="text-[#808080]">Preservation</dt>
+                      <dd className="font-mono-tech text-[#D4D4D4]">Geometry Locked</dd>
                     </div>
-                    <div className="py-3 flex items-center justify-between text-[12px]">
-                      <span className="font-mono text-[#667085] uppercase tracking-[0.08em]">Use Cases</span>
-                      <span className="font-mono text-[#E5E9F0]">UI Edits · Lighting · Scenes</span>
+                    <div className="flex items-center justify-between py-3">
+                      <dt className="text-[#808080]">Workflows</dt>
+                      <dd className="font-mono-tech text-[#D4D4D4]">UI · Lighting · Scenes</dd>
                     </div>
-                  </div>
+                  </dl>
                 </div>
 
-                <div className="mt-6 pt-5 border-t border-white/[0.08]">
-                  <p className="font-mono text-[11px] text-[#667085] leading-[1.55] mb-4">
-                    {product.availabilityNote}
+                <div className="mt-8 border-t border-[#1A1A1A] pt-5">
+                  <p className="font-mono-tech text-[11px] leading-[1.55] text-[#737373] uppercase">
+                    Available inside Gyra Chat for SuperGyra · Dedicated Studio expanding
                   </p>
                   <a
                     href={resolveGyraRoute("/dashboard", routeBase)}
-                    className="w-full inline-flex items-center justify-center gap-2 bg-[#F1F5F9] text-[#050608] hover:bg-white py-2.5 px-4 rounded-[4px] text-[13px] font-medium transition-colors"
+                    className="font-mono-tech mt-4 inline-flex min-h-[44px] w-full items-center justify-center gap-2 bg-white px-4 text-[12px] font-medium tracking-[0.08em] text-black uppercase transition-colors hover:bg-[#E5E5E5]"
                   >
                     Try Image Editing in Gyra
-                    <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
+                    <ArrowUpRight className="h-3.5 w-3.5" />
                   </a>
                 </div>
               </div>
             </div>
-          )}
-
-          {/* GENERATE MODE: 4-Specimen Curated Darkroom */}
-          {mode === "generate" && (
+          ) : (
             <div
-              id="image-panel-generate"
               role="tabpanel"
-              aria-labelledby="image-tab-generate"
-              className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-white/[0.08]"
+              aria-label="Text-to-Image · Flux"
+              className="grid grid-cols-1 divide-y divide-[#1F1F1F] lg:grid-cols-12 lg:divide-x lg:divide-y-0"
             >
-              <div className="lg:col-span-7 p-5 sm:p-6 bg-[#07090D]">
-                <div className="relative aspect-square max-h-[500px] mx-auto bg-[#050608] border border-white/[0.08] rounded-[4px] overflow-hidden">
+              <div className="bg-black p-5 sm:p-6 lg:col-span-8">
+                <div className="relative aspect-[4/3] w-full overflow-hidden border border-[#242424] bg-black">
                   <img
-                    src={activePreset.imageSrc}
-                    alt={activePreset.title}
-                    className="w-full h-full object-cover"
+                    src={selectedSpecimen.imageSrc}
+                    alt={`${selectedSpecimen.category}: ${selectedSpecimen.title}`}
+                    referrerPolicy="no-referrer"
+                    className="h-full w-full object-cover"
                   />
-                  <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between bg-[#050608]/92 border border-white/[0.1] px-3 py-1.5 rounded-[3px] font-mono text-[11px] text-[#D0D5DD]">
-                    <span>{activePreset.title}</span>
-                    <span className="text-[#E5B975]">{activePreset.resolution}</span>
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/45 to-transparent p-5">
+                    <p className="font-mono-tech text-[10px] tracking-[0.12em] text-[#FF3D00] uppercase">
+                      {selectedSpecimen.category} · {selectedSpecimen.resolution}
+                    </p>
+                    <p className="font-display mt-1 text-[22px] font-bold text-white uppercase">
+                      {selectedSpecimen.title}
+                    </p>
                   </div>
                 </div>
               </div>
 
-              <div className="lg:col-span-5 p-5 sm:p-6 bg-[#0A0C10] flex flex-col justify-between">
+              <div className="flex flex-col justify-between bg-black p-5 sm:p-6 lg:col-span-4">
                 <div>
-                  <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-[#E5B975] mb-3">
-                    Curated Output Specimens
+                  <p className="font-mono-tech text-[10px] tracking-[0.12em] text-[#737373] uppercase">
+                    Select Specimen
                   </p>
-                  <div className="grid grid-cols-2 gap-2.5 mb-6">
-                    {IMAGE_PRESETS.map((preset) => {
-                      const active = preset.id === activePreset.id;
+
+                  <div className="mt-3 grid grid-cols-2 gap-2.5">
+                    {IMAGE_PRESETS.map((item) => {
+                      const active = item.id === selectedSpecimen.id;
                       return (
                         <button
-                          key={preset.id}
+                          key={item.id}
                           type="button"
-                          onClick={() => setPresetId(preset.id)}
+                          onClick={() => setSelectedId(item.id)}
                           aria-pressed={active}
-                          className={`group text-left rounded-[4px] overflow-hidden border ${
+                          className={`group overflow-hidden border text-left transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#FF3D00] ${
                             active
-                              ? "border-[#E5B975] ring-1 ring-[#E5B975]/40 bg-[#141821]"
-                              : "border-white/[0.08] bg-[#0D1016] hover:border-white/[0.2]"
+                              ? "border-[#FF3D00] bg-[#0B0B0B]"
+                              : "border-[#222222] bg-black hover:border-[#444444]"
                           }`}
                         >
-                          <div className="aspect-[16/10] w-full overflow-hidden bg-[#050608]">
+                          <div className="aspect-[4/3] w-full overflow-hidden bg-[#050505]">
                             <img
-                              src={preset.imageSrc}
-                              alt={preset.title}
-                              className="w-full h-full object-cover"
+                              src={item.imageSrc}
+                              alt={item.title}
+                              referrerPolicy="no-referrer"
+                              className={`h-full w-full object-cover transition-transform duration-300 ${
+                                active ? "scale-[1.03]" : "opacity-75 group-hover:opacity-100"
+                              }`}
                             />
                           </div>
-                          <div className="px-2.5 py-2">
-                            <div className="flex items-center justify-between gap-1">
-                              <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-[#667085]">
-                                {preset.category}
-                              </p>
-                              {active && (
-                                <span className="font-mono text-[9px] uppercase tracking-[0.08em] text-[#E5B975]">
-                                  Selected
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-[12px] font-medium text-[#E5E9F0] truncate mt-0.5">
-                              {preset.title}
+                          <div className="flex items-center justify-between px-2.5 py-2">
+                            <p
+                              className={`font-mono-tech truncate text-[10px] uppercase ${
+                                active ? "text-white" : "text-[#808080]"
+                              }`}
+                            >
+                              {item.category}
                             </p>
+                            {active && (
+                              <span className="font-mono-tech text-[9px] font-medium text-[#FF3D00] uppercase">
+                                Active
+                              </span>
+                            )}
                           </div>
                         </button>
                       );
                     })}
                   </div>
 
-                  <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#667085] mb-1.5">
-                    Prompt Specification
-                  </p>
-                  <p className="text-[13px] text-[#C5CBD6] leading-[1.6] bg-[#101319] border border-white/[0.08] rounded-[4px] p-3.5">
-                    {activePreset.prompt}
-                  </p>
+                  <div className="mt-5 border border-[#1F1F1F] bg-[#050505] p-3.5">
+                    <p className="font-mono-tech text-[10px] tracking-[0.1em] text-[#737373] uppercase">
+                      Generation Prompt
+                    </p>
+                    <p className="mt-1.5 text-[13px] leading-[1.6] text-[#D4D4D4]">
+                      {selectedSpecimen.prompt}
+                    </p>
+                  </div>
                 </div>
 
-                <div className="mt-6 pt-5 border-t border-white/[0.08] flex items-center justify-between gap-3">
-                  <span className="font-mono text-[11px] text-[#667085]">
-                    {activePreset.modelLabel} · {activePreset.aspect}
-                  </span>
-                  <a
-                    href={resolveGyraRoute("/dashboard", routeBase)}
-                    className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[#F5F7FA] hover:text-[#E5B975] transition-colors"
-                  >
-                    Generate in Gyra
-                    <ArrowUpRight className="w-3.5 h-3.5" aria-hidden="true" />
-                  </a>
-                </div>
+                <a
+                  href={resolveGyraRoute("/dashboard", routeBase)}
+                  className="font-mono-tech mt-6 inline-flex min-h-[44px] w-full items-center justify-center gap-2 bg-[#FF3D00] px-4 text-[12px] font-medium tracking-[0.08em] text-white uppercase transition-colors hover:bg-[#FF551F]"
+                >
+                  Generate in Gyra
+                  <ArrowUpRight className="h-3.5 w-3.5" />
+                </a>
               </div>
             </div>
           )}

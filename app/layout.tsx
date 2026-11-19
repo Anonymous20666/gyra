@@ -1,8 +1,8 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono, Space_Grotesk } from "next/font/google";
+import { Barlow_Semi_Condensed, DM_Sans, JetBrains_Mono } from "next/font/google";
 
-const fontDisplay = Space_Grotesk({ subsets: ["latin"], weight: ["500", "600", "700"], variable: "--font-display" });
-const fontSans = Inter({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-sans" });
+const fontDisplay = Barlow_Semi_Condensed({ subsets: ["latin"], weight: ["600", "700"], variable: "--font-display" });
+const fontSans = DM_Sans({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-sans" });
 const fontMono = JetBrains_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-mono" });
 import "./globals.css";
 import { ThemeProvider } from "./components/ThemeProvider";
