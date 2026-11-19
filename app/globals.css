@@ -104,3 +104,85 @@ body {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(200%); }
 }
+/* ============================================================
+   Gyra Landing Architectural Tokens & Utilities
+   ============================================================ */
+@theme inline {
+  --font-display: var(--font-display), "Space Grotesk", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-sans: var(--font-sans), "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: var(--font-mono), "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+body {
+  font-family: var(--font-sans), "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.font-display {
+  font-family: var(--font-display), "Space Grotesk", -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.gyra-frame {
+  position: relative;
+  background-color: #0B0D11;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.gyra-frame-interactive {
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.gyra-frame-interactive::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: radial-gradient(
+    260px circle at var(--mx, -400px) var(--my, -400px),
+    rgba(255, 255, 255, 0.24),
+    transparent 65%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.gyra-frame-interactive:hover::after {
+  opacity: 1;
+}
+
+.gyra-grid-rail {
+  border-left: 1px solid rgba(255, 255, 255, 0.07);
+  border-right: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.gyra-grid-rail-light {
+  border-left: 1px solid rgba(10, 13, 18, 0.1);
+  border-right: 1px solid rgba(10, 13, 18, 0.1);
+}
+
+.gyra-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.gyra-scroll::-webkit-scrollbar-track {
+  background: #0B0D11;
+}
+
+.gyra-scroll::-webkit-scrollbar-thumb {
+  background: #232834;
+  border-radius: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gyra-frame-interactive::after {
+    display: none;
+  }
+}

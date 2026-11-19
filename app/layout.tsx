@@ -1,4 +1,9 @@
 import type { Metadata, Viewport } from "next";
+import { Inter, JetBrains_Mono, Space_Grotesk } from "next/font/google";
+
+const fontDisplay = Space_Grotesk({ subsets: ["latin"], weight: ["500", "600", "700"], variable: "--font-display" });
+const fontSans = Inter({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-sans" });
+const fontMono = JetBrains_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-mono" });
 import "./globals.css";
 import { ThemeProvider } from "./components/ThemeProvider";
 
@@ -150,7 +155,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={`${fontDisplay.variable} ${fontSans.variable} ${fontMono.variable} scroll-smooth`}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
         <script
