@@ -262,6 +262,24 @@ input[type="range"].gyra-slider::-moz-range-thumb {
   border: 2px solid #000000;
   cursor: ew-resize;
 }
-@media (prefers-reduced-motion: reduce) {
-  .gyra-cursor, .gyra-scan-motion { animation: none !important; }
+/* Digital bus trace flow animation for Hero Intelligence Tree */
+@keyframes gyra-trace-flow {
+  0% { stroke-dashoffset: 180; }
+  100% { stroke-dashoffset: 0; }
 }
+.gyra-trace-pulse { stroke-dasharray: 28 152; animation: gyra-trace-flow 2.4s linear infinite; }
+.gyra-trace-pulse-delay-1 { stroke-dasharray: 28 152; animation: gyra-trace-flow 2.4s linear infinite; animation-delay: -0.6s; }
+.gyra-trace-pulse-delay-2 { stroke-dasharray: 28 152; animation: gyra-trace-flow 2.4s linear infinite; animation-delay: -1.2s; }
+.gyra-trace-pulse-delay-3 { stroke-dasharray: 28 152; animation: gyra-trace-flow 2.4s linear infinite; animation-delay: -1.8s; }
+@keyframes gyra-spine-drop {
+  0% { transform: translateY(-100%); opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { transform: translateY(320%); opacity: 0; }
+}
+.gyra-spine-pulse { animation: gyra-spine-drop 2.2s linear infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .gyra-cursor, .gyra-scan-motion, .gyra-trace-pulse, .gyra-trace-pulse-delay-1, .gyra-trace-pulse-delay-2, .gyra-trace-pulse-delay-3, .gyra-spine-pulse { animation: none !important; }
+}
+
