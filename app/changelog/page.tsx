@@ -418,12 +418,12 @@ export default function ChangelogPage() {
           <h3 className="text-xl font-bold text-white mb-2 relative z-10">Stay in the loop</h3>
           <p className="text-zinc-400 mb-6 relative z-10">Subscribe to our Telegram for immediate release announcements and early access.</p>
           <a 
-            href="https://t.me/GyraAiNews" 
+            href="https://t.me/GenviaNews" 
             target="_blank" 
             rel="noreferrer"
             className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-full text-sm font-semibold transition-all shadow-[0_0_20px_rgba(59,130,246,0.3)] relative z-10"
           >
-            Join @GyraAiNews <ArrowRight className="w-4 h-4" />
+            Join @GenviaNews <ArrowRight className="w-4 h-4" />
           </a>
         </div>
 

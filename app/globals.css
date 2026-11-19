@@ -104,3 +104,163 @@ body {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(200%); }
 }
+/* ============================================================
+   Gyra Landing Architectural Tokens & Utilities
+   ============================================================ */
+@theme inline {
+  --font-display: var(--font-display), "Space Grotesk", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-sans: var(--font-sans), "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: var(--font-mono), "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+body {
+  font-family: var(--font-sans), "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.font-display {
+  font-family: var(--font-display), "Space Grotesk", -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.gyra-frame {
+  position: relative;
+  background-color: #0B0D11;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.gyra-frame-interactive {
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.gyra-frame-interactive::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: radial-gradient(
+    260px circle at var(--mx, -400px) var(--my, -400px),
+    rgba(255, 255, 255, 0.24),
+    transparent 65%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.gyra-frame-interactive:hover::after {
+  opacity: 1;
+}
+
+.gyra-grid-rail {
+  border-left: 1px solid rgba(255, 255, 255, 0.07);
+  border-right: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.gyra-grid-rail-light {
+  border-left: 1px solid rgba(10, 13, 18, 0.1);
+  border-right: 1px solid rgba(10, 13, 18, 0.1);
+}
+
+.gyra-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.gyra-scroll::-webkit-scrollbar-track {
+  background: #0B0D11;
+}
+
+.gyra-scroll::-webkit-scrollbar-thumb {
+  background: #232834;
+  border-radius: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gyra-frame-interactive::after {
+    display: none;
+  }
+}
+
+/* GYRA_LANDING_V3_TOKENS */
+.font-display {
+  font-family: var(--font-display), "Barlow Semi Condensed", sans-serif;
+}
+.font-mono-tech {
+  font-family: var(--font-mono), "JetBrains Mono", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+.gyra-dither-sweep {
+  background-image:
+    radial-gradient(circle, rgba(91, 158, 194, 0.88) 1.15px, transparent 1.35px),
+    radial-gradient(circle, rgba(31, 91, 124, 0.50) 1px, transparent 1.25px);
+  background-size: 6px 6px, 6px 6px;
+  background-position: 0 0, 3px 3px;
+  mask-image: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.9) 35%, #000 72%, transparent 100%);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.9) 35%, #000 72%, transparent 100%);
+}
+.gyra-dither-backdrop {
+  background-image:
+    radial-gradient(rgba(255, 255, 255, 0.14) 1px, transparent 1px),
+    radial-gradient(rgba(91, 158, 194, 0.26) 1px, transparent 1px);
+  background-size: 16px 16px, 32px 32px;
+  background-position: 0 0, 8px 8px;
+}
+@keyframes gyra-cursor-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+.gyra-cursor {
+  display: inline-block;
+  width: 7px;
+  height: 13px;
+  background-color: #5B9EC2;
+  vertical-align: -2px;
+  animation: gyra-cursor-blink 1.05s steps(1, end) infinite;
+}
+@keyframes gyra-dither-scan {
+  0% { transform: translateX(-110%); opacity: 0.9; }
+  70% { opacity: 0.95; }
+  100% { transform: translateX(130%); opacity: 0; }
+}
+.gyra-scan-motion {
+  animation: gyra-dither-scan 2.8s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+input[type="range"].gyra-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+}
+input[type="range"].gyra-slider::-webkit-slider-runnable-track {
+  height: 2px;
+  background: #262626;
+}
+input[type="range"].gyra-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  background: #5B9EC2;
+  border: 2px solid #000000;
+  margin-top: -6px;
+  cursor: ew-resize;
+}
+input[type="range"].gyra-slider::-moz-range-track {
+  height: 2px;
+  background: #262626;
+}
+input[type="range"].gyra-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 0;
+  background: #5B9EC2;
+  border: 2px solid #000000;
+  cursor: ew-resize;
+}
+
+
