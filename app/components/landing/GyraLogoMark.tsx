@@ -67,17 +67,17 @@ export function GyraLogoMark({
                   y1={a.y}
                   x2={b.x}
                   y2={b.y}
-                  stroke="#5B9EC2"
-                  strokeOpacity="0.22"
-                  strokeWidth="0.6"
+                  stroke="#6BAAD0"
+                  strokeOpacity="0.34"
+                  strokeWidth="0.9"
                 />
                 <line
                   x1={a.x}
                   y1={a.y}
                   x2={b.x}
                   y2={b.y}
-                  stroke="#A8D4EB"
-                  strokeWidth="0.9"
+                  stroke="#B8DFF2"
+                  strokeWidth="1.35"
                   strokeLinecap="round"
                   pathLength={100}
                   className="gyra-logo-synapse"
@@ -96,8 +96,8 @@ export function GyraLogoMark({
               key={node.id}
               cx={node.x}
               cy={node.y}
-              r={node.r}
-              fill="#CBE8F7"
+              r={node.r * 1.15}
+              fill="#D4ECF9"
               className="gyra-logo-node"
               style={{
                 animationDelay: `${node.delaySec}s`,

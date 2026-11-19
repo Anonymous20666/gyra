@@ -418,7 +418,7 @@ function drawOrbIcon(ctx: CanvasRenderingContext2D, n: CanvasNode, col: string, 
     ctx.lineTo(11.4 * s, 5.2 * s);
     ctx.stroke();
 
-    // Inner attaching constellation nodes inside the G cavity
+    // Inner attaching constellation nodes inside the G cavity (clearer visibility)
     const innerPts: [number, number][] = [
       [-5.2 * s, -4.4 * s],
       [-1.0 * s, -5.8 * s],
@@ -427,8 +427,8 @@ function drawOrbIcon(ctx: CanvasRenderingContext2D, n: CanvasNode, col: string, 
       [2.6 * s, 4.8 * s],
     ];
     ctx.save();
-    ctx.globalAlpha = 0.52;
-    ctx.lineWidth = 0.85;
+    ctx.globalAlpha = 0.84;
+    ctx.lineWidth = 1.2;
     ctx.beginPath();
     ctx.moveTo(innerPts[0][0], innerPts[0][1]);
     ctx.lineTo(innerPts[1][0], innerPts[1][1]);
@@ -437,12 +437,14 @@ function drawOrbIcon(ctx: CanvasRenderingContext2D, n: CanvasNode, col: string, 
     ctx.lineTo(innerPts[4][0], innerPts[4][1]);
     ctx.moveTo(innerPts[0][0], innerPts[0][1]);
     ctx.lineTo(innerPts[2][0], innerPts[2][1]);
+    ctx.moveTo(innerPts[1][0], innerPts[1][1]);
+    ctx.lineTo(innerPts[3][0], innerPts[3][1]);
     ctx.stroke();
     ctx.restore();
 
     innerPts.forEach(([px, py]) => {
       ctx.beginPath();
-      ctx.arc(px, py, 1.25 * s, 0, Math.PI * 2);
+      ctx.arc(px, py, 1.65 * s, 0, Math.PI * 2);
       ctx.fill();
     });
   } else if (n.icon === "understand") {
@@ -536,10 +538,13 @@ function drawOrbIcon(ctx: CanvasRenderingContext2D, n: CanvasNode, col: string, 
     ctx.stroke();
   } else {
     ctx.beginPath();
-    ctx.moveTo(0, -3.2 * s);
-    ctx.lineTo(3.2 * s, 0);
-    ctx.lineTo(0, 3.2 * s);
-    ctx.lineTo(-3.2 * s, 0);
+    ctx.arc(0, 0, 5.2 * s, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, -2.8 * s);
+    ctx.lineTo(2.8 * s, 0);
+    ctx.lineTo(0, 2.8 * s);
+    ctx.lineTo(-2.8 * s, 0);
     ctx.closePath();
     ctx.fill();
   }
@@ -838,7 +843,7 @@ export function SynapticFlowHero({ routeBase = "" }: SynapticFlowHeroProps) {
         ports.push(portNode);
 
         if (!compact) {
-          const leafSpread = Math.min(76, stepX * 0.27);
+          const leafSpread = Math.min(82, stepX * 0.285);
           p.subEngines.forEach((se, li) => {
             const lx = px + (li - 1) * leafSpread;
             const ly = py + 92 + (li === 1 ? 14 : 0);
@@ -851,7 +856,7 @@ export function SynapticFlowHero({ routeBase = "" }: SynapticFlowHeroProps) {
               icon: "leaf",
               x: lx,
               y: ly,
-              r: 10.5,
+              r: 12.8,
               branch: p.id,
               leafName: se.name,
               glow: 0,
@@ -870,12 +875,12 @@ export function SynapticFlowHero({ routeBase = "" }: SynapticFlowHeroProps) {
       eng.nodes = nodes;
       eng.edges = edges;
       eng.ports = ports;
-      eng.motes = Array.from({ length: Math.min(18, edges.length) }, (_, i) => ({
+      eng.motes = Array.from({ length: Math.min(22, edges.length) }, (_, i) => ({
         edgeIdx: (i * 5) % Math.max(1, edges.length),
         u: (i * 0.27) % 1,
-        speed: 0.042 + (i % 4) * 0.012,
-        r: 0.9 + (i % 2) * 0.25,
-        alpha: 0.14 + (i % 3) * 0.05,
+        speed: 0.046 + (i % 4) * 0.012,
+        r: 1.2 + (i % 2) * 0.35,
+        alpha: 0.26 + (i % 3) * 0.07,
       }));
     };
 
@@ -1316,35 +1321,50 @@ export function SynapticFlowHero({ routeBase = "" }: SynapticFlowHeroProps) {
       const isFailed = phase === "failed";
       const isDone = phase === "done";
 
-      // 1. Structural & Downward Tether Edges
+      // 1. Structural & Downward Tether Edges (higher visibility for tiny sub-branches)
       for (const e of eng.edges) {
         const isBranch = branch && e.branch === branch;
         const isShared =
           branch && (e.kind === "trunk" || e.kind === "core-stage" || e.kind === "stage-chain");
         const isLit = Boolean(isBranch || isShared);
+        const isTinyBranch = e.kind === "product-leaf" || e.kind === "generator-port";
+
+        // Subtle steel-blue under-sheath so tiny branches read crisply against #000000
+        if (isTinyBranch || isLit) {
+          traceEdgePath(ctx, e);
+          ctx.strokeStyle = isLit
+            ? isFailed
+              ? "rgba(248, 113, 113, 0.16)"
+              : isDone
+                ? "rgba(75, 155, 130, 0.18)"
+                : "rgba(91, 158, 194, 0.20)"
+            : "rgba(91, 158, 194, 0.10)";
+          ctx.lineWidth = isLit ? 3.8 : 2.6;
+          ctx.stroke();
+        }
 
         traceEdgePath(ctx, e);
-        if (e.kind === "generator-port") {
+        if (e.kind === "generator-port" || e.kind === "product-leaf") {
           ctx.strokeStyle = isBranch
             ? isDone
-              ? "rgba(52, 211, 153, 0.72)"
+              ? "rgba(75, 155, 130, 0.88)"
               : isFailed
-                ? "rgba(248, 113, 113, 0.5)"
-                : "rgba(91, 158, 194, 0.62)"
+                ? "rgba(248, 113, 113, 0.72)"
+                : "rgba(135, 192, 224, 0.85)"
             : branch
-              ? "rgba(31, 91, 124, 0.14)"
-              : "rgba(91, 158, 194, 0.22)";
-          ctx.lineWidth = isBranch ? 1.75 : 1.0;
+              ? "rgba(91, 158, 194, 0.38)"
+              : "rgba(120, 176, 206, 0.45)";
+          ctx.lineWidth = isBranch ? 2.0 : 1.35;
         } else if (isLit) {
           ctx.strokeStyle = isFailed
-            ? "rgba(248, 113, 113, 0.52)"
+            ? "rgba(248, 113, 113, 0.68)"
             : isDone
-              ? "rgba(52, 211, 153, 0.58)"
-              : "rgba(91, 158, 194, 0.52)";
-          ctx.lineWidth = e.kind === "trunk" ? 2.1 : 1.5;
+              ? "rgba(75, 155, 130, 0.76)"
+              : "rgba(120, 176, 206, 0.74)";
+          ctx.lineWidth = e.kind === "trunk" ? 2.3 : 1.75;
         } else {
-          ctx.strokeStyle = branch ? "rgba(31, 91, 124, 0.14)" : "rgba(91, 158, 194, 0.24)";
-          ctx.lineWidth = e.kind === "trunk" ? 1.4 : 1.0;
+          ctx.strokeStyle = branch ? "rgba(91, 158, 194, 0.30)" : "rgba(120, 176, 206, 0.38)";
+          ctx.lineWidth = e.kind === "trunk" ? 1.6 : 1.25;
         }
         ctx.stroke();
       }
@@ -1359,7 +1379,7 @@ export function SynapticFlowHero({ routeBase = "" }: SynapticFlowHeroProps) {
         const edge = eng.edges[m.edgeIdx];
         if (!edge) continue;
         const pt = curvePoint(edge, m.u);
-        ctx.fillStyle = `rgba(120, 176, 206, ${branch ? m.alpha * 0.45 : m.alpha})`;
+        ctx.fillStyle = `rgba(142, 196, 224, ${branch ? m.alpha * 0.72 : m.alpha})`;
         ctx.beginPath();
         ctx.arc(pt.x, pt.y, m.r, 0, Math.PI * 2);
         ctx.fill();
@@ -1495,18 +1515,22 @@ export function SynapticFlowHero({ routeBase = "" }: SynapticFlowHeroProps) {
           : isDone && (isTargetBranch || stagePassed)
             ? "#071814"
             : isTargetBranch || isStageActive || isHover || n.id === "core"
-              ? "#091C2A"
-              : "#050A0F";
+              ? "#0B2132"
+              : n.tier === 4
+                ? "#081520"
+                : "#060D14";
         ctx.strokeStyle = isStageFail
           ? "#D97575"
           : isDone && (isTargetBranch || stagePassed)
             ? "#4B9B82"
             : isTargetBranch || isStageActive || isHover
-              ? "#8FBBD6"
+              ? "#9CC4DC"
               : n.id === "core"
-                ? "#5B9EC2"
-                : "#1F3B4D";
-        ctx.lineWidth = isTargetBranch || isStageActive || isHover || n.id === "core" ? 1.5 : 1.05;
+                ? "#6BAAD0"
+                : n.tier === 4
+                  ? "#3D7394"
+                  : "#2B526B";
+        ctx.lineWidth = isTargetBranch || isStageActive || isHover || n.id === "core" ? 1.7 : n.tier === 4 ? 1.35 : 1.2;
 
         ctx.beginPath();
         ctx.arc(n.x, n.y, rr, 0, Math.PI * 2);
@@ -1514,8 +1538,8 @@ export function SynapticFlowHero({ routeBase = "" }: SynapticFlowHeroProps) {
         ctx.stroke();
 
         // Subtle metallic top rim
-        ctx.strokeStyle = "rgba(195, 224, 240, 0.14)";
-        ctx.lineWidth = 0.9;
+        ctx.strokeStyle = "rgba(195, 224, 240, 0.22)";
+        ctx.lineWidth = 0.95;
         ctx.beginPath();
         ctx.arc(n.x, n.y, rr - 1.8, Math.PI * 1.18, Math.PI * 1.82);
         ctx.stroke();
@@ -1525,9 +1549,11 @@ export function SynapticFlowHero({ routeBase = "" }: SynapticFlowHeroProps) {
           : isDone && (isTargetBranch || stagePassed)
             ? "#8BC8B4"
             : isTargetBranch || isStageActive || isHover || n.id === "core"
-              ? "#E6F1F8"
-              : "#71A1BF";
-        drawOrbIcon(ctx, n, iconColor, n.tier === 4 ? 0.85 : compact ? 0.85 : 1.0);
+              ? "#EDF6FC"
+              : n.tier === 4
+                ? "#9CC4DC"
+                : "#7FAECF";
+        drawOrbIcon(ctx, n, iconColor, n.tier === 4 ? 0.96 : compact ? 0.85 : 1.0);
 
         // Crisp Floating Labels with subtle dark knockout halo so crossing fibers never obscure legibility
         const drawCrispLabel = (
@@ -1543,10 +1569,10 @@ export function SynapticFlowHero({ routeBase = "" }: SynapticFlowHeroProps) {
           ctx.lineJoin = "round";
           if (withMatteBacking) {
             const tw = ctx.measureText(text).width;
-            ctx.fillStyle = "rgba(1, 5, 9, 0.9)";
-            ctx.fillRect(lx - tw * 0.5 - 4, ly - 9, tw + 8, 12);
+            ctx.fillStyle = "rgba(2, 8, 14, 0.92)";
+            ctx.fillRect(lx - tw * 0.5 - 5, ly - 9.5, tw + 10, 13);
           }
-          ctx.strokeStyle = "rgba(0, 0, 0, 0.92)";
+          ctx.strokeStyle = "rgba(0, 0, 0, 0.94)";
           ctx.lineWidth = 4;
           ctx.strokeText(text, lx, ly);
           ctx.fillStyle = fill;
@@ -1579,7 +1605,7 @@ export function SynapticFlowHero({ routeBase = "" }: SynapticFlowHeroProps) {
               n.sub,
               n.x,
               n.y + rr + 29,
-              isTargetBranch ? "#9CC4DC" : "#6A8296",
+              isTargetBranch ? "#9CC4DC" : "#7E99AD",
               '500 8.5px "JetBrains Mono", monospace',
             );
           }
@@ -1587,9 +1613,9 @@ export function SynapticFlowHero({ routeBase = "" }: SynapticFlowHeroProps) {
           drawCrispLabel(
             n.label,
             n.x,
-            n.y + rr + 13,
-            isTargetBranch || isHover ? "#E2F2FC" : "#778FA3",
-            '500 9px "JetBrains Mono", monospace',
+            n.y + rr + 14,
+            isTargetBranch || isHover ? "#FFFFFF" : "#A6C5DA",
+            '500 9.5px "JetBrains Mono", monospace',
             true,
           );
         }
