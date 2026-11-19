@@ -59,7 +59,7 @@ export function EcosystemRoadmap({ routeBase = "" }: EcosystemRoadmapProps) {
                     href={resolveGyraRoute(item.route, routeBase)}
                     target={isExternal ? "_blank" : undefined}
                     rel={isExternal ? "noreferrer" : undefined}
-                    className="group relative flex flex-col justify-between border-b border-r border-[#1F1F1F] bg-black p-7 transition-colors duration-150 hover:bg-[#080808] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[#3B82F6]"
+                    className="group relative flex flex-col justify-between border-b border-r border-[#1F1F1F] bg-black p-7 transition-colors duration-150 hover:bg-[#080808] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[#5B9EC2]"
                   >
                     <div>
                       <div className="flex items-center justify-between gap-2 font-mono-tech text-[10px] tracking-[0.1em] uppercase">
@@ -67,7 +67,7 @@ export function EcosystemRoadmap({ routeBase = "" }: EcosystemRoadmapProps) {
                         <span
                           className={
                             item.availability === "preview"
-                              ? "border border-[#3B82F6]/60 px-2 py-0.5 text-[#3B82F6]"
+                              ? "border border-[#5B9EC2]/60 px-2 py-0.5 text-[#5B9EC2]"
                               : "text-[#A3A3A3]"
                           }
                         >
@@ -76,10 +76,10 @@ export function EcosystemRoadmap({ routeBase = "" }: EcosystemRoadmapProps) {
                       </div>
 
                       <div className="mt-5 flex items-center justify-between gap-2">
-                        <h3 className="font-display text-[22px] font-bold tracking-[-0.01em] text-white uppercase transition-colors group-hover:text-[#3B82F6]">
+                        <h3 className="font-display text-[22px] font-bold tracking-[-0.01em] text-white uppercase transition-colors group-hover:text-[#5B9EC2]">
                           {item.name}
                         </h3>
-                        <ArrowUpRight className="h-4 w-4 shrink-0 text-[#666666] transition-transform duration-150 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[#3B82F6]" />
+                        <ArrowUpRight className="h-4 w-4 shrink-0 text-[#666666] transition-transform duration-150 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[#5B9EC2]" />
                       </div>
 
                       <p className="mt-2.5 text-[14px] leading-[1.6] text-[#8E8E8E]">
@@ -98,7 +98,7 @@ export function EcosystemRoadmap({ routeBase = "" }: EcosystemRoadmapProps) {
               <span className="text-[#737373]">[ In Development · Roadmap ]</span>
               <a
                 href={resolveGyraRoute("/changelog", routeBase)}
-                className="inline-flex items-center gap-1 text-white underline decoration-[#303030] underline-offset-4 hover:text-[#3B82F6] hover:decoration-[#3B82F6]"
+                className="inline-flex items-center gap-1 text-white underline decoration-[#303030] underline-offset-4 hover:text-[#5B9EC2] hover:decoration-[#5B9EC2]"
               >
                 Shipped releases in Changelog
                 <ArrowUpRight className="h-3.5 w-3.5" />
@@ -110,7 +110,7 @@ export function EcosystemRoadmap({ routeBase = "" }: EcosystemRoadmapProps) {
                   key={item.id}
                   className="border-b border-r border-[#1F1F1F] bg-[#040404] p-5"
                 >
-                  <p className="font-mono-tech text-[10px] tracking-[0.12em] text-[#3B82F6] uppercase">
+                  <p className="font-mono-tech text-[10px] tracking-[0.12em] text-[#5B9EC2] uppercase">
                     {item.scope}
                   </p>
                   <h3 className="mt-2 text-[15px] font-semibold text-white">{item.name}</h3>
@@ -147,13 +147,13 @@ export function EcosystemRoadmap({ routeBase = "" }: EcosystemRoadmapProps) {
           <h2 className="font-display mt-6 text-[clamp(2.75rem,5.4vw,4.75rem)] font-bold leading-[0.94] tracking-[-0.02em] text-white uppercase">
             One intelligence
             <br />
-            <span className="text-[#3B82F6]">every medium</span>
+            <span className="text-[#5B9EC2]">every medium</span>
           </h2>
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <a
               href={resolveGyraRoute("/dashboard", routeBase)}
-              className="font-mono-tech inline-flex min-h-[46px] shrink-0 items-center justify-center bg-[#2563EB] px-7 text-[13px] font-medium tracking-[0.1em] text-white uppercase transition-colors hover:bg-[#3B82F6]"
+              className="font-mono-tech inline-flex min-h-[46px] shrink-0 items-center justify-center bg-[#1F5B7C] px-7 text-[13px] font-medium tracking-[0.1em] text-white uppercase transition-colors hover:bg-[#296E93]"
             >
               Start Building
             </a>
@@ -172,7 +172,7 @@ export function EcosystemRoadmap({ routeBase = "" }: EcosystemRoadmapProps) {
           >
             <span>POST https://gyra.ng/api/v1/chat</span>
             {copiedEndpoint ? (
-              <Check className="h-3.5 w-3.5 text-[#3B82F6]" />
+              <Check className="h-3.5 w-3.5 text-[#5B9EC2]" />
             ) : (
               <Copy className="h-3.5 w-3.5" />
             )}
@@ -205,7 +205,7 @@ export function EcosystemRoadmap({ routeBase = "" }: EcosystemRoadmapProps) {
               </p>
               <a
                 href={`mailto:${GYRA_COMPANY.emails.support}`}
-                className="font-mono-tech mt-3 inline-block text-[12px] text-[#A3A3A3] transition-colors hover:text-[#3B82F6]"
+                className="font-mono-tech mt-3 inline-block text-[12px] text-[#A3A3A3] transition-colors hover:text-[#5B9EC2]"
               >
                 {GYRA_COMPANY.emails.support}
               </a>

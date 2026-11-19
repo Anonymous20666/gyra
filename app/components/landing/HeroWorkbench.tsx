@@ -297,9 +297,9 @@ function getStatusBadgeStyle(status: ExecutionStatus): string {
     case "idle":
       return "border-[#2A2A2A] bg-black text-[#8E8E8E]";
     case "active":
-      return "border-[#3B82F6] bg-[#2563EB]/15 text-[#93C5FD]";
+      return "border-[#5B9EC2] bg-[#1F5B7C]/20 text-[#9CC4DC]";
     case "processing":
-      return "border-[#3B82F6] bg-[#2563EB]/20 text-white";
+      return "border-[#5B9EC2] bg-[#1F5B7C]/25 text-white";
     case "completed":
       return "border-[#10B981]/60 bg-[#10B981]/10 text-[#34D399]";
     case "failed":
@@ -484,7 +484,7 @@ export function HeroWorkbench({
       ? "#10B981"
       : status === "failed"
         ? "#EF4444"
-        : "#3B82F6";
+        : "#5B9EC2";
 
   const activeEvents = selectedBranch
     ? (simulateFailure ? selectedBranch.failureEvents : selectedBranch.successEvents).slice(
@@ -505,7 +505,7 @@ export function HeroWorkbench({
             ? "border-[#EF4444]/50"
             : status === "completed"
               ? "border-[#10B981]/45"
-              : "border-[#3B82F6]/50"
+              : "border-[#5B9EC2]/50"
         }`}
       >
         <div
@@ -517,7 +517,7 @@ export function HeroWorkbench({
           <div className={`p-5 ${compactMobile ? "" : "lg:col-span-6 lg:p-6"}`}>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2.5">
-                <span className="font-mono-tech text-[11px] tracking-[0.14em] text-[#3B82F6]">
+                <span className="font-mono-tech text-[11px] tracking-[0.14em] text-[#5B9EC2]">
                   {branch.index}
                 </span>
                 <h3 className="font-display text-[22px] font-bold leading-none text-white uppercase">
@@ -594,7 +594,7 @@ export function HeroWorkbench({
                     referrerPolicy="no-referrer"
                     className="h-full w-full object-cover"
                   />
-                  <span className="font-mono-tech absolute bottom-1.5 left-1.5 bg-[#2563EB] px-1.5 py-0.5 text-[9px] text-white uppercase">
+                  <span className="font-mono-tech absolute bottom-1.5 left-1.5 bg-[#1F5B7C] px-1.5 py-0.5 text-[9px] text-white uppercase">
                     Pro Ultra
                   </span>
                 </div>
@@ -615,7 +615,7 @@ export function HeroWorkbench({
                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/25" />
                 <div className="font-mono-tech absolute bottom-2 left-2.5 right-2.5 flex items-center justify-between text-[10px] text-[#E5E5E5]">
                   <span>LTX-VIDEO 13B · 720P · 24 FPS</span>
-                  <span className="text-[#60A5FA]">GYRA STUDIO</span>
+                  <span className="text-[#78B0CE]">GYRA STUDIO</span>
                 </div>
               </div>
             )}
@@ -627,12 +627,12 @@ export function HeroWorkbench({
                 className="font-mono-tech inline-flex items-center gap-1.5 text-[11px] tracking-[0.1em] text-[#A3A3A3] uppercase transition-colors hover:text-white"
               >
                 <span>Jump to {branch.sectionLabel}</span>
-                <ArrowDown className="h-3.5 w-3.5 text-[#3B82F6]" />
+                <ArrowDown className="h-3.5 w-3.5 text-[#5B9EC2]" />
               </a>
 
               <a
                 href={resolveGyraRoute(branch.appHref, routeBase)}
-                className="font-mono-tech inline-flex items-center gap-1.5 bg-[#2563EB] px-4 py-2 text-[11px] font-medium tracking-[0.1em] text-white uppercase transition-colors hover:bg-[#3B82F6]"
+                className="font-mono-tech inline-flex items-center gap-1.5 bg-[#1F5B7C] px-4 py-2 text-[11px] font-medium tracking-[0.1em] text-white uppercase transition-colors hover:bg-[#296E93]"
               >
                 <span>{branch.appLabel}</span>
                 <ArrowUpRight className="h-3.5 w-3.5" />
@@ -646,7 +646,7 @@ export function HeroWorkbench({
               {/* Console Header + Interactive Controls */}
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#1A1A1A] pb-3">
                 <div className="flex items-center gap-2">
-                  <Terminal className="h-3.5 w-3.5 text-[#3B82F6]" />
+                  <Terminal className="h-3.5 w-3.5 text-[#5B9EC2]" />
                   <span className="font-mono-tech text-[11px] font-medium tracking-[0.1em] text-white uppercase">
                     Execution Console
                   </span>
@@ -673,7 +673,7 @@ export function HeroWorkbench({
                     type="button"
                     onClick={replayTrace}
                     aria-label="Replay architecture trace"
-                    className="font-mono-tech inline-flex min-h-[28px] items-center gap-1 border border-[#262626] bg-[#070707] px-2.5 text-[10px] tracking-[0.08em] text-[#CCCCCC] uppercase transition-colors hover:border-[#3B82F6] hover:text-white"
+                    className="font-mono-tech inline-flex min-h-[28px] items-center gap-1 border border-[#262626] bg-[#070707] px-2.5 text-[10px] tracking-[0.08em] text-[#CCCCCC] uppercase transition-colors hover:border-[#5B9EC2] hover:text-white"
                   >
                     <RotateCcw className="h-3 w-3" />
                     <span>Replay</span>
@@ -713,7 +713,7 @@ export function HeroWorkbench({
                         isErrorRow
                           ? "border-[#EF4444]/60 bg-[#140707]"
                           : isLast && (status === "active" || status === "processing")
-                            ? "border-[#3B82F6] bg-[#050914]"
+                            ? "border-[#5B9EC2] bg-[#040D14]"
                             : "border-[#1D1D1D] bg-[#050505]"
                       }`}
                     >
@@ -724,7 +724,7 @@ export function HeroWorkbench({
                               ? "text-[#F87171]"
                               : isDoneRow
                                 ? "text-[#34D399]"
-                                : "text-[#60A5FA]"
+                                : "text-[#78B0CE]"
                           }`}
                         >
                           [{ev.tag}]
@@ -790,23 +790,23 @@ export function HeroWorkbench({
           <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
             <a
               href={resolveGyraRoute("/dashboard", routeBase)}
-              className="font-mono-tech inline-flex min-h-[42px] shrink-0 items-center justify-center whitespace-nowrap bg-[#2563EB] px-6 text-[12px] font-medium tracking-[0.1em] text-white uppercase transition-colors duration-150 hover:bg-[#3B82F6] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white"
+              className="font-mono-tech inline-flex min-h-[42px] shrink-0 items-center justify-center whitespace-nowrap bg-[#1F5B7C] px-6 text-[12px] font-medium tracking-[0.1em] text-white uppercase transition-colors duration-150 hover:bg-[#296E93] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white"
             >
               {isAuthenticated ? "Open Dashboard" : "Start with Gyra"}
             </a>
             <a
               href={resolveGyraRoute("/api", routeBase)}
-              className="font-mono-tech inline-flex min-h-[42px] shrink-0 items-center justify-center whitespace-nowrap border border-[#3A3A3A] bg-black px-6 text-[12px] font-medium tracking-[0.1em] text-white uppercase transition-colors duration-150 hover:border-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#3B82F6]"
+              className="font-mono-tech inline-flex min-h-[42px] shrink-0 items-center justify-center whitespace-nowrap border border-[#3A3A3A] bg-black px-6 text-[12px] font-medium tracking-[0.1em] text-white uppercase transition-colors duration-150 hover:border-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#5B9EC2]"
             >
               Explore API
             </a>
             <button
               type="button"
               onClick={copyQuickCurl}
-              className="font-mono-tech inline-flex min-h-[42px] items-center gap-2 border border-[#1F1F1F] bg-[#060606] px-4 text-[11px] tracking-[0.08em] text-[#8E8E8E] uppercase transition-colors hover:border-[#3A3A3A] hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#3B82F6]"
+              className="font-mono-tech inline-flex min-h-[42px] items-center gap-2 border border-[#1F1F1F] bg-[#060606] px-4 text-[11px] tracking-[0.08em] text-[#8E8E8E] uppercase transition-colors hover:border-[#3A3A3A] hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#5B9EC2]"
             >
               {copiedCmd ? (
-                <Check className="h-3.5 w-3.5 text-[#3B82F6]" />
+                <Check className="h-3.5 w-3.5 text-[#5B9EC2]" />
               ) : (
                 <Terminal className="h-3.5 w-3.5 text-[#7A7A7A]" />
               )}
@@ -858,7 +858,7 @@ export function HeroWorkbench({
             {/* Platform Top Bar */}
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#1A1A1A] bg-[#050505] px-4 py-2.5 sm:px-6">
               <div className="flex flex-wrap items-center gap-2.5">
-                <span className="h-2 w-2 bg-[#2563EB]" aria-hidden="true" />
+                <span className="h-2 w-2 bg-[#1F5B7C]" aria-hidden="true" />
                 <span className="font-display text-[17px] font-bold tracking-[0.08em] text-white uppercase">
                   GYRA
                 </span>
@@ -902,7 +902,7 @@ export function HeroWorkbench({
                       : status === "completed"
                         ? "border-[#10B981]/50"
                         : status === "active" || status === "processing"
-                          ? "border-[#3B82F6]"
+                          ? "border-[#5B9EC2]"
                           : "border-[#2D2D2D]"
                   }`}
                 >
@@ -913,19 +913,19 @@ export function HeroWorkbench({
                         ? "bg-[#EF4444]"
                         : status === "completed"
                           ? "bg-[#10B981]"
-                          : "bg-[#2563EB]"
+                          : "bg-[#1F5B7C]"
                     }`}
                     aria-hidden="true"
                   />
 
                   {/* Corner hardware ticks */}
-                  <span className="pointer-events-none absolute -bottom-px -left-px h-2 w-2 border-b border-l border-[#3B82F6]" />
-                  <span className="pointer-events-none absolute -bottom-px -right-px h-2 w-2 border-b border-r border-[#3B82F6]" />
+                  <span className="pointer-events-none absolute -bottom-px -left-px h-2 w-2 border-b border-l border-[#5B9EC2]" />
+                  <span className="pointer-events-none absolute -bottom-px -right-px h-2 w-2 border-b border-r border-[#5B9EC2]" />
 
                   {/* Level 3 Header: GYRA INTELLIGENCE CORE */}
                   <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#191919] px-4 py-2.5 sm:px-5">
                     <div className="flex items-center gap-2.5">
-                      <span className="flex h-7 w-7 items-center justify-center border border-[#3B82F6]/45 bg-[#2563EB]/12 text-[#60A5FA]">
+                      <span className="flex h-7 w-7 items-center justify-center border border-[#5B9EC2]/45 bg-[#1F5B7C]/18 text-[#78B0CE]">
                         <Cpu className="h-3.5 w-3.5" />
                       </span>
                       <div className="text-left">
@@ -940,7 +940,7 @@ export function HeroWorkbench({
                       </div>
                     </div>
 
-                    <span className="font-mono-tech text-[10px] tracking-[0.12em] text-[#60A5FA] uppercase">
+                    <span className="font-mono-tech text-[10px] tracking-[0.12em] text-[#78B0CE] uppercase">
                       {selectedBranch
                         ? `${activeEvents.length} / ${
                             (simulateFailure
@@ -970,7 +970,7 @@ export function HeroWorkbench({
                                   : stageStatus === "completed"
                                     ? "border-[#10B981] bg-[#04110C]"
                                     : stageStatus === "processing" || stageStatus === "active"
-                                      ? "border-[#3B82F6] bg-[#050C1D]"
+                                      ? "border-[#5B9EC2] bg-[#05111A]"
                                       : "border-[#262626] bg-[#060606]"
                               }`}
                             >
@@ -983,7 +983,7 @@ export function HeroWorkbench({
                                         : stageStatus === "completed"
                                           ? "text-[#34D399]"
                                           : stageStatus === "processing" || stageStatus === "active"
-                                            ? "text-[#60A5FA]"
+                                            ? "text-[#78B0CE]"
                                             : "text-[#666666]"
                                     }`}
                                   >
@@ -1005,7 +1005,7 @@ export function HeroWorkbench({
                                     : stageStatus === "completed"
                                       ? "text-[#34D399]"
                                       : stageStatus === "processing" || stageStatus === "active"
-                                        ? "text-[#60A5FA]"
+                                        ? "text-[#78B0CE]"
                                         : "text-[#4A4A4A]"
                                 }`}
                               >
@@ -1029,7 +1029,7 @@ export function HeroWorkbench({
                                     stageStatus === "completed"
                                       ? "bg-[#10B981]"
                                       : stageStatus === "processing"
-                                        ? "bg-[#3B82F6]"
+                                        ? "bg-[#5B9EC2]"
                                         : "bg-[#262626]"
                                   }`}
                                 />
@@ -1038,7 +1038,7 @@ export function HeroWorkbench({
                                     stageStatus === "completed"
                                       ? "text-[#10B981]"
                                       : stageStatus === "processing"
-                                        ? "text-[#3B82F6]"
+                                        ? "text-[#5B9EC2]"
                                         : "text-[#3A3A3A]"
                                   }`}
                                 />
@@ -1085,7 +1085,7 @@ export function HeroWorkbench({
                       const isHighlighted = isSelected || isHovered;
                       const anyFocus = Boolean(selectedBranchId || hoveredBranchId);
                       const pathD = `M 600 0 L 600 30 L ${x} 30 L ${x} 60`;
-                      const strokeColor = isSelected ? activeTraceColor : "#3B82F6";
+                      const strokeColor = isSelected ? activeTraceColor : "#5B9EC2";
 
                       return (
                         <g key={branch.id}>
@@ -1130,7 +1130,7 @@ export function HeroWorkbench({
                   {/* Center manifold junction pin */}
                   <span
                     style={{
-                      backgroundColor: selectedBranchId ? activeTraceColor : "#3B82F6",
+                      backgroundColor: selectedBranchId ? activeTraceColor : "#5B9EC2",
                     }}
                     className="pointer-events-none absolute left-1/2 top-[27px] h-1.5 w-1.5 -translate-x-1/2"
                   />
@@ -1148,7 +1148,7 @@ export function HeroWorkbench({
                           borderColor: isSelected
                             ? activeTraceColor
                             : isHovered
-                              ? "#3B82F6"
+                              ? "#5B9EC2"
                               : "#2D2D2D",
                           backgroundColor: isSelected ? activeTraceColor : "#000000",
                         }}
@@ -1175,9 +1175,9 @@ export function HeroWorkbench({
                         onMouseLeave={() => setHoveredBranchId(null)}
                         onFocus={() => setHoveredBranchId(branch.id)}
                         onBlur={() => setHoveredBranchId(null)}
-                        className={`group relative flex flex-col justify-between p-5 text-left transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[#3B82F6] ${
+                        className={`group relative flex flex-col justify-between p-5 text-left transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[#5B9EC2] ${
                           isSelected
-                            ? "bg-[#060B18]"
+                            ? "bg-[#040C12]"
                             : isHovered
                               ? "bg-[#080808]"
                               : "bg-black hover:bg-[#070707]"
@@ -1195,7 +1195,7 @@ export function HeroWorkbench({
                         <div>
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex items-center gap-2">
-                              <span className="font-mono-tech text-[11px] tracking-[0.14em] text-[#3B82F6]">
+                              <span className="font-mono-tech text-[11px] tracking-[0.14em] text-[#5B9EC2]">
                                 {branch.index}
                               </span>
                               <span className="font-mono-tech text-[10px] tracking-[0.08em] text-[#666666] uppercase">
@@ -1206,9 +1206,9 @@ export function HeroWorkbench({
                             <span
                               className={`flex h-7 w-7 items-center justify-center border transition-colors ${
                                 isSelected
-                                  ? "border-[#3B82F6] bg-[#2563EB] text-white"
+                                  ? "border-[#5B9EC2] bg-[#1F5B7C] text-white"
                                   : isHovered
-                                    ? "border-[#3B82F6]/60 bg-[#0A1020] text-[#60A5FA]"
+                                    ? "border-[#5B9EC2]/60 bg-[#071520] text-[#78B0CE]"
                                     : "border-[#242424] bg-[#060606] text-[#A3A3A3]"
                               }`}
                             >
@@ -1233,14 +1233,14 @@ export function HeroWorkbench({
                                   ? "text-[#F87171]"
                                   : status === "completed"
                                     ? "text-[#34D399]"
-                                    : "text-[#60A5FA]"
+                                    : "text-[#78B0CE]"
                                 : "text-[#737373] transition-colors group-hover:text-white"
                             }
                           >
                             {isSelected ? getStatusLabel(branchStatus) : "Select Branch"}
                           </span>
                           <ChevronDown
-                            className={`h-3.5 w-3.5 text-[#3B82F6] transition-transform duration-150 ${
+                            className={`h-3.5 w-3.5 text-[#5B9EC2] transition-transform duration-150 ${
                               isSelected ? "rotate-180" : ""
                             }`}
                           />
@@ -1256,7 +1256,7 @@ export function HeroWorkbench({
                 ) : (
                   <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#1A1A1A] bg-[#040404] px-6 py-3 font-mono-tech text-[11px]">
                     <div className="flex items-center gap-2.5 text-[#8A8A8A]">
-                      <Terminal className="h-3.5 w-3.5 text-[#3B82F6]" />
+                      <Terminal className="h-3.5 w-3.5 text-[#5B9EC2]" />
                       <span>
                         EXECUTION CONSOLE: <span className="text-white">IDLE</span> — Select any
                         branch above to trace a request through Understand → Orchestrate → Execute.
@@ -1279,7 +1279,7 @@ export function HeroWorkbench({
                     aria-hidden="true"
                     className="pointer-events-none absolute bottom-5 left-[6px] top-0 w-[2px] overflow-hidden bg-[#242424]"
                   >
-                    <div className="gyra-spine-pulse h-20 w-full bg-gradient-to-b from-transparent via-[#3B82F6] to-transparent" />
+                    <div className="gyra-spine-pulse h-20 w-full bg-gradient-to-b from-transparent via-[#5B9EC2] to-transparent" />
                   </div>
 
                   <div className="space-y-3">
@@ -1298,7 +1298,7 @@ export function HeroWorkbench({
                           <span
                             aria-hidden="true"
                             style={{
-                              borderColor: isSelected ? activeTraceColor : "#3B82F6",
+                              borderColor: isSelected ? activeTraceColor : "#5B9EC2",
                               backgroundColor: isSelected ? activeTraceColor : "#000000",
                             }}
                             className="pointer-events-none absolute -left-[21px] top-[25px] h-2 w-2 border"
@@ -1306,28 +1306,28 @@ export function HeroWorkbench({
 
                           <div
                             className={`border transition-colors ${
-                              isSelected ? "border-[#3B82F6]/70 bg-[#060B18]" : "border-[#222222] bg-black"
+                              isSelected ? "border-[#5B9EC2]/70 bg-[#040C12]" : "border-[#222222] bg-black"
                             }`}
                           >
                             <button
                               type="button"
                               aria-expanded={isSelected}
                               onClick={() => selectBranch(branch.id)}
-                              className="flex w-full items-center justify-between gap-3 p-4 text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#3B82F6]"
+                              className="flex w-full items-center justify-between gap-3 p-4 text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#5B9EC2]"
                             >
                               <div className="flex items-start gap-3">
                                 <span
                                   className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center border ${
                                     isSelected
-                                      ? "border-[#3B82F6] bg-[#2563EB] text-white"
-                                      : "border-[#262626] bg-[#070707] text-[#60A5FA]"
+                                      ? "border-[#5B9EC2] bg-[#1F5B7C] text-white"
+                                      : "border-[#262626] bg-[#070707] text-[#78B0CE]"
                                   }`}
                                 >
                                   <BranchIcon id={branch.id} className="h-4 w-4" />
                                 </span>
                                 <div>
                                   <div className="flex items-center gap-2">
-                                    <span className="font-mono-tech text-[10px] text-[#3B82F6]">
+                                    <span className="font-mono-tech text-[10px] text-[#5B9EC2]">
                                       {branch.index}
                                     </span>
                                     <span className="font-display text-[21px] font-bold leading-none text-white uppercase">
@@ -1344,7 +1344,7 @@ export function HeroWorkbench({
                               </div>
 
                               <ChevronDown
-                                className={`h-4 w-4 shrink-0 text-[#3B82F6] transition-transform ${
+                                className={`h-4 w-4 shrink-0 text-[#5B9EC2] transition-transform ${
                                   isSelected ? "rotate-180" : ""
                                 }`}
                               />
@@ -1372,7 +1372,7 @@ export function HeroWorkbench({
                 key={item}
                 className="font-mono-tech flex shrink-0 items-center gap-2 whitespace-nowrap text-[11px] tracking-[0.09em] text-[#8E8E8E]"
               >
-                <span className="h-1.5 w-1.5 shrink-0 bg-[#3B82F6]" aria-hidden="true" />
+                <span className="h-1.5 w-1.5 shrink-0 bg-[#5B9EC2]" aria-hidden="true" />
                 <span>{item}</span>
               </div>
             ))}

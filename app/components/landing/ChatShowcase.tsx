@@ -61,7 +61,7 @@ export function ChatShowcase({ routeBase = "" }: ChatShowcaseProps) {
         {/* Header Row */}
         <div className="grid grid-cols-1 items-end gap-6 lg:grid-cols-12">
           <div className="lg:col-span-7">
-            <p className="font-mono-tech text-[12px] tracking-[0.14em] text-[#3B82F6] uppercase">
+            <p className="font-mono-tech text-[12px] tracking-[0.14em] text-[#5B9EC2] uppercase">
               [ 01 · Gyra Chat ]
             </p>
             <h2 className="font-display mt-3.5 text-[clamp(2.35rem,4.2vw,3.75rem)] font-bold leading-[0.98] tracking-[-0.02em] text-white uppercase [text-wrap:balance]">
@@ -76,7 +76,7 @@ export function ChatShowcase({ routeBase = "" }: ChatShowcaseProps) {
             </p>
             <a
               href={resolveGyraRoute("/dashboard", routeBase)}
-              className="font-mono-tech mt-4 inline-flex items-center gap-1.5 text-[12px] tracking-[0.1em] text-white uppercase underline decoration-[#3B82F6] underline-offset-4 transition-colors hover:text-[#3B82F6]"
+              className="font-mono-tech mt-4 inline-flex items-center gap-1.5 text-[12px] tracking-[0.1em] text-white uppercase underline decoration-[#5B9EC2] underline-offset-4 transition-colors hover:text-[#5B9EC2]"
             >
               Open Gyra Chat
               <ArrowUpRight className="h-3.5 w-3.5" />
@@ -102,9 +102,9 @@ export function ChatShowcase({ routeBase = "" }: ChatShowcaseProps) {
                       setActiveAgentIdx(Math.min(3, item.agents.length - 1));
                       setIsTracing(false);
                     }}
-                    className={`font-mono-tech min-h-[34px] border px-3 text-[11px] tracking-[0.06em] uppercase transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#3B82F6] ${
+                    className={`font-mono-tech min-h-[34px] border px-3 text-[11px] tracking-[0.06em] uppercase transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#5B9EC2] ${
                       selected
-                        ? "border-[#3B82F6] bg-[#2563EB]/12 text-white"
+                        ? "border-[#5B9EC2] bg-[#1F5B7C]/18 text-white"
                         : "border-[#242424] bg-black text-[#8A8A8A] hover:border-[#444] hover:text-white"
                     }`}
                   >
@@ -149,7 +149,7 @@ export function ChatShowcase({ routeBase = "" }: ChatShowcaseProps) {
               <button
                 type="button"
                 onClick={handleRunTrace}
-                className="font-mono-tech inline-flex min-h-[34px] items-center gap-1.5 bg-[#2563EB] px-3.5 text-[11px] font-medium tracking-[0.08em] text-white uppercase transition-colors hover:bg-[#3B82F6] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white"
+                className="font-mono-tech inline-flex min-h-[34px] items-center gap-1.5 bg-[#1F5B7C] px-3.5 text-[11px] font-medium tracking-[0.08em] text-white uppercase transition-colors hover:bg-[#296E93] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white"
               >
                 {isTracing ? (
                   <>
@@ -173,7 +173,7 @@ export function ChatShowcase({ routeBase = "" }: ChatShowcaseProps) {
               <div>
                 <div className="flex items-center justify-between font-mono-tech text-[11px] tracking-[0.1em] uppercase">
                   <span className="text-[#8A8A8A]">{agents.length}-Agent Pipeline</span>
-                  <span className="text-[#3B82F6]">{totalDuration}s trace</span>
+                  <span className="text-[#5B9EC2]">{totalDuration}s trace</span>
                 </div>
 
                 <div className="mt-4 divide-y divide-[#181818] border border-[#1F1F1F]">
@@ -188,7 +188,7 @@ export function ChatShowcase({ routeBase = "" }: ChatShowcaseProps) {
                           setIsTracing(false);
                           setActiveAgentIdx(idx);
                         }}
-                        className={`flex w-full items-center justify-between px-3.5 py-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[#3B82F6] ${
+                        className={`flex w-full items-center justify-between px-3.5 py-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[#5B9EC2] ${
                           isCurrent
                             ? "bg-[#111111] text-white"
                             : "bg-black text-[#8A8A8A] hover:bg-[#080808] hover:text-[#D4D4D4]"
@@ -198,7 +198,7 @@ export function ChatShowcase({ routeBase = "" }: ChatShowcaseProps) {
                           <span
                             className={`font-mono-tech text-[10px] ${
                               isCurrent
-                                ? "text-[#3B82F6]"
+                                ? "text-[#5B9EC2]"
                                 : isPassed
                                   ? "text-white"
                                   : "text-[#555555]"
@@ -221,7 +221,7 @@ export function ChatShowcase({ routeBase = "" }: ChatShowcaseProps) {
               </div>
 
               <div className="mt-5 border border-[#1F1F1F] bg-[#050505] p-3.5">
-                <p className="font-mono-tech text-[10px] tracking-[0.1em] text-[#3B82F6] uppercase">
+                <p className="font-mono-tech text-[10px] tracking-[0.1em] text-[#5B9EC2] uppercase">
                   Step {agents[safeAgentIdx].order} · {agents[safeAgentIdx].name}
                 </p>
                 <p className="mt-1.5 text-[13px] leading-[1.55] text-[#C8C8C8]">
@@ -243,7 +243,7 @@ export function ChatShowcase({ routeBase = "" }: ChatShowcaseProps) {
                 {response.reasoningNote && (
                   <div className="mt-4 border border-[#242424] bg-[#060606] px-4 py-3">
                     <div className="flex flex-wrap items-center justify-between gap-2 font-mono-tech text-[10px] tracking-[0.1em] uppercase">
-                      <span className="text-[#3B82F6]">
+                      <span className="text-[#5B9EC2]">
                         {modelTier === "gyra-super2.0"
                           ? "SuperGyra 2.0 · Deep Reasoning"
                           : "Gyra 1.0 · Fast Path"}
@@ -268,7 +268,7 @@ export function ChatShowcase({ routeBase = "" }: ChatShowcaseProps) {
                     >
                       {copied ? (
                         <>
-                          <Check className="h-3 w-3 text-[#3B82F6]" />
+                          <Check className="h-3 w-3 text-[#5B9EC2]" />
                           Copied
                         </>
                       ) : (
@@ -291,7 +291,7 @@ export function ChatShowcase({ routeBase = "" }: ChatShowcaseProps) {
                 </span>
                 <a
                   href={resolveGyraRoute("/dashboard", routeBase)}
-                  className="inline-flex items-center gap-1 text-white uppercase hover:text-[#3B82F6]"
+                  className="inline-flex items-center gap-1 text-white uppercase hover:text-[#5B9EC2]"
                 >
                   Open workspace
                   <ArrowUpRight className="h-3.5 w-3.5" />

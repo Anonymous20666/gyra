@@ -48,7 +48,7 @@ export function VideoShowcase({ routeBase = "" }: VideoShowcaseProps) {
         {/* Header Row */}
         <div className="grid grid-cols-1 items-end gap-6 lg:grid-cols-12">
           <div className="lg:col-span-7">
-            <p className="font-mono-tech text-[12px] tracking-[0.14em] text-[#3B82F6] uppercase">
+            <p className="font-mono-tech text-[12px] tracking-[0.14em] text-[#5B9EC2] uppercase">
               [ 03 · Gyra Video ]
             </p>
             <h2 className="font-display mt-3.5 text-[clamp(2.35rem,4.2vw,3.75rem)] font-bold leading-[0.98] tracking-[-0.02em] text-white uppercase [text-wrap:balance]">
@@ -63,7 +63,7 @@ export function VideoShowcase({ routeBase = "" }: VideoShowcaseProps) {
             </p>
             <a
               href={resolveGyraRoute("/studio", routeBase)}
-              className="font-mono-tech mt-4 inline-flex items-center gap-1.5 text-[12px] tracking-[0.1em] text-white uppercase underline decoration-[#3B82F6] underline-offset-4 transition-colors hover:text-[#3B82F6]"
+              className="font-mono-tech mt-4 inline-flex items-center gap-1.5 text-[12px] tracking-[0.1em] text-white uppercase underline decoration-[#5B9EC2] underline-offset-4 transition-colors hover:text-[#5B9EC2]"
             >
               Open Gyra Studio
               <ArrowUpRight className="h-3.5 w-3.5" />
@@ -88,7 +88,7 @@ export function VideoShowcase({ routeBase = "" }: VideoShowcaseProps) {
                   onClick={() => setInputMode("text-to-video")}
                   className={`font-mono-tech inline-flex min-h-[34px] items-center gap-1.5 px-3 text-[11px] tracking-[0.06em] uppercase transition-colors ${
                     inputMode === "text-to-video"
-                      ? "bg-[#2563EB] font-medium text-white"
+                      ? "bg-[#1F5B7C] font-medium text-white"
                       : "bg-black text-[#8A8A8A] hover:text-white"
                   }`}
                 >
@@ -102,7 +102,7 @@ export function VideoShowcase({ routeBase = "" }: VideoShowcaseProps) {
                   onClick={() => setInputMode("image-to-video")}
                   className={`font-mono-tech inline-flex min-h-[34px] items-center gap-1.5 border-l border-[#242424] px-3 text-[11px] tracking-[0.06em] uppercase transition-colors ${
                     inputMode === "image-to-video"
-                      ? "bg-[#2563EB] font-medium text-white"
+                      ? "bg-[#1F5B7C] font-medium text-white"
                       : "bg-black text-[#8A8A8A] hover:text-white"
                   }`}
                 >
@@ -175,13 +175,13 @@ export function VideoShowcase({ routeBase = "" }: VideoShowcaseProps) {
                 />
                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/35" />
 
-                <div className="font-mono-tech absolute left-3 top-3 border border-[#3B82F6]/70 bg-black/90 px-2.5 py-1 text-[10px] tracking-[0.08em] text-white uppercase">
+                <div className="font-mono-tech absolute left-3 top-3 border border-[#5B9EC2]/70 bg-black/90 px-2.5 py-1 text-[10px] tracking-[0.08em] text-white uppercase">
                   {aspect} · {inputMode === "image-to-video" ? "Ref Frame Active" : "Prompt Driven"}
                 </div>
 
                 <div className="font-mono-tech absolute inset-x-3 bottom-3 flex flex-wrap items-center justify-between gap-2 text-[10px] tracking-[0.08em] text-[#D4D4D4] uppercase">
                   <span>{preset.specs}</span>
-                  <span className="text-[#3B82F6]">{preset.durationLabel}</span>
+                  <span className="text-[#5B9EC2]">{preset.durationLabel}</span>
                 </div>
               </div>
             </div>
@@ -192,7 +192,7 @@ export function VideoShowcase({ routeBase = "" }: VideoShowcaseProps) {
                 {inputMode === "image-to-video" && (
                   <div className="mb-5 border border-[#1F1F1F] bg-[#050505] p-3">
                     <div className="flex items-center justify-between font-mono-tech text-[10px] uppercase">
-                      <span className="text-[#3B82F6]">Attached Reference Frame</span>
+                      <span className="text-[#5B9EC2]">Attached Reference Frame</span>
                       <span className="text-[#737373]">Frame 001</span>
                     </div>
                     <div className="mt-2.5 aspect-[16/9] overflow-hidden border border-[#242424]">
@@ -223,7 +223,7 @@ export function VideoShowcase({ routeBase = "" }: VideoShowcaseProps) {
                         type="button"
                         onClick={() => selectPreset(item.id)}
                         aria-pressed={active}
-                        className={`flex w-full items-center justify-between px-3.5 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[#3B82F6] ${
+                        className={`flex w-full items-center justify-between px-3.5 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[#5B9EC2] ${
                           active
                             ? "bg-[#111111] text-white"
                             : "bg-black text-[#8A8A8A] hover:bg-[#080808] hover:text-white"
@@ -232,7 +232,7 @@ export function VideoShowcase({ routeBase = "" }: VideoShowcaseProps) {
                         <span className="text-[13px] font-medium">{item.label}</span>
                         <span
                           className={`font-mono-tech text-[10px] uppercase ${
-                            active ? "text-[#3B82F6]" : "text-[#666666]"
+                            active ? "text-[#5B9EC2]" : "text-[#666666]"
                           }`}
                         >
                           {item.category}
@@ -250,7 +250,7 @@ export function VideoShowcase({ routeBase = "" }: VideoShowcaseProps) {
                 </div>
                 <a
                   href={resolveGyraRoute("/studio", routeBase)}
-                  className="font-mono-tech mt-4 inline-flex min-h-[44px] w-full items-center justify-center gap-2 bg-[#2563EB] px-4 text-[12px] font-medium tracking-[0.08em] text-white uppercase transition-colors hover:bg-[#3B82F6]"
+                  className="font-mono-tech mt-4 inline-flex min-h-[44px] w-full items-center justify-center gap-2 bg-[#1F5B7C] px-4 text-[12px] font-medium tracking-[0.08em] text-white uppercase transition-colors hover:bg-[#296E93]"
                 >
                   Open Gyra Studio
                   <ArrowUpRight className="h-3.5 w-3.5" />

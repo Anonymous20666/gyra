@@ -116,7 +116,7 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
                 viewBox="0 0 700 460"
                 className="h-auto w-full select-none"
                 role="img"
-                aria-label="Three-layer isometric architecture of Gyra: Product Surfaces on top, Gyra Core Intelligence in cobalt middle slab, and Developer Platform baseplate below."
+                aria-label="Three-layer isometric architecture of Gyra: Product Surfaces on top, Gyra Core Intelligence in steel-blue middle slab, and Developer Platform baseplate below."
               >
                 {/* Orbital Boundary Ring (highlights on I/O Boundary) */}
                 <ellipse
@@ -125,7 +125,7 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
                   rx="282"
                   ry="148"
                   fill="none"
-                  stroke={activeId === "boundary" ? "#3B82F6" : "#262626"}
+                  stroke={activeId === "boundary" ? "#5B9EC2" : "#262626"}
                   strokeWidth={activeId === "boundary" ? "1.4" : "1"}
                   strokeDasharray="3 5"
                   style={{ transition: "stroke 250ms ease" }}
@@ -146,7 +146,7 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
                     <polygon
                       points={`${node.x + 26},${node.y} ${node.x + 64},${node.y + 16} ${node.x + 38},${node.y + 30} ${node.x},${node.y + 14}`}
                       fill="#0A0A0A"
-                      stroke={node.active ? "#3B82F6" : "#3A3A3A"}
+                      stroke={node.active ? "#5B9EC2" : "#3A3A3A"}
                       strokeWidth="1.2"
                     />
                     <text
@@ -173,14 +173,14 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
                   <polygon
                     points="130,300 340,400 550,300 550,312 340,412 130,312"
                     fill="#080808"
-                    stroke={activeId === "platform" ? "#3B82F6" : "#282828"}
+                    stroke={activeId === "platform" ? "#5B9EC2" : "#282828"}
                     strokeWidth="1.2"
                   />
                   {/* Base top face */}
                   <polygon
                     points="340,200 550,300 340,400 130,300"
                     fill={activeId === "platform" ? "#111111" : "#050505"}
-                    stroke={activeId === "platform" ? "#3B82F6" : "#2D2D2D"}
+                    stroke={activeId === "platform" ? "#5B9EC2" : "#2D2D2D"}
                     strokeWidth="1.2"
                   />
                   {/* Platform etched grid lines */}
@@ -209,29 +209,29 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
                   {/* Left bevel thickness */}
                   <polygon
                     points="130,225 340,325 340,341 130,241"
-                    fill="#1E40AF"
+                    fill="#12354A"
                     stroke="#000000"
                     strokeWidth="1"
                   />
                   {/* Right bevel thickness */}
                   <polygon
                     points="340,325 550,225 550,241 340,341"
-                    fill="#172554"
+                    fill="#0B2230"
                     stroke="#000000"
                     strokeWidth="1"
                   />
                   {/* Top glowing matte vermilion hardware slab */}
                   <polygon
                     points="340,125 550,225 340,325 130,225"
-                    fill={activeId === "core" ? "#2563EB" : "#1D4ED8"}
+                    fill={activeId === "core" ? "#1F5B7C" : "#16445E"}
                     stroke="#000000"
                     strokeWidth="1.4"
                   />
 
                   {/* Etched architectural bay dividers across the vermilion slab */}
-                  <line x1="182" y1="200" x2="392" y2="300" stroke="#93C5FD" strokeWidth="1" opacity="0.45" />
-                  <line x1="235" y1="175" x2="445" y2="275" stroke="#93C5FD" strokeWidth="1" opacity="0.45" />
-                  <line x1="288" y1="150" x2="498" y2="250" stroke="#93C5FD" strokeWidth="1" opacity="0.45" />
+                  <line x1="182" y1="200" x2="392" y2="300" stroke="#78A8C0" strokeWidth="1" opacity="0.45" />
+                  <line x1="235" y1="175" x2="445" y2="275" stroke="#78A8C0" strokeWidth="1" opacity="0.45" />
+                  <line x1="288" y1="150" x2="498" y2="250" stroke="#78A8C0" strokeWidth="1" opacity="0.45" />
 
                   {/* Etched Bay Labels aligned cleanly inside each isometric channel */}
                   <text
@@ -307,14 +307,14 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
                   <polygon
                     points="130,148 340,248 550,148 550,158 340,258 130,158"
                     fill="#0A0A0A"
-                    stroke={activeId === "surfaces" ? "#3B82F6" : "#262626"}
+                    stroke={activeId === "surfaces" ? "#5B9EC2" : "#262626"}
                     strokeWidth="1.2"
                   />
                   {/* Top slab main plane */}
                   <polygon
                     points="340,48 550,148 340,248 130,148"
                     fill="#070707"
-                    stroke={activeId === "surfaces" ? "#3B82F6" : "#303030"}
+                    stroke={activeId === "surfaces" ? "#5B9EC2" : "#303030"}
                     strokeWidth="1.3"
                   />
                   {/* Precision 4x4 isometric surface matrix */}
@@ -352,7 +352,7 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
                       height="6"
                       fill={
                         pt.accent && activeId === "surfaces"
-                          ? "#3B82F6"
+                          ? "#5B9EC2"
                           : pt.accent
                             ? "#FFFFFF"
                             : "#4A4A4A"
@@ -381,9 +381,9 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
                     role="tab"
                     aria-selected={selected}
                     onClick={() => setActiveId(layer.id)}
-                    className={`font-mono-tech border-r border-[#1F1F1F] px-2 py-2.5 text-[11px] tracking-[0.06em] uppercase transition-colors last:border-r-0 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#3B82F6] ${
+                    className={`font-mono-tech border-r border-[#1F1F1F] px-2 py-2.5 text-[11px] tracking-[0.06em] uppercase transition-colors last:border-r-0 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#5B9EC2] ${
                       selected
-                        ? "bg-[#2563EB] font-medium text-white"
+                        ? "bg-[#1F5B7C] font-medium text-white"
                         : "bg-black text-[#808080] hover:bg-[#0A0A0A] hover:text-white"
                     }`}
                   >
@@ -394,7 +394,7 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
             </div>
 
             <div className="mt-7">
-              <p className="font-mono-tech text-[12px] tracking-[0.12em] text-[#3B82F6] uppercase">
+              <p className="font-mono-tech text-[12px] tracking-[0.12em] text-[#5B9EC2] uppercase">
                 {active.tag}
               </p>
               <h3 className="font-display mt-3 text-[30px] font-bold leading-[1.06] tracking-[-0.015em] text-white">
@@ -423,7 +423,7 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
             <div className="mt-6">
               <a
                 href={resolveGyraRoute("/about", routeBase)}
-                className="font-mono-tech inline-flex items-center gap-2 text-[12px] tracking-[0.1em] text-white uppercase underline decoration-[#3B82F6] underline-offset-4 transition-colors hover:text-[#3B82F6]"
+                className="font-mono-tech inline-flex items-center gap-2 text-[12px] tracking-[0.1em] text-white uppercase underline decoration-[#5B9EC2] underline-offset-4 transition-colors hover:text-[#5B9EC2]"
               >
                 About Genvia AI Company →
               </a>

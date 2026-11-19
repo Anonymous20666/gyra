@@ -39,7 +39,7 @@ export function Navbar({ isAuthenticated = false, routeBase = "" }: NavbarProps)
         {/* Zone 1: Clean single-element Brand mark */}
         <a
           href={resolveGyraRoute("/", routeBase)}
-          className="flex shrink-0 items-center gap-2.5 whitespace-nowrap focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#3B82F6]"
+          className="flex shrink-0 items-center gap-2.5 whitespace-nowrap focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#5B9EC2]"
           aria-label="Gyra Home"
         >
           <img
@@ -60,14 +60,14 @@ export function Navbar({ isAuthenticated = false, routeBase = "" }: NavbarProps)
             <a
               key={item.label}
               href={item.href}
-              className="font-mono-tech shrink-0 whitespace-nowrap text-[12px] tracking-[0.1em] text-[#A3A3A3] uppercase transition-colors duration-150 hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#3B82F6]"
+              className="font-mono-tech shrink-0 whitespace-nowrap text-[12px] tracking-[0.1em] text-[#A3A3A3] uppercase transition-colors duration-150 hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#5B9EC2]"
             >
               {item.label}
             </a>
           ))}
           <a
             href={docsHref}
-            className="font-mono-tech shrink-0 whitespace-nowrap text-[12px] tracking-[0.1em] text-[#A3A3A3] uppercase transition-colors duration-150 hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#3B82F6]"
+            className="font-mono-tech shrink-0 whitespace-nowrap text-[12px] tracking-[0.1em] text-[#A3A3A3] uppercase transition-colors duration-150 hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#5B9EC2]"
           >
             Docs
           </a>
@@ -78,14 +78,14 @@ export function Navbar({ isAuthenticated = false, routeBase = "" }: NavbarProps)
           {!isAuthenticated && (
             <a
               href={loginHref}
-              className="font-mono-tech shrink-0 whitespace-nowrap px-3 py-2 text-[12px] tracking-[0.08em] text-[#CCCCCC] uppercase transition-colors duration-150 hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#3B82F6]"
+              className="font-mono-tech shrink-0 whitespace-nowrap px-3 py-2 text-[12px] tracking-[0.08em] text-[#CCCCCC] uppercase transition-colors duration-150 hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#5B9EC2]"
             >
               Sign in
             </a>
           )}
           <a
             href={primaryHref}
-            className="font-mono-tech inline-flex shrink-0 items-center justify-center whitespace-nowrap bg-white px-4 py-2 text-[12px] font-medium tracking-[0.08em] text-black uppercase transition-colors duration-150 hover:bg-[#E5E5E5] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#3B82F6]"
+            className="font-mono-tech inline-flex shrink-0 items-center justify-center whitespace-nowrap bg-white px-4 py-2 text-[12px] font-medium tracking-[0.08em] text-black uppercase transition-colors duration-150 hover:bg-[#E5E5E5] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#5B9EC2]"
           >
             {isAuthenticated ? "Dashboard" : "Open Gyra"}
           </a>
@@ -98,7 +98,7 @@ export function Navbar({ isAuthenticated = false, routeBase = "" }: NavbarProps)
           aria-expanded={mobileOpen}
           aria-controls="gyra-mobile-nav"
           aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
-          className="inline-flex h-10 w-10 items-center justify-center border border-[#262626] bg-black text-white transition-colors hover:border-[#444] lg:hidden focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#3B82F6]"
+          className="inline-flex h-10 w-10 items-center justify-center border border-[#262626] bg-black text-white transition-colors hover:border-[#444] lg:hidden focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#5B9EC2]"
         >
           {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
         </button>
@@ -142,7 +142,7 @@ export function Navbar({ isAuthenticated = false, routeBase = "" }: NavbarProps)
             <a
               href={primaryHref}
               onClick={() => setMobileOpen(false)}
-              className={`font-mono-tech inline-flex min-h-[44px] items-center justify-center bg-[#2563EB] px-4 text-[12px] font-medium tracking-[0.08em] text-white uppercase ${
+              className={`font-mono-tech inline-flex min-h-[44px] items-center justify-center bg-[#1F5B7C] px-4 text-[12px] font-medium tracking-[0.08em] text-white uppercase ${
                 isAuthenticated ? "col-span-2" : ""
               }`}
             >
