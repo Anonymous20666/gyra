@@ -44,6 +44,12 @@ html {
   font-size: calc(16px * var(--font-scale, 1));
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
 html.dark {
   color-scheme: dark;
 }
@@ -51,16 +57,9 @@ html.dark {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-gyra-sans), "DM Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size-adjust: from-font;
   transition: background-color 0.2s ease, color 0.2s ease;
-}
-
-*,
-*::before,
-*::after {
-  transition-property: background-color, border-color, color, fill, stroke;
-  transition-duration: 150ms;
-  transition-timing-function: ease;
 }
 
 .no-transition,
@@ -108,17 +107,9 @@ body {
    Gyra Landing Architectural Tokens & Utilities
    ============================================================ */
 @theme inline {
-  --font-display: var(--font-display), "Space Grotesk", -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-sans: var(--font-sans), "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono: var(--font-mono), "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-}
-
-body {
-  font-family: var(--font-sans), "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
-}
-
-.font-display {
-  font-family: var(--font-display), "Space Grotesk", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: var(--font-gyra-display), "Barlow Semi Condensed", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-sans: var(--font-gyra-sans), "DM Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: var(--font-gyra-mono), "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 .gyra-frame {
@@ -181,20 +172,23 @@ body {
   border-radius: 2px;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .gyra-frame-interactive::after {
-    display: none;
-  }
-}
-
 /* GYRA_LANDING_V3_TOKENS */
 .font-display {
-  font-family: var(--font-display), "Barlow Semi Condensed", sans-serif;
+  font-family: var(--font-gyra-display), "Barlow Semi Condensed", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size-adjust: from-font;
 }
+
 .font-mono-tech {
-  font-family: var(--font-mono), "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-gyra-mono), "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   font-variant-numeric: tabular-nums;
+  font-size-adjust: from-font;
 }
+
+.gyra-band-defer {
+  content-visibility: auto;
+  contain-intrinsic-block-size: auto 720px;
+}
+
 .gyra-dither-sweep {
   background-image:
     radial-gradient(circle, rgba(91, 158, 194, 0.88) 1.15px, transparent 1.35px),
@@ -204,6 +198,7 @@ body {
   mask-image: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.9) 35%, #000 72%, transparent 100%);
   -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.9) 35%, #000 72%, transparent 100%);
 }
+
 .gyra-dither-backdrop {
   background-image:
     radial-gradient(rgba(255, 255, 255, 0.14) 1px, transparent 1px),
@@ -211,25 +206,212 @@ body {
   background-size: 16px 16px, 32px 32px;
   background-position: 0 0, 8px 8px;
 }
+
 @keyframes gyra-cursor-blink {
   0%, 49% { opacity: 1; }
   50%, 100% { opacity: 0; }
 }
+
 .gyra-cursor {
   display: inline-block;
   width: 7px;
   height: 13px;
   background-color: #5B9EC2;
   vertical-align: -2px;
-  animation: gyra-cursor-blink 1.05s steps(1, end) infinite;
 }
+
 @keyframes gyra-dither-scan {
   0% { transform: translateX(-110%); opacity: 0.9; }
   70% { opacity: 0.95; }
   100% { transform: translateX(130%); opacity: 0; }
 }
-.gyra-scan-motion {
-  animation: gyra-dither-scan 2.8s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+
+@keyframes gyra-logo-synapse-flow {
+  0% { stroke-dashoffset: 100; opacity: 0.15; }
+  30% { opacity: 0.95; }
+  70% { opacity: 0.85; }
+  100% { stroke-dashoffset: -100; opacity: 0.15; }
+}
+
+@keyframes gyra-logo-node-breathe {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 1; }
+}
+
+@keyframes gyra-port-sweep-beam {
+  0% { transform: translateX(-100%); opacity: 0; }
+  18% { opacity: 1; }
+  82% { opacity: 1; }
+  100% { transform: translateX(100%); opacity: 0; }
+}
+
+@keyframes gyra-trace-pulse-flow {
+  0% { stroke-dashoffset: 140; opacity: 0.18; }
+  25% { opacity: 0.95; }
+  75% { opacity: 0.9; }
+  100% { stroke-dashoffset: -140; opacity: 0.18; }
+}
+
+@keyframes gyra-prompt-drop-in {
+  0% { opacity: 0; transform: translateY(-8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes gyra-video-fade-in {
+  0% { opacity: 0.35; }
+  100% { opacity: 1; }
+}
+
+.gyra-logo-synapse {
+  stroke-dasharray: 24 76;
+  opacity: 0.55;
+}
+
+.gyra-logo-node {
+  opacity: 0.78;
+}
+
+.gyra-trace-pulse,
+.gyra-trace-pulse-fast,
+.gyra-trace-pulse-delay-1,
+.gyra-trace-pulse-delay-2,
+.gyra-trace-pulse-delay-3 {
+  stroke-dasharray: 28 112;
+  opacity: 0.65;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .gyra-cursor {
+    animation: gyra-cursor-blink 1.05s steps(1, end) infinite;
+  }
+
+  .gyra-scan-motion {
+    animation: gyra-dither-scan 2.8s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  }
+
+  .gyra-logo-synapse {
+    animation-name: gyra-logo-synapse-flow;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+  }
+
+  .gyra-logo-node {
+    animation: gyra-logo-node-breathe 3.6s ease-in-out infinite;
+  }
+
+  .gyra-port-sweep {
+    animation: gyra-port-sweep-beam 1.25s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  .gyra-trace-pulse {
+    animation: gyra-trace-pulse-flow 2.8s linear infinite;
+  }
+
+  .gyra-trace-pulse-fast {
+    animation: gyra-trace-pulse-flow 1.45s linear infinite;
+  }
+
+  .gyra-trace-pulse-delay-1 {
+    animation: gyra-trace-pulse-flow 2.8s linear 0.55s infinite;
+  }
+
+  .gyra-trace-pulse-delay-2 {
+    animation: gyra-trace-pulse-flow 2.8s linear 1.1s infinite;
+  }
+
+  .gyra-trace-pulse-delay-3 {
+    animation: gyra-trace-pulse-flow 2.8s linear 1.65s infinite;
+  }
+
+  .gyra-prompt-drop {
+    animation: gyra-prompt-drop-in 260ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .gyra-video-fade {
+    animation: gyra-video-fade-in 260ms ease-out;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gyra-frame-interactive::after {
+    display: none;
+  }
+}
+
+/* Native <dialog> Lightbox — Top-Layer Animation & Pure CSS Scroll Lock */
+dialog.gyra-lightbox-dialog {
+  margin: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  max-width: calc(100vw - 1.5rem);
+  max-height: calc(100vh - 1.5rem);
+  width: 100%;
+  opacity: 0;
+  transition-property: opacity, transform, display, overlay;
+  transition-duration: 0.22s;
+  transition-timing-function: ease-out;
+  transition-behavior: allow-discrete;
+}
+
+@media (min-width: 640px) {
+  dialog.gyra-lightbox-dialog {
+    max-width: min(1280px, calc(100vw - 3rem));
+    max-height: 94vh;
+  }
+}
+
+dialog.gyra-lightbox-dialog:modal {
+  overscroll-behavior: contain;
+}
+
+dialog.gyra-lightbox-dialog::backdrop {
+  background-color: rgba(0, 0, 0, 0);
+  overflow: hidden;
+  overscroll-behavior: contain;
+  transition-property: background-color, display, overlay;
+  transition-duration: 0.22s;
+  transition-timing-function: ease-out;
+  transition-behavior: allow-discrete;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  dialog.gyra-lightbox-dialog {
+    transform: scale(0.97);
+  }
+}
+
+dialog.gyra-lightbox-dialog[open]:where(:not([data-closing])) {
+  display: flex;
+  flex-direction: column;
+  opacity: 1;
+
+  @starting-style {
+    opacity: 0;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    transform: scale(1);
+
+    @starting-style {
+      transform: scale(0.97);
+    }
+  }
+
+  &::backdrop {
+    background-color: rgba(0, 0, 0, 0.94);
+
+    @starting-style {
+      background-color: rgba(0, 0, 0, 0);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  dialog.gyra-lightbox-dialog,
+  dialog.gyra-lightbox-dialog::backdrop {
+    transition-duration: 0.08s;
+  }
 }
 input[type="range"].gyra-slider {
   -webkit-appearance: none;

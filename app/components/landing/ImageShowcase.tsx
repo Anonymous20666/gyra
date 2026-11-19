@@ -22,6 +22,14 @@ export interface ImageShowcaseProps {
   routeBase?: string;
 }
 
+function toHdWebp(src: string): string {
+  return src.replace(/\.jpg$/i, ".webp");
+}
+
+function toThumbWebp(src: string): string {
+  return src.replace(/-hd\.jpg$/i, "-thumb.webp").replace(/\.jpg$/i, ".webp");
+}
+
 export function ImageShowcase({ routeBase = "" }: ImageShowcaseProps) {
   // Default to the new Momentum-Spin HD Gallery so visitors immediately feel the peak 1080p imagery & flick-spin wheel,
   // with Pro Ultra Geometry-Locked Before/After right beside it!
@@ -252,7 +260,7 @@ export function ImageShowcase({ routeBase = "" }: ImageShowcaseProps) {
   };
 
   return (
-    <section id="image" className="border-b border-[#1F1F1F] bg-black py-24 lg:py-32">
+    <section id="image" className="gyra-band-defer border-b border-[#1F1F1F] bg-black py-24 lg:py-32">
       <div className="mx-auto max-w-[1380px] px-5 sm:px-8">
         {/* Header Row */}
         <div className="grid grid-cols-1 items-end gap-6 lg:grid-cols-12">
@@ -285,9 +293,11 @@ export function ImageShowcase({ routeBase = "" }: ImageShowcaseProps) {
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#1F1F1F] bg-[#050505] px-4 py-3 sm:px-5">
             <div role="tablist" aria-label="Gyra Image modes" className="flex flex-wrap gap-1.5">
               <button
+                id="gyra-image-tab-generate"
                 type="button"
                 role="tab"
                 aria-selected={mode === "generate"}
+                aria-controls="gyra-image-panel-generate"
                 onClick={() => setMode("generate")}
                 className={`font-mono-tech min-h-[34px] border px-3.5 text-[11px] tracking-[0.08em] uppercase transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#5B9EC2] ${
                   mode === "generate"
@@ -298,9 +308,11 @@ export function ImageShowcase({ routeBase = "" }: ImageShowcaseProps) {
                 Text-to-Image · Flux Deck
               </button>
               <button
+                id="gyra-image-tab-edit"
                 type="button"
                 role="tab"
                 aria-selected={mode === "edit"}
+                aria-controls="gyra-image-panel-edit"
                 onClick={() => setMode("edit")}
                 className={`font-mono-tech min-h-[34px] border px-3.5 text-[11px] tracking-[0.08em] uppercase transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#5B9EC2] ${
                   mode === "edit"
@@ -321,8 +333,9 @@ export function ImageShowcase({ routeBase = "" }: ImageShowcaseProps) {
 
           {mode === "generate" ? (
             <div
+              id="gyra-image-panel-generate"
               role="tabpanel"
-              aria-label="Text-to-Image · Flux Momentum Deck"
+              aria-labelledby="gyra-image-tab-generate"
               className="grid grid-cols-1 divide-y divide-[#1F1F1F] lg:grid-cols-12 lg:divide-x lg:divide-y-0"
             >
               {/* Left 8 cols: Interactive 3D Momentum-Spin Specimen Deck */}
@@ -388,15 +401,23 @@ export function ImageShowcase({ routeBase = "" }: ImageShowcaseProps) {
                             : "border-[#1C2C3A] cursor-pointer"
                         }`}
                       >
-                        <img
-                          src={item.imageSrc}
-                          alt={`${item.category}: ${item.title}`}
-                          draggable={false}
-                          referrerPolicy="no-referrer"
-                          className={`h-full w-full object-cover transition-transform duration-300 ${
-                            isCenter && !isDeckDragging ? "group-hover:scale-[1.025]" : ""
-                          }`}
-                        />
+                        <picture className="block h-full w-full">
+                          <source srcSet={toHdWebp(item.imageSrc)} type="image/webp" />
+                          <img
+                            src={item.imageSrc}
+                            alt={`${item.category}: ${item.title}`}
+                            width={1200}
+                            height={896}
+                            loading="lazy"
+                            decoding="async"
+                            fetchPriority={isCenter ? "auto" : "low"}
+                            draggable={false}
+                            referrerPolicy="no-referrer"
+                            className={`h-full w-full object-cover transition-transform duration-300 ${
+                              isCenter && !isDeckDragging ? "group-hover:scale-[1.025]" : ""
+                            }`}
+                          />
+                        </picture>
                         {isCenter && (
                           <button
                             type="button"
@@ -509,12 +530,20 @@ export function ImageShowcase({ routeBase = "" }: ImageShowcaseProps) {
                                 : "border-[#1E2B36] opacity-55 hover:opacity-95"
                             }`}
                           >
-                            <img
-                              src={item.imageSrc}
-                              alt={item.title}
-                              referrerPolicy="no-referrer"
-                              className="h-full w-full object-cover"
-                            />
+                            <picture className="block h-full w-full">
+                              <source srcSet={toThumbWebp(item.imageSrc)} type="image/webp" />
+                              <img
+                                src={item.imageSrc}
+                                alt={item.title}
+                                width={320}
+                                height={238}
+                                loading="lazy"
+                                decoding="async"
+                                fetchPriority="low"
+                                referrerPolicy="no-referrer"
+                                className="h-full w-full object-cover"
+                              />
+                            </picture>
                           </button>
                         );
                       })}
@@ -563,8 +592,9 @@ export function ImageShowcase({ routeBase = "" }: ImageShowcaseProps) {
             </div>
           ) : (
             <div
+              id="gyra-image-panel-edit"
               role="tabpanel"
-              aria-label="Image-to-Image Edit · Pro Ultra"
+              aria-labelledby="gyra-image-tab-edit"
               className="grid grid-cols-1 divide-y divide-[#1F1F1F] lg:grid-cols-12 lg:divide-x lg:divide-y-0"
             >
               {/* Interactive Pixel-Registered Comparison Stage */}
@@ -584,25 +614,39 @@ export function ImageShowcase({ routeBase = "" }: ImageShowcaseProps) {
                   onPointerCancel={() => setIsSplitDragging(false)}
                   className="relative aspect-[4/3] w-full cursor-ew-resize select-none overflow-hidden border border-[#242424] bg-black touch-none"
                 >
-                  <img
-                    src={IMAGE_EDIT_SHOWCASE.afterSrc}
-                    alt={IMAGE_EDIT_SHOWCASE.afterLabel}
-                    draggable={false}
-                    referrerPolicy="no-referrer"
-                    className="h-full w-full object-cover"
-                  />
+                  <picture className="block h-full w-full">
+                    <source srcSet={toHdWebp(IMAGE_EDIT_SHOWCASE.afterSrc)} type="image/webp" />
+                    <img
+                      src={IMAGE_EDIT_SHOWCASE.afterSrc}
+                      alt={IMAGE_EDIT_SHOWCASE.afterLabel}
+                      width={1200}
+                      height={896}
+                      loading="lazy"
+                      decoding="async"
+                      draggable={false}
+                      referrerPolicy="no-referrer"
+                      className="h-full w-full object-cover"
+                    />
+                  </picture>
 
                   <div
                     className="absolute inset-0 overflow-hidden"
                     style={{ clipPath: `inset(0 ${100 - splitPct}% 0 0)` }}
                   >
-                    <img
-                      src={IMAGE_EDIT_SHOWCASE.beforeSrc}
-                      alt={IMAGE_EDIT_SHOWCASE.beforeLabel}
-                      draggable={false}
-                      referrerPolicy="no-referrer"
-                      className="h-full w-full object-cover"
-                    />
+                    <picture className="block h-full w-full">
+                      <source srcSet={toHdWebp(IMAGE_EDIT_SHOWCASE.beforeSrc)} type="image/webp" />
+                      <img
+                        src={IMAGE_EDIT_SHOWCASE.beforeSrc}
+                        alt={IMAGE_EDIT_SHOWCASE.beforeLabel}
+                        width={1200}
+                        height={896}
+                        loading="lazy"
+                        decoding="async"
+                        draggable={false}
+                        referrerPolicy="no-referrer"
+                        className="h-full w-full object-cover"
+                      />
+                    </picture>
                   </div>
 
                   {/* Razor Steel-Blue Split Hairline + Square Hardware Handle */}

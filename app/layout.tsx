@@ -1,11 +1,32 @@
 import type { Metadata, Viewport } from "next";
-import { Barlow_Semi_Condensed, DM_Sans, JetBrains_Mono } from "next/font/google";
-
-const fontDisplay = Barlow_Semi_Condensed({ subsets: ["latin"], weight: ["600", "700"], variable: "--font-display" });
-const fontSans = DM_Sans({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-sans" });
-const fontMono = JetBrains_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-mono" });
+import localFont from "next/font/local";
 import "./globals.css";
 import { ThemeProvider } from "./components/ThemeProvider";
+
+const fontDisplay = localFont({
+  src: [
+    { path: "./fonts/barlow-semi-condensed-latin-600.woff2", weight: "600", style: "normal" },
+    { path: "./fonts/barlow-semi-condensed-latin-700.woff2", weight: "700", style: "normal" },
+  ],
+  variable: "--font-gyra-display",
+  display: "swap",
+});
+
+const fontSans = localFont({
+  src: "./fonts/dm-sans-latin-var.woff2",
+  weight: "400 600",
+  style: "normal",
+  variable: "--font-gyra-sans",
+  display: "swap",
+});
+
+const fontMono = localFont({
+  src: "./fonts/jetbrains-mono-latin-var.woff2",
+  weight: "400 500",
+  style: "normal",
+  variable: "--font-gyra-mono",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Gyra — Intelligence, Simplified.",
@@ -59,8 +80,6 @@ export const viewport: Viewport = {
   ],
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
 };
 
 // ============================================================
@@ -155,7 +174,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${fontDisplay.variable} ${fontSans.variable} ${fontMono.variable} scroll-smooth`}>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${fontDisplay.variable} ${fontSans.variable} ${fontMono.variable}`}
+    >
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
         <script

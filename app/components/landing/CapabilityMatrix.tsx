@@ -12,7 +12,7 @@ export function CapabilityMatrix() {
   ];
 
   return (
-    <section className="border-b border-[#1F1F1F] bg-black py-24 lg:py-32">
+    <section className="gyra-band-defer border-b border-[#1F1F1F] bg-black py-24 lg:py-32">
       <div className="mx-auto max-w-[1380px] px-5 sm:px-8">
         <div className="grid grid-cols-1 items-end gap-6 lg:grid-cols-12">
           <div className="lg:col-span-7">

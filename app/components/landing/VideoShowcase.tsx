@@ -29,6 +29,13 @@ export function VideoShowcase({ routeBase = "" }: VideoShowcaseProps) {
 
   const preset = VIDEO_TEMPLATES.find((p) => p.id === presetId) ?? VIDEO_TEMPLATES[0];
 
+  // Respect prefers-reduced-motion so video does not autoplay unexpectedly
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setIsPlaying(false);
+    }
+  }, []);
+
   // Smart IntersectionObserver + visibilitychange so video only consumes GPU/CPU when actually visible
   useEffect(() => {
     const el = sectionRef.current;
@@ -86,7 +93,7 @@ export function VideoShowcase({ routeBase = "" }: VideoShowcaseProps) {
     <section
       ref={sectionRef}
       id="video"
-      className="border-b border-[#1F1F1F] bg-black py-24 lg:py-32"
+      className="gyra-band-defer border-b border-[#1F1F1F] bg-black py-24 lg:py-32"
     >
       <div className="mx-auto max-w-[1380px] px-5 sm:px-8">
         {/* Header Row */}
@@ -216,9 +223,13 @@ export function VideoShowcase({ routeBase = "" }: VideoShowcaseProps) {
                     key={preset.videoSrc}
                     src={preset.videoSrc}
                     poster={preset.posterSrc}
+                    width={1280}
+                    height={720}
+                    preload="none"
                     loop
                     muted={isMuted}
                     playsInline
+                    aria-label={`${preset.label} — ${preset.prompt}`}
                     onLoadedMetadata={(e) => {
                       const d = e.currentTarget.duration;
                       if (Number.isFinite(d) && d > 0) {
@@ -294,12 +305,24 @@ export function VideoShowcase({ routeBase = "" }: VideoShowcaseProps) {
                       <span className="text-[#34D399]">Locked · F001</span>
                     </div>
                     <div className="mt-2.5 aspect-[16/9] overflow-hidden border border-[#24384A]">
-                      <img
-                        src={preset.referenceStillSrc}
-                        alt={`Reference frame for ${preset.label}`}
-                        referrerPolicy="no-referrer"
-                        className="h-full w-full object-cover"
-                      />
+                      <picture className="block h-full w-full">
+                        {preset.referenceStillSrc.endsWith("video-ref-lagos.jpg") && (
+                          <source
+                            srcSet={preset.referenceStillSrc.replace(/\.jpg$/i, ".webp")}
+                            type="image/webp"
+                          />
+                        )}
+                        <img
+                          src={preset.referenceStillSrc}
+                          alt={`Reference frame for ${preset.label}`}
+                          width={1376}
+                          height={768}
+                          loading="lazy"
+                          decoding="async"
+                          referrerPolicy="no-referrer"
+                          className="h-full w-full object-cover"
+                        />
+                      </picture>
                     </div>
                   </div>
                 )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Check,
   ChevronLeft,
@@ -19,6 +19,38 @@ export interface ImageLightboxModalProps {
   onClose: () => void;
 }
 
+function toHdWebp(src: string): string {
+  return src.replace(/\.jpg$/i, ".webp");
+}
+
+function toThumbWebp(src: string): string {
+  return src.replace(/-hd\.jpg$/i, "-thumb.webp").replace(/\.jpg$/i, ".webp");
+}
+
+let cachedDisplayTransitionSupport: boolean | undefined;
+function canTransitionDisplay(): boolean {
+  if (cachedDisplayTransitionSupport !== undefined) return cachedDisplayTransitionSupport;
+  if (
+    typeof window === "undefined" ||
+    !window.CSS?.supports?.("transition-behavior", "allow-discrete") ||
+    !document.body
+  ) {
+    return false;
+  }
+  const probe = document.createElement("div");
+  probe.style.cssText = "transition: display 1s allow-discrete !important; display: block;";
+  document.body.appendChild(probe);
+  void getComputedStyle(probe).display;
+  probe.style.display = "none";
+  cachedDisplayTransitionSupport = getComputedStyle(probe).display === "block";
+  probe.remove();
+  return cachedDisplayTransitionSupport;
+}
+
+function supportsTopLayerExit(): boolean {
+  return Boolean(window.CSS?.supports?.("overlay", "auto") && canTransitionDisplay());
+}
+
 export function ImageLightboxModal({
   items,
   activeIndex,
@@ -27,46 +59,93 @@ export function ImageLightboxModal({
 }: ImageLightboxModalProps) {
   const [zoomed, setZoomed] = useState(false);
   const [copied, setCopied] = useState(false);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const closingRef = useRef(false);
 
   const count = items.length;
   const safeIndex = ((activeIndex % count) + count) % count;
   const specimen = items[safeIndex] ?? items[0];
 
-  const step = (delta: -1 | 1) => {
-    setZoomed(false);
-    setCopied(false);
-    onSelectIndex((safeIndex + delta + count) % count);
-  };
+  const requestAnimatedClose = useCallback(async () => {
+    const dialog = dialogRef.current;
+    if (!dialog || !dialog.open || closingRef.current) return;
+    closingRef.current = true;
+
+    if (!supportsTopLayerExit()) {
+      dialog.setAttribute("data-closing", "");
+      const animations = dialog.getAnimations({ subtree: true });
+      if (animations.length > 0) {
+        await Promise.race([
+          Promise.allSettled(animations.map((a) => a.finished)),
+          new Promise<void>((resolve) => window.setTimeout(resolve, 400)),
+        ]);
+      }
+      dialog.removeAttribute("data-closing");
+    }
+
+    if (dialog.open) {
+      dialog.close();
+    }
+  }, []);
+
+  const step = useCallback(
+    (delta: -1 | 1) => {
+      setZoomed(false);
+      setCopied(false);
+      onSelectIndex((safeIndex + delta + count) % count);
+    },
+    [count, onSelectIndex, safeIndex],
+  );
+
+  // Promote native <dialog> into the browser top layer via showModal()
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    if (!dialog.open) {
+      try {
+        dialog.showModal();
+      } catch {
+        // Fallback if already open in strict double-invocation
+      }
+    }
+
+    const handleCancel = (event: Event) => {
+      if (!supportsTopLayerExit()) {
+        event.preventDefault();
+        void requestAnimatedClose();
+      }
+    };
+
+    const handleNativeClose = () => {
+      closingRef.current = false;
+      onClose();
+    };
+
+    dialog.addEventListener("cancel", handleCancel);
+    dialog.addEventListener("close", handleNativeClose);
+    return () => {
+      dialog.removeEventListener("cancel", handleCancel);
+      dialog.removeEventListener("close", handleNativeClose);
+    };
+  }, [onClose, requestAnimatedClose]);
 
   useEffect(() => {
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
+      if (e.key === "ArrowLeft") {
         e.preventDefault();
-        onClose();
-      } else if (e.key === "ArrowLeft") {
-        e.preventDefault();
-        setZoomed(false);
-        setCopied(false);
-        onSelectIndex((safeIndex - 1 + count) % count);
+        step(-1);
       } else if (e.key === "ArrowRight") {
         e.preventDefault();
-        setZoomed(false);
-        setCopied(false);
-        onSelectIndex((safeIndex + 1) % count);
+        step(1);
       } else if (e.key === "z" || e.key === "Z") {
         setZoomed((z) => !z);
       }
     };
 
     window.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.body.style.overflow = prevOverflow;
-      window.removeEventListener("keydown", onKeyDown);
-    };
-  }, [safeIndex, count, onClose, onSelectIndex]);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [step]);
 
   const handleCopyPrompt = async () => {
     try {
@@ -79,18 +158,21 @@ export function ImageLightboxModal({
   };
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={`Full resolution view: ${specimen.title}`}
+    <dialog
+      ref={dialogRef}
+      // Progressive enhancement: native light-dismiss on backdrop click + Esc
+      {...({ closedby: "any" } as Record<string, string>)}
+      aria-labelledby="gyra-lightbox-title"
       data-testid="image-lightbox-modal"
-      onClick={onClose}
-      className="fixed inset-0 z-[90] flex items-center justify-center bg-black/95 p-3 sm:p-6 gyra-lightbox-enter"
+      onClick={(e) => {
+        // Light-dismiss fallback for browsers without native closedby="any"
+        if (e.target === dialogRef.current) {
+          void requestAnimatedClose();
+        }
+      }}
+      className="gyra-lightbox-dialog text-white"
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[94vh] w-full max-w-[1280px] flex-col overflow-hidden border border-[#24394B] bg-[#03060A]"
-      >
+      <div className="flex max-h-[94vh] w-full flex-col overflow-hidden border border-[#24394B] bg-[#03060A]">
         {/* Top Bar */}
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#182735] bg-[#04090F] px-4 py-3 sm:px-5">
           <div className="flex min-w-0 items-center gap-3">
@@ -106,9 +188,12 @@ export function ImageLightboxModal({
             <span aria-hidden="true" className="hidden text-[#2D4354] sm:inline">
               ·
             </span>
-            <h3 className="font-display truncate text-[17px] font-bold tracking-[0.02em] text-white uppercase sm:text-[19px]">
+            <h2
+              id="gyra-lightbox-title"
+              className="font-display truncate text-[17px] font-bold tracking-[0.02em] text-white uppercase sm:text-[19px]"
+            >
               {specimen.title}
-            </h3>
+            </h2>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
@@ -117,7 +202,7 @@ export function ImageLightboxModal({
               onClick={() => setZoomed((z) => !z)}
               aria-pressed={zoomed}
               aria-label={zoomed ? "Reset image zoom to 1x" : "Zoom image to 2x"}
-              className={`font-mono-tech inline-flex min-h-[36px] items-center gap-1.5 border px-3 text-[11px] tracking-[0.08em] uppercase transition-colors cursor-pointer whitespace-nowrap ${
+              className={`font-mono-tech inline-flex min-h-[36px] items-center gap-1.5 border px-3 text-[11px] tracking-[0.08em] uppercase transition-colors cursor-pointer whitespace-nowrap focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#5B9EC2] ${
                 zoomed
                   ? "border-[#5B9EC2] bg-[#1F5B7C] text-white"
                   : "border-[#233748] bg-black text-[#B8D2E6] hover:border-[#5B9EC2] hover:text-white"
@@ -128,9 +213,10 @@ export function ImageLightboxModal({
             </button>
             <button
               type="button"
-              onClick={onClose}
+              autoFocus
+              onClick={() => void requestAnimatedClose()}
               aria-label="Close full resolution image viewer"
-              className="inline-flex h-[36px] w-[36px] items-center justify-center border border-[#233748] bg-black text-[#D4E3EE] transition-colors hover:border-white hover:text-white cursor-pointer"
+              className="inline-flex h-[36px] w-[36px] items-center justify-center border border-[#233748] bg-black text-[#D4E3EE] transition-colors hover:border-white hover:text-white cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#5B9EC2]"
             >
               <X className="h-4 w-4" />
             </button>
@@ -141,29 +227,36 @@ export function ImageLightboxModal({
         <div className="grid min-h-0 flex-1 grid-cols-1 divide-y divide-[#182735] lg:grid-cols-12 lg:divide-x lg:divide-y-0">
           {/* Image Canvas */}
           <div className="relative flex min-h-[300px] items-center justify-center overflow-hidden bg-black p-3 sm:min-h-[480px] sm:p-5 lg:col-span-8">
-            <div
+            <button
+              type="button"
               onClick={() => setZoomed((z) => !z)}
-              className={`relative flex max-h-[64vh] w-full items-center justify-center overflow-hidden ${
+              aria-label={zoomed ? `Zoom out ${specimen.title}` : `Zoom in ${specimen.title}`}
+              className={`relative flex max-h-[64vh] w-full items-center justify-center overflow-hidden border-0 bg-transparent p-0 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#5B9EC2] ${
                 zoomed ? "cursor-zoom-out" : "cursor-zoom-in"
               }`}
             >
-              <img
-                key={specimen.id}
-                src={specimen.imageSrc}
-                alt={`${specimen.category}: ${specimen.title}`}
-                referrerPolicy="no-referrer"
-                className={`max-h-[62vh] w-auto max-w-full border border-[#1E3142] object-contain transition-transform duration-300 ease-out ${
-                  zoomed ? "scale-[1.75]" : "scale-100"
-                }`}
-              />
-            </div>
+              <picture key={specimen.id} className="flex items-center justify-center">
+                <source srcSet={toHdWebp(specimen.imageSrc)} type="image/webp" />
+                <img
+                  src={specimen.imageSrc}
+                  alt={`${specimen.category}: ${specimen.title}`}
+                  width={1200}
+                  height={896}
+                  decoding="async"
+                  referrerPolicy="no-referrer"
+                  className={`max-h-[62vh] w-auto max-w-full border border-[#1E3142] object-contain transition-transform duration-300 ease-out ${
+                    zoomed ? "scale-[1.75]" : "scale-100"
+                  }`}
+                />
+              </picture>
+            </button>
 
             {/* Side Prev / Next Controls */}
             <button
               type="button"
               onClick={() => step(-1)}
               aria-label="Previous image in viewer"
-              className="absolute left-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center border border-[#2A4256] bg-black/85 text-white transition-colors hover:border-[#78B0CE] hover:bg-[#0D273B] cursor-pointer"
+              className="absolute left-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center border border-[#2A4256] bg-black/85 text-white transition-colors hover:border-[#78B0CE] hover:bg-[#0D273B] cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#5B9EC2]"
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
@@ -171,7 +264,7 @@ export function ImageLightboxModal({
               type="button"
               onClick={() => step(1)}
               aria-label="Next image in viewer"
-              className="absolute right-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center border border-[#2A4256] bg-black/85 text-white transition-colors hover:border-[#78B0CE] hover:bg-[#0D273B] cursor-pointer"
+              className="absolute right-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center border border-[#2A4256] bg-black/85 text-white transition-colors hover:border-[#78B0CE] hover:bg-[#0D273B] cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#5B9EC2]"
             >
               <ChevronRight className="h-5 w-5" />
             </button>
@@ -187,7 +280,7 @@ export function ImageLightboxModal({
                 <button
                   type="button"
                   onClick={handleCopyPrompt}
-                  className="font-mono-tech inline-flex items-center gap-1.5 text-[10.5px] tracking-[0.08em] text-[#9BC1DA] uppercase transition-colors hover:text-white cursor-pointer"
+                  className="font-mono-tech inline-flex items-center gap-1.5 text-[10.5px] tracking-[0.08em] text-[#9BC1DA] uppercase transition-colors hover:text-white cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#5B9EC2]"
                 >
                   {copied ? (
                     <>
@@ -240,18 +333,25 @@ export function ImageLightboxModal({
                         }}
                         aria-label={`View ${item.title}`}
                         aria-pressed={active}
-                        className={`aspect-[4/3] overflow-hidden border transition-all cursor-pointer ${
+                        className={`aspect-[4/3] overflow-hidden border transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#5B9EC2] ${
                           active
                             ? "border-[#78B0CE] opacity-100"
                             : "border-[#1A2A37] opacity-55 hover:opacity-100"
                         }`}
                       >
-                        <img
-                          src={item.imageSrc}
-                          alt={item.title}
-                          referrerPolicy="no-referrer"
-                          className="h-full w-full object-cover"
-                        />
+                        <picture className="block h-full w-full">
+                          <source srcSet={toThumbWebp(item.imageSrc)} type="image/webp" />
+                          <img
+                            src={item.imageSrc}
+                            alt={item.title}
+                            width={320}
+                            height={238}
+                            loading="lazy"
+                            decoding="async"
+                            referrerPolicy="no-referrer"
+                            className="h-full w-full object-cover"
+                          />
+                        </picture>
                       </button>
                     );
                   })}
@@ -265,6 +365,6 @@ export function ImageLightboxModal({
           </div>
         </div>
       </div>
-    </div>
+    </dialog>
   );
 }

@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
+  ACTIVE_LOGO_VARIANT,
   getGyraLogoSrc,
   getLogoConstellation,
   resolveActiveLogoVariant,
@@ -15,6 +16,8 @@ export interface GyraLogoMarkProps {
   variant?: GyraLogoVariant;
   /** Render the calm animated inner synaptic mesh attaching node-to-node inside the G */
   animated?: boolean;
+  /** Accessible alt text; defaults to empty string when paired with adjacent "Gyra" wordmark */
+  alt?: string;
   className?: string;
 }
 
@@ -22,13 +25,23 @@ export function GyraLogoMark({
   size = 44,
   variant,
   animated = true,
+  alt = "",
   className = "",
 }: GyraLogoMarkProps) {
-  const resolvedVariant = useMemo(
-    () => variant ?? resolveActiveLogoVariant(),
-    [variant],
+  const [resolvedVariant, setResolvedVariant] = useState<GyraLogoVariant>(
+    variant ?? ACTIVE_LOGO_VARIANT,
   );
+
+  useEffect(() => {
+    if (variant) {
+      setResolvedVariant(variant);
+      return;
+    }
+    setResolvedVariant(resolveActiveLogoVariant(window.location.search));
+  }, [variant]);
+
   const src = getGyraLogoSrc(resolvedVariant);
+  const webpSrc = src.replace(/\.jpg$/i, ".webp");
   const constellation = getLogoConstellation(resolvedVariant);
   const nodeLookup = useMemo(
     () => new Map(constellation.nodes.map((node) => [node.id, node])),
@@ -40,14 +53,18 @@ export function GyraLogoMark({
       className={`relative inline-flex shrink-0 items-center justify-center overflow-hidden select-none ${className}`}
       style={{ width: size, height: size }}
     >
-      <img
-        src={src}
-        alt="Gyra"
-        width={size}
-        height={size}
-        draggable={false}
-        className="h-full w-full object-contain mix-blend-lighten contrast-[1.06] brightness-[1.08]"
-      />
+      <picture className="block h-full w-full">
+        <source srcSet={webpSrc} type="image/webp" />
+        <img
+          src={src}
+          alt={alt}
+          width={size}
+          height={size}
+          decoding="async"
+          draggable={false}
+          className="h-full w-full object-contain mix-blend-lighten contrast-[1.06] brightness-[1.08]"
+        />
+      </picture>
 
       {animated && (
         <svg
