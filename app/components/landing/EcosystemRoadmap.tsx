@@ -9,6 +9,7 @@ import {
   ROADMAP_ITEMS,
 } from "../../lib/gyraCatalog";
 import { resolveGyraRoute } from "../../lib/landingSimulations";
+import { GyraLogoMark } from "./GyraLogoMark";
 
 export interface EcosystemRoadmapProps {
   routeBase?: string;
@@ -189,14 +190,8 @@ export function EcosystemRoadmap({ routeBase = "" }: EcosystemRoadmapProps) {
                 href={resolveGyraRoute("/", routeBase)}
                 className="inline-flex items-center gap-2.5"
               >
-                <img
-                  src="/gyra-logo.png"
-                  alt="Gyra"
-                  width={22}
-                  height={22}
-                  className="h-[22px] w-[22px] object-contain"
-                />
-                <span className="font-display text-[19px] font-bold tracking-[0.06em] text-white uppercase">
+                <GyraLogoMark size={40} />
+                <span className="font-display text-[21px] font-bold tracking-[0.07em] text-white uppercase">
                   Gyra
                 </span>
               </a>

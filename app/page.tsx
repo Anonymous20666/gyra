@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "./supabase";
+import { GyraPreloader } from "./components/landing/GyraPreloader";
 import { Navbar } from "./components/landing/Navbar";
 import { HeroWorkbench } from "./components/landing/HeroWorkbench";
 import { ArchitectureBand } from "./components/landing/ArchitectureBand";
@@ -30,6 +31,7 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-black text-[#F5F5F5] overflow-x-clip selection:bg-[#1F5B7C]/35 selection:text-white">
+      <GyraPreloader />
       <Navbar isAuthenticated={isAuthenticated} />
       <main>
         <HeroWorkbench isAuthenticated={isAuthenticated} />

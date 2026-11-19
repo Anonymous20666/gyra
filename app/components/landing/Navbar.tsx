@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
 import { resolveGyraRoute } from "../../lib/landingSimulations";
+import { GyraLogoMark } from "./GyraLogoMark";
 
 export interface NavbarProps {
   isAuthenticated?: boolean;
@@ -36,20 +37,14 @@ export function Navbar({ isAuthenticated = false, routeBase = "" }: NavbarProps)
   return (
     <header className="sticky top-0 z-50 h-16 border-b border-[#1F1F1F] bg-black">
       <div className="mx-auto flex h-full max-w-[1380px] items-center justify-between gap-8 px-5 sm:px-8">
-        {/* Zone 1: Clean single-element Brand mark */}
+        {/* Zone 1: High-visibility live Gyra brand mark */}
         <a
           href={resolveGyraRoute("/", routeBase)}
           className="flex shrink-0 items-center gap-2.5 whitespace-nowrap focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#5B9EC2]"
           aria-label="Gyra Home"
         >
-          <img
-            src="/gyra-logo.png"
-            alt="Gyra"
-            width={24}
-            height={24}
-            className="h-6 w-6 object-contain"
-          />
-          <span className="font-display text-[20px] font-bold tracking-[0.06em] text-white uppercase">
+          <GyraLogoMark size={44} />
+          <span className="font-display text-[22px] font-bold tracking-[0.07em] text-white uppercase">
             Gyra
           </span>
         </a>
