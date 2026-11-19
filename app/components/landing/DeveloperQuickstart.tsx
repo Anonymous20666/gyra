@@ -43,7 +43,7 @@ export function DeveloperQuickstart({ routeBase = "" }: DeveloperQuickstartProps
         {/* Header Row */}
         <div className="grid grid-cols-1 items-end gap-6 lg:grid-cols-12">
           <div className="lg:col-span-7">
-            <p className="font-mono-tech text-[12px] tracking-[0.14em] text-[#FF3D00] uppercase">
+            <p className="font-mono-tech text-[12px] tracking-[0.14em] text-[#3B82F6] uppercase">
               [ 04 · Developer Platform ]
             </p>
             <h2 className="font-display mt-3.5 text-[clamp(2.35rem,4.2vw,3.75rem)] font-bold leading-[0.98] tracking-[-0.02em] text-white uppercase [text-wrap:balance]">
@@ -66,7 +66,7 @@ export function DeveloperQuickstart({ routeBase = "" }: DeveloperQuickstartProps
                 <a
                   key={link.label}
                   href={resolveGyraRoute(link.href, routeBase)}
-                  className="inline-flex items-center gap-1 text-white underline decoration-[#303030] underline-offset-4 transition-colors hover:text-[#FF3D00] hover:decoration-[#FF3D00]"
+                  className="inline-flex items-center gap-1 text-white underline decoration-[#303030] underline-offset-4 transition-colors hover:text-[#3B82F6] hover:decoration-[#3B82F6]"
                 >
                   {link.label}
                   <ArrowUpRight className="h-3 w-3" />
@@ -90,9 +90,9 @@ export function DeveloperQuickstart({ routeBase = "" }: DeveloperQuickstartProps
                     role="tab"
                     aria-selected={selected}
                     onClick={() => setEndpointId(item.id)}
-                    className={`font-mono-tech min-h-[34px] border px-3 text-[11px] tracking-[0.06em] uppercase transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#FF3D00] ${
+                    className={`font-mono-tech min-h-[34px] border px-3 text-[11px] tracking-[0.06em] uppercase transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#3B82F6] ${
                       selected
-                        ? "border-[#FF3D00] bg-[#FF3D00] font-medium text-white"
+                        ? "border-[#3B82F6] bg-[#2563EB] font-medium text-white"
                         : "border-[#242424] bg-black text-[#8A8A8A] hover:border-[#444] hover:text-white"
                     }`}
                   >
@@ -130,7 +130,7 @@ export function DeveloperQuickstart({ routeBase = "" }: DeveloperQuickstartProps
               >
                 {copied ? (
                   <>
-                    <Check className="h-3 w-3 text-[#FF3D00]" />
+                    <Check className="h-3 w-3 text-[#3B82F6]" />
                     Copied
                   </>
                 ) : (
@@ -146,7 +146,7 @@ export function DeveloperQuickstart({ routeBase = "" }: DeveloperQuickstartProps
           {/* Endpoint Contract Strip */}
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#1A1A1A] bg-black px-5 py-3 font-mono-tech text-[12px]">
             <div className="flex items-center gap-2.5">
-              <span className="bg-[#FF3D00] px-2 py-0.5 text-[10px] font-medium text-white">
+              <span className="bg-[#2563EB] px-2 py-0.5 text-[10px] font-medium text-white">
                 {activeExample.method}
               </span>
               <span className="text-white">{activeExample.endpoint}</span>
@@ -169,7 +169,7 @@ export function DeveloperQuickstart({ routeBase = "" }: DeveloperQuickstartProps
               <div>
                 <div className="mb-3 flex items-center justify-between font-mono-tech text-[10px] tracking-[0.12em] uppercase">
                   <span className="text-[#737373]">Response Payload</span>
-                  <span className="text-[#FF3D00]">200 OK · JSON</span>
+                  <span className="text-[#3B82F6]">200 OK · JSON</span>
                 </div>
                 <pre className="overflow-x-auto border border-[#1A1A1A] bg-[#040404] p-4 font-mono-tech text-[12px] leading-[1.65] text-[#CCCCCC]">
                   <code>{activeExample.sampleResponse}</code>
@@ -180,7 +180,7 @@ export function DeveloperQuickstart({ routeBase = "" }: DeveloperQuickstartProps
                 <span className="text-[#737373] uppercase">Test live in browser</span>
                 <a
                   href={resolveGyraRoute("/playground", routeBase)}
-                  className="inline-flex items-center gap-1 text-white uppercase hover:text-[#FF3D00]"
+                  className="inline-flex items-center gap-1 text-white uppercase hover:text-[#3B82F6]"
                 >
                   Open Playground
                   <ArrowUpRight className="h-3.5 w-3.5" />

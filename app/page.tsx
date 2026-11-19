@@ -29,7 +29,7 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-black text-[#F5F5F5] overflow-x-clip selection:bg-[#FF3D00]/25 selection:text-white">
+    <div className="min-h-screen bg-black text-[#F5F5F5] overflow-x-clip selection:bg-[#2563EB]/30 selection:text-white">
       <Navbar isAuthenticated={isAuthenticated} />
       <main>
         <HeroWorkbench isAuthenticated={isAuthenticated} />

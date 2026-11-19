@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
+  AlertTriangle,
   ArrowDown,
-  ArrowLeft,
   ArrowUpRight,
   Check,
+  ChevronDown,
   ChevronRight,
   Copy,
   Cpu,
@@ -14,6 +15,7 @@ import {
   MessageSquare,
   RotateCcw,
   Terminal,
+  X,
 } from "lucide-react";
 import { resolveGyraRoute } from "../../lib/landingSimulations";
 
@@ -23,62 +25,97 @@ export interface HeroWorkbenchProps {
 }
 
 type BranchId = "chat" | "image" | "video" | "api";
+type ExecutionStatus = "idle" | "active" | "processing" | "completed" | "failed";
+type PipelineStageId = "understand" | "orchestrate" | "execute";
 
-interface FlowStep {
-  id: string;
-  stage: string;
-  detail: string;
-  timing: string;
+interface ConsoleEvent {
+  stage: PipelineStageId;
+  tag: string;
+  message: string;
 }
 
-interface BranchSpec {
+interface BranchArchitecture {
   id: BranchId;
   index: string;
   name: string;
   shortLabel: string;
-  engineTag: string;
+  role: string;
   summary: string;
-  metricTag: string;
+  subEngines: string[];
+  capabilities: string[];
+  routePath: string;
   sectionHref: string;
-  sectionCta: string;
-  appRoute: string;
-  appCta: string;
-  inputLabel: string;
-  inputMeta: string;
-  inputBody: string;
-  pipelineTitle: string;
-  steps: FlowStep[];
-  outputLabel: string;
-  outputBadge: string;
+  sectionLabel: string;
+  appHref: string;
+  appLabel: string;
+  requestSample: string;
+  successEvents: ConsoleEvent[];
+  successSummary: string;
+  failureStage: PipelineStageId;
+  failureEvents: ConsoleEvent[];
+  failureSummary: string;
   traceClass: string;
 }
 
-const BRANCHES: BranchSpec[] = [
+const PIPELINE_STAGES: { id: PipelineStageId; num: string; label: string; caption: string }[] = [
+  { id: "understand", num: "01", label: "Understand", caption: "Parse prompt, files & auth" },
+  { id: "orchestrate", num: "02", label: "Orchestrate", caption: "Route engines & guardrails" },
+  { id: "execute", num: "03", label: "Execute", caption: "Run models & stream output" },
+];
+
+const BRANCHES: BranchArchitecture[] = [
   {
     id: "chat",
     index: "01",
     name: "Gyra Chat",
     shortLabel: "Chat",
-    engineTag: "Gyra 1.0 · SuperGyra 2.0",
-    summary: "Conversational reasoning and a 6-agent engineering pipeline.",
-    metricTag: "6 AGENTS · LIVE TOOLS",
-    sectionHref: "#chat",
-    sectionCta: "Jump to Chat Workbench",
-    appRoute: "/dashboard",
-    appCta: "Open Gyra Chat",
-    inputLabel: "USER PROMPT",
-    inputMeta: "model: super-2.0",
-    inputBody:
-      "Build a TypeScript webhook POST handler with HMAC-SHA256 verification and replay protection.",
-    pipelineTitle: "6-AGENT REASONING TRACE",
-    steps: [
-      { id: "c1", stage: "Intent Router", detail: "Complexity high → dispatch SuperGyra 2.0", timing: "0.2s" },
-      { id: "c2", stage: "Atlas · Spec", detail: "Checks replay window & timing-attack risks", timing: "0.5s" },
-      { id: "c3", stage: "Forge · Code", detail: "Generates strict App Router webhook-handler.ts", timing: "1.1s" },
-      { id: "c4", stage: "Sentinel · QA", detail: "Verified timingSafeEqual & 401 guard", timing: "0.5s" },
+    role: "Reasoning & Agents",
+    summary: "Conversational intelligence with Gyra 1.0, SuperGyra 2.0, and a 6-agent build pipeline.",
+    subEngines: [
+      "Gyra 1.0 (Fast Inference)",
+      "SuperGyra 2.0 (Deep Reasoning)",
+      "6-Agent Pipeline (Atlas → Mentor)",
     ],
-    outputLabel: "webhook-handler.ts",
-    outputBadge: "SENTINEL VERIFIED",
+    capabilities: ["Web Search", "PDF & File RAG", "Vision Analysis", "Voice Mode"],
+    routePath: "/dashboard · /api/v1/chat",
+    sectionHref: "#chat",
+    sectionLabel: "Chat Workbench",
+    appHref: "/dashboard",
+    appLabel: "Open Gyra Chat",
+    requestSample:
+      "Build a TypeScript webhook POST handler with HMAC-SHA256 verification and replay protection.",
+    successEvents: [
+      {
+        stage: "understand",
+        tag: "UNDERSTAND",
+        message: "Classified multi-step engineering prompt; attached strict TypeScript constraint.",
+      },
+      {
+        stage: "orchestrate",
+        tag: "ORCHESTRATE",
+        message: "Selected SuperGyra 2.0 + 6-agent graph (Atlas → Orion → Architect → Forge → Sentinel → Mentor).",
+      },
+      {
+        stage: "execute",
+        tag: "EXECUTE",
+        message: "Forge drafted App Router POST handler; Sentinel verified timingSafeEqual & timestamp window.",
+      },
+    ],
+    successSummary: "Verified webhook-handler.ts delivered to workspace stream.",
+    failureStage: "orchestrate",
+    failureEvents: [
+      {
+        stage: "understand",
+        tag: "UNDERSTAND",
+        message: "Parsed incoming prompt payload for /api/v1/chat session.",
+      },
+      {
+        stage: "orchestrate",
+        tag: "GUARDRAIL HALT",
+        message: "Free-tier thread limit (20 messages/thread) reached — halted cleanly before dispatch.",
+      },
+    ],
+    failureSummary: "HTTP 429 quota guard triggered; retryable after new thread or SuperGyra upgrade.",
     traceClass: "gyra-trace-pulse",
   },
   {
@@ -86,26 +123,44 @@ const BRANCHES: BranchSpec[] = [
     index: "02",
     name: "Gyra Image",
     shortLabel: "Image",
-    engineTag: "Flux Dev · Pro Ultra I2I",
-    summary: "Text-to-image synthesis and geometry-locked visual editing.",
-    metricTag: "1440×1080 · I2I LOCK",
+    role: "Synthesis & I2I Edit",
+    summary: "Text-to-image synthesis via Flux Dev and geometry-locked editing via Gyra Pro Ultra.",
+    subEngines: ["Flux Dev (Text-to-Image)", "Gyra Pro Ultra (Image-to-Image)", "Spatial Lock Pass"],
+    capabilities: ["Lighting Relight", "UI & Scene Edits", "Geometry Preservation", "High-Res Output"],
+    routePath: "/dashboard · Image Tools",
     sectionHref: "#image",
-    sectionCta: "Jump to Image Darkroom",
-    appRoute: "/dashboard",
-    appCta: "Create with Gyra Image",
-    inputLabel: "SOURCE FRAME + EDIT SPEC",
-    inputMeta: "engine: pro-ultra",
-    inputBody:
-      "Shift daylight window to blue-hour dusk and ignite the desk lamp with 2700K tungsten falloff — preserve exact geometry.",
-    pipelineTitle: "OPTICAL RELIGHT PIPELINE",
-    steps: [
-      { id: "i1", stage: "Frame Lock", detail: "Indexed 1440×1080 studio scene geometry", timing: "0.3s" },
-      { id: "i2", stage: "Depth & Light", detail: "Mapped concrete shadow planes & lamp emitter", timing: "0.7s" },
-      { id: "i3", stage: "Pro Ultra Pass", detail: "Applied blue-hour sky & 2700K tungsten wash", timing: "1.2s" },
-      { id: "i4", stage: "Export Check", detail: "100% spatial lock · high-res frame ready", timing: "0.4s" },
+    sectionLabel: "Image Darkroom",
+    appHref: "/dashboard",
+    appLabel: "Create with Gyra Image",
+    requestSample:
+      "Relight uploaded studio scene to blue-hour dusk with 2700K tungsten desk lamp falloff — lock geometry.",
+    successEvents: [
+      {
+        stage: "understand",
+        tag: "UNDERSTAND",
+        message: "Loaded source frame (1440×1080) and extracted relighting instruction constraints.",
+      },
+      {
+        stage: "orchestrate",
+        tag: "ORCHESTRATE",
+        message: "Routed request to Gyra Pro Ultra I2I pipeline with structural geometry lock enabled.",
+      },
+      {
+        stage: "execute",
+        tag: "EXECUTE",
+        message: "Completed tungsten dusk relight pass while preserving original architecture & framing.",
+      },
     ],
-    outputLabel: "PRO ULTRA · BEFORE / AFTER",
-    outputBadge: "GEOMETRY LOCKED",
+    successSummary: "Geometry-locked Gyra Pro Ultra frame rendered cleanly.",
+    failureStage: "understand",
+    failureEvents: [
+      {
+        stage: "understand",
+        tag: "VALIDATION HALT",
+        message: "Unsupported or corrupted reference image payload rejected at input sanitizer.",
+      },
+    ],
+    failureSummary: "Input validation failed before GPU dispatch; no generation credits deducted.",
     traceClass: "gyra-trace-pulse-delay-1",
   },
   {
@@ -113,26 +168,54 @@ const BRANCHES: BranchSpec[] = [
     index: "03",
     name: "Gyra Video",
     shortLabel: "Video",
-    engineTag: "LTX-Video 13B Studio",
-    summary: "Direct 720p, 24 fps clips from text or attached stills.",
-    metricTag: "720P · 24 FPS · 121F",
+    role: "Cinematic Motion",
+    summary: "Text-to-video and image-to-video 720p, 24 fps clips queued inside Gyra Studio.",
+    subEngines: ["LTX-Video 13B", "Reference Frame Encoder", "Async Studio Render Queue"],
+    capabilities: ["Text-to-Video", "Image-to-Video", "16:9 & 9:16", "720p · 24 fps · 121f"],
+    routePath: "/studio · /api/v1/video/generate",
     sectionHref: "#video",
-    sectionCta: "Jump to Video Studio",
-    appRoute: "/studio",
-    appCta: "Open Gyra Studio",
-    inputLabel: "MOTION BRIEF + REF FRAME",
-    inputMeta: "aspect: 16:9 · 5.0s",
-    inputBody:
-      "Slow cinematic drone glide across a cable-stayed bridge over dark lagoon water at twilight with warm traffic light trails.",
-    pipelineTitle: "STUDIO RENDER QUEUE",
-    steps: [
-      { id: "v1", stage: "Ref Frame 001", detail: "Anchored twilight lagoon keyframe composition", timing: "0.4s" },
-      { id: "v2", stage: "Motion Plan", detail: "Computed steady aerial dolly & water shimmer", timing: "0.8s" },
-      { id: "v3", stage: "LTX-13B Worker", detail: "Synthesizing 121 frames @ 720p · 24 fps", timing: "2.1s" },
-      { id: "v4", stage: "Stream Ready", detail: "Encoded MP4 delivered · $2.00 / render", timing: "0.4s" },
+    sectionLabel: "Video Studio",
+    appHref: "/studio",
+    appLabel: "Open Gyra Studio",
+    requestSample:
+      "Slow aerial glide over a twilight lagoon bridge from attached Reference Frame 001 (16:9, 5s).",
+    successEvents: [
+      {
+        stage: "understand",
+        tag: "UNDERSTAND",
+        message: "Verified motion prompt, Reference Frame 001, and 16:9 aspect ratio configuration.",
+      },
+      {
+        stage: "orchestrate",
+        tag: "ORCHESTRATE",
+        message: "Verified SuperGyra studio wallet ($2.00/render) and enqueued async LTX-Video 13B job.",
+      },
+      {
+        stage: "execute",
+        tag: "EXECUTE",
+        message: "Synthesized 121-frame 720p @ 24 fps clip and registered output in Studio History.",
+      },
     ],
-    outputLabel: "LTX-13B · 16:9 PREVIEW",
-    outputBadge: "720P · 24 FPS",
+    successSummary: "Async MP4 job completed and stored in /api/v1/video/history.",
+    failureStage: "execute",
+    failureEvents: [
+      {
+        stage: "understand",
+        tag: "UNDERSTAND",
+        message: "Validated motion brief and 16:9 render parameters.",
+      },
+      {
+        stage: "orchestrate",
+        tag: "ORCHESTRATE",
+        message: "Dispatched job to async Studio worker via authenticated proxy.",
+      },
+      {
+        stage: "execute",
+        tag: "WORKER HALT",
+        message: "Upstream render timeout detected — job marked failed and wallet charge rolled back.",
+      },
+    ],
+    failureSummary: "Worker failure isolated safely; job status set to failed with zero charge.",
     traceClass: "gyra-trace-pulse-delay-2",
   },
   {
@@ -140,26 +223,49 @@ const BRANCHES: BranchSpec[] = [
     index: "04",
     name: "Gyra API",
     shortLabel: "API",
-    engineTag: "OpenAI-Compat REST v1",
-    summary: "Drop-in chat, voice, video queues, and media extraction.",
-    metricTag: "SCOPED KEYS · SSE",
+    role: "Developer Platform",
+    summary: "OpenAI-compatible REST chat, async video queues, voice synthesis, and media extraction.",
+    subEngines: ["OpenAI-Compat REST Gateway", "Scoped API Key Auth", "Media Extraction Workers"],
+    capabilities: ["/api/v1/chat", "/api/v1/video/generate", "/api/v1/transcribe", "YouTube & TikTok API"],
+    routePath: "https://gyra.ng/api/v1/*",
     sectionHref: "#developers",
-    sectionCta: "Jump to API Console",
-    appRoute: "/api",
-    appCta: "Explore API Platform",
-    inputLabel: "HTTP REQUEST",
-    inputMeta: "POST /api/v1/chat",
-    inputBody:
-      `POST https://gyra.ng/api/v1/chat\nAuthorization: Bearer $GYRA_API_KEY\n{ "model": "gyra-super2.0", "stream": false }`,
-    pipelineTitle: "GATEWAY ROUTING TRACE",
-    steps: [
-      { id: "a1", stage: "Key Scope Auth", detail: "Verified bearer token & category permissions", timing: "18ms" },
-      { id: "a2", stage: "Quota Guard", detail: "Rate limit & transparent credit wallet ok", timing: "24ms" },
-      { id: "a3", stage: "Core Dispatch", detail: "Routed payload to gyra-super2.0 cluster", timing: "310ms" },
-      { id: "a4", stage: "200 OK JSON", detail: "Returned OpenAI-compatible completion body", timing: "58ms" },
+    sectionLabel: "API Console",
+    appHref: "/api",
+    appLabel: "Explore API Platform",
+    requestSample:
+      'POST /api/v1/chat · Authorization: Bearer $GYRA_API_KEY · { "model": "gyra-super2.0" }',
+    successEvents: [
+      {
+        stage: "understand",
+        tag: "UNDERSTAND",
+        message: "Validated JSON schema and Bearer API key header at Gyra API gateway.",
+      },
+      {
+        stage: "orchestrate",
+        tag: "ORCHESTRATE",
+        message: "Confirmed category scope, rate-limit bucket, and credit wallet balance.",
+      },
+      {
+        stage: "execute",
+        tag: "EXECUTE",
+        message: "Dispatched completion to gyra-super2.0 and streamed OpenAI-compatible 200 OK JSON.",
+      },
     ],
-    outputLabel: "POST /api/v1/chat",
-    outputBadge: "200 OK · JSON",
+    successSummary: "OpenAI-compatible response returned with usage telemetry headers.",
+    failureStage: "orchestrate",
+    failureEvents: [
+      {
+        stage: "understand",
+        tag: "UNDERSTAND",
+        message: "Received POST /api/v1/chat request at gateway edge.",
+      },
+      {
+        stage: "orchestrate",
+        tag: "AUTH HALT",
+        message: "HTTP 401 Unauthorized — Bearer key missing required 'chat' category scope.",
+      },
+    ],
+    failureSummary: "Rejected cleanly at auth boundary before model invocation.",
     traceClass: "gyra-trace-pulse-delay-3",
   },
 ];
@@ -186,86 +292,151 @@ function BranchIcon({ id, className }: { id: BranchId; className?: string }) {
   }
 }
 
+function getStatusBadgeStyle(status: ExecutionStatus): string {
+  switch (status) {
+    case "idle":
+      return "border-[#2A2A2A] bg-black text-[#8E8E8E]";
+    case "active":
+      return "border-[#3B82F6] bg-[#2563EB]/15 text-[#93C5FD]";
+    case "processing":
+      return "border-[#3B82F6] bg-[#2563EB]/20 text-white";
+    case "completed":
+      return "border-[#10B981]/60 bg-[#10B981]/10 text-[#34D399]";
+    case "failed":
+      return "border-[#EF4444]/60 bg-[#EF4444]/10 text-[#F87171]";
+  }
+}
+
+function getStatusLabel(status: ExecutionStatus): string {
+  switch (status) {
+    case "idle":
+      return "IDLE";
+    case "active":
+      return "ACTIVE";
+    case "processing":
+      return "PROCESSING";
+    case "completed":
+      return "COMPLETED";
+    case "failed":
+      return "FAILED";
+  }
+}
+
 export function HeroWorkbench({
   isAuthenticated = false,
   routeBase = "",
 }: HeroWorkbenchProps) {
   const [selectedBranchId, setSelectedBranchId] = useState<BranchId | null>(null);
   const [hoveredBranchId, setHoveredBranchId] = useState<BranchId | null>(null);
-  const [completedSteps, setCompletedSteps] = useState(0);
+  const [status, setStatus] = useState<ExecutionStatus>("idle");
+  const [activeStageIdx, setActiveStageIdx] = useState<number>(-1);
+  const [simulateFailure, setSimulateFailure] = useState(false);
   const [runNonce, setRunNonce] = useState(0);
   const [copiedCmd, setCopiedCmd] = useState(false);
-  const stageRef = useRef<HTMLDivElement | null>(null);
+  const detailRef = useRef<HTMLDivElement | null>(null);
 
   const selectedBranch = selectedBranchId
     ? BRANCHES.find((b) => b.id === selectedBranchId) ?? null
     : null;
 
-  // Allow Escape key to cleanly return from any inspected branch back to the full tree
+  // Escape key cleanly collapses expanded branch back to Idle
   useEffect(() => {
     if (!selectedBranchId) return;
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setSelectedBranchId(null);
+        setStatus("idle");
+        setActiveStageIdx(-1);
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [selectedBranchId]);
 
-  // Step through the selected branch's live execution flow cleanly once, then hold in COMPLETED state (never auto-skipping)
+  // Deterministic progression through Active -> Processing (Understand -> Orchestrate -> Execute) -> Completed / Failed
   useEffect(() => {
     if (!selectedBranch) {
-      setCompletedSteps(0);
+      setStatus("idle");
+      setActiveStageIdx(-1);
       return;
     }
+
+    const events = simulateFailure
+      ? selectedBranch.failureEvents
+      : selectedBranch.successEvents;
+    const targetOutcome: ExecutionStatus = simulateFailure ? "failed" : "completed";
 
     const prefersReduced =
       typeof window !== "undefined" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     if (prefersReduced) {
-      setCompletedSteps(selectedBranch.steps.length);
+      setActiveStageIdx(events.length - 1);
+      setStatus(targetOutcome);
       return;
     }
 
-    setCompletedSteps(1);
-    let current = 1;
-    const timer = window.setInterval(() => {
-      current += 1;
-      if (current <= selectedBranch.steps.length) {
-        setCompletedSteps(current);
-      } else {
-        window.clearInterval(timer);
-      }
-    }, 420);
+    setStatus("active");
+    setActiveStageIdx(0);
 
-    return () => window.clearInterval(timer);
-  }, [selectedBranch, runNonce]);
+    const timers: number[] = [];
 
-  const ensureStageVisible = () => {
-    if (!stageRef.current || typeof window === "undefined") return;
-    const rect = stageRef.current.getBoundingClientRect();
-    if (rect.top < 76 || rect.top > window.innerHeight * 0.55) {
-      stageRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    timers.push(
+      window.setTimeout(() => {
+        setStatus("processing");
+      }, 220),
+    );
+
+    events.forEach((_, idx) => {
+      if (idx === 0) return;
+      timers.push(
+        window.setTimeout(() => {
+          setActiveStageIdx(idx);
+        }, 220 + idx * 520),
+      );
+    });
+
+    timers.push(
+      window.setTimeout(() => {
+        setStatus(targetOutcome);
+      }, 220 + events.length * 520),
+    );
+
+    return () => {
+      timers.forEach((id) => window.clearTimeout(id));
+    };
+  }, [selectedBranch, simulateFailure, runNonce]);
+
+  const selectBranch = (id: BranchId) => {
+    if (selectedBranchId === id) {
+      setSelectedBranchId(null);
+      setStatus("idle");
+      setActiveStageIdx(-1);
+      return;
     }
-  };
-
-  const openBranch = (id: BranchId) => {
     setSelectedBranchId(id);
     setHoveredBranchId(null);
     setRunNonce((n) => n + 1);
-    window.requestAnimationFrame(ensureStageVisible);
   };
 
-  const backToTree = () => {
+  const resetToIdle = () => {
     setSelectedBranchId(null);
     setHoveredBranchId(null);
-    window.requestAnimationFrame(ensureStageVisible);
+    setStatus("idle");
+    setActiveStageIdx(-1);
+    setSimulateFailure(false);
   };
 
-  const replayFlow = () => {
+  const replayTrace = () => {
+    if (!selectedBranchId) return;
     setRunNonce((n) => n + 1);
+  };
+
+  const toggleFailureSimulation = () => {
+    setSimulateFailure((prev) => !prev);
+    if (selectedBranchId) {
+      setRunNonce((n) => n + 1);
+    }
   };
 
   const copyQuickCurl = async () => {
@@ -279,7 +450,6 @@ export function HeroWorkbench({
     window.setTimeout(() => setCopiedCmd(false), 1800);
   };
 
-  // Exact SVG X centers for the 4 equal border-collapsed columns (12.5%, 37.5%, 62.5%, 87.5% of 1200)
   const branchCoords: Record<BranchId, number> = {
     chat: 150,
     image: 450,
@@ -287,16 +457,325 @@ export function HeroWorkbench({
     api: 1050,
   };
 
-  const isFlowComplete = selectedBranch
-    ? completedSteps >= selectedBranch.steps.length
-    : false;
+  // Compute state for each of the 3 core stages (Understand -> Orchestrate -> Execute)
+  const getStageState = (stageIdx: number): ExecutionStatus => {
+    if (!selectedBranch || status === "idle") return "idle";
+    const events = simulateFailure
+      ? selectedBranch.failureEvents
+      : selectedBranch.successEvents;
+    const lastReachedIdx = Math.min(activeStageIdx, events.length - 1);
+
+    if (status === "failed") {
+      if (stageIdx < events.length - 1) return "completed";
+      if (stageIdx === events.length - 1) return "failed";
+      return "idle";
+    }
+    if (status === "completed") {
+      return "completed";
+    }
+    if (stageIdx < lastReachedIdx) return "completed";
+    if (stageIdx === lastReachedIdx) return status === "active" ? "active" : "processing";
+    return "idle";
+  };
+
+  // Active connector accent color matches current execution state
+  const activeTraceColor =
+    status === "completed"
+      ? "#10B981"
+      : status === "failed"
+        ? "#EF4444"
+        : "#3B82F6";
+
+  const activeEvents = selectedBranch
+    ? (simulateFailure ? selectedBranch.failureEvents : selectedBranch.successEvents).slice(
+        0,
+        Math.max(0, activeStageIdx + 1),
+      )
+    : [];
+
+  const renderBranchDetailsPanel = (branch: BranchArchitecture, compactMobile = false) => {
+    const events = simulateFailure ? branch.failureEvents : branch.successEvents;
+    const shownEvents = events.slice(0, Math.max(0, activeStageIdx + 1));
+
+    return (
+      <div
+        ref={!compactMobile ? detailRef : undefined}
+        className={`border-t bg-[#030303] ${
+          status === "failed"
+            ? "border-[#EF4444]/50"
+            : status === "completed"
+              ? "border-[#10B981]/45"
+              : "border-[#3B82F6]/50"
+        }`}
+      >
+        <div
+          className={`grid grid-cols-1 divide-y divide-[#1C1C1C] ${
+            compactMobile ? "" : "lg:grid-cols-12 lg:divide-x lg:divide-y-0"
+          }`}
+        >
+          {/* Left: Capabilities, Sub-Engines & Architecture Details */}
+          <div className={`p-5 ${compactMobile ? "" : "lg:col-span-6 lg:p-6"}`}>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5">
+                <span className="font-mono-tech text-[11px] tracking-[0.14em] text-[#3B82F6]">
+                  {branch.index}
+                </span>
+                <h3 className="font-display text-[22px] font-bold leading-none text-white uppercase">
+                  {branch.name}
+                </h3>
+                <span
+                  className={`font-mono-tech border px-2 py-0.5 text-[10px] tracking-[0.1em] uppercase ${getStatusBadgeStyle(
+                    status,
+                  )}`}
+                >
+                  {getStatusLabel(status)}
+                </span>
+              </div>
+
+              <span className="font-mono-tech text-[10px] tracking-[0.08em] text-[#7A7A7A]">
+                {branch.routePath}
+              </span>
+            </div>
+
+            <p className="mt-2.5 text-[13.5px] leading-[1.55] text-[#A3A3A3]">{branch.summary}</p>
+
+            {/* Sub-Engines */}
+            <div className="mt-4">
+              <p className="font-mono-tech text-[10px] tracking-[0.14em] text-[#6E6E6E] uppercase">
+                Sub-Engines
+              </p>
+              <div className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-3">
+                {branch.subEngines.map((engine) => (
+                  <div
+                    key={engine}
+                    className="border border-[#1F1F1F] bg-black px-2.5 py-2 font-mono-tech text-[11px] leading-[1.35] text-[#D4D4D4]"
+                  >
+                    {engine}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Capabilities */}
+            <div className="mt-4">
+              <p className="font-mono-tech text-[10px] tracking-[0.14em] text-[#6E6E6E] uppercase">
+                Capabilities
+              </p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {branch.capabilities.map((cap) => (
+                  <span
+                    key={cap}
+                    className="font-mono-tech border border-[#242424] bg-[#070707] px-2.5 py-1 text-[10.5px] text-[#B8B8B8]"
+                  >
+                    {cap}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Compact Real Artifact Reference for Image & Video */}
+            {branch.id === "image" && (
+              <div className="mt-4 grid grid-cols-2 gap-2 border border-[#1E1E1E] bg-black p-2">
+                <div className="relative aspect-[16/10] overflow-hidden">
+                  <img
+                    src="/showcase/edit-before.jpg"
+                    alt="Original daylight architectural studio"
+                    referrerPolicy="no-referrer"
+                    className="h-full w-full object-cover"
+                  />
+                  <span className="font-mono-tech absolute bottom-1.5 left-1.5 bg-black/85 px-1.5 py-0.5 text-[9px] text-[#D4D4D4] uppercase">
+                    Original
+                  </span>
+                </div>
+                <div className="relative aspect-[16/10] overflow-hidden">
+                  <img
+                    src="/showcase/edit-after.jpg"
+                    alt="Gyra Pro Ultra tungsten dusk edit"
+                    referrerPolicy="no-referrer"
+                    className="h-full w-full object-cover"
+                  />
+                  <span className="font-mono-tech absolute bottom-1.5 left-1.5 bg-[#2563EB] px-1.5 py-0.5 text-[9px] text-white uppercase">
+                    Pro Ultra
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {branch.id === "video" && (
+              <div className="relative mt-4 aspect-[21/9] overflow-hidden border border-[#1E1E1E] bg-black">
+                <video
+                  src="/products-hero-bg.mp4"
+                  poster="/products-hero-poster.jpg"
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  className="h-full w-full object-cover"
+                />
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/25" />
+                <div className="font-mono-tech absolute bottom-2 left-2.5 right-2.5 flex items-center justify-between text-[10px] text-[#E5E5E5]">
+                  <span>LTX-VIDEO 13B · 720P · 24 FPS</span>
+                  <span className="text-[#60A5FA]">GYRA STUDIO</span>
+                </div>
+              </div>
+            )}
+
+            {/* Branch Action Links */}
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[#181818] pt-3.5">
+              <a
+                href={branch.sectionHref}
+                className="font-mono-tech inline-flex items-center gap-1.5 text-[11px] tracking-[0.1em] text-[#A3A3A3] uppercase transition-colors hover:text-white"
+              >
+                <span>Jump to {branch.sectionLabel}</span>
+                <ArrowDown className="h-3.5 w-3.5 text-[#3B82F6]" />
+              </a>
+
+              <a
+                href={resolveGyraRoute(branch.appHref, routeBase)}
+                className="font-mono-tech inline-flex items-center gap-1.5 bg-[#2563EB] px-4 py-2 text-[11px] font-medium tracking-[0.1em] text-white uppercase transition-colors hover:bg-[#3B82F6]"
+              >
+                <span>{branch.appLabel}</span>
+                <ArrowUpRight className="h-3.5 w-3.5" />
+              </a>
+            </div>
+          </div>
+
+          {/* Right: Compact Live Execution Console */}
+          <div className={`flex flex-col justify-between bg-black p-5 ${compactMobile ? "" : "lg:col-span-6 lg:p-6"}`}>
+            <div>
+              {/* Console Header + Interactive Controls */}
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#1A1A1A] pb-3">
+                <div className="flex items-center gap-2">
+                  <Terminal className="h-3.5 w-3.5 text-[#3B82F6]" />
+                  <span className="font-mono-tech text-[11px] font-medium tracking-[0.1em] text-white uppercase">
+                    Execution Console
+                  </span>
+                  <span className="font-mono-tech text-[10px] tracking-[0.06em] text-[#666666] uppercase">
+                    · Simulated Trace
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={toggleFailureSimulation}
+                    className={`font-mono-tech inline-flex min-h-[28px] items-center gap-1.5 border px-2.5 text-[10px] tracking-[0.08em] uppercase transition-colors ${
+                      simulateFailure
+                        ? "border-[#EF4444]/70 bg-[#EF4444]/15 text-[#FCA5A5]"
+                        : "border-[#262626] bg-[#070707] text-[#9A9A9A] hover:border-[#404040] hover:text-white"
+                    }`}
+                  >
+                    <AlertTriangle className="h-3 w-3" />
+                    <span>{simulateFailure ? "Failure Path: On" : "Test Failure"}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={replayTrace}
+                    aria-label="Replay architecture trace"
+                    className="font-mono-tech inline-flex min-h-[28px] items-center gap-1 border border-[#262626] bg-[#070707] px-2.5 text-[10px] tracking-[0.08em] text-[#CCCCCC] uppercase transition-colors hover:border-[#3B82F6] hover:text-white"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                    <span>Replay</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={resetToIdle}
+                    aria-label="Collapse branch and return to idle"
+                    className="inline-flex h-7 w-7 items-center justify-center border border-[#262626] bg-[#070707] text-[#9A9A9A] transition-colors hover:border-white hover:text-white"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Request Payload Preview */}
+              <div className="mt-3.5 border border-[#1B1B1B] bg-[#060606] px-3.5 py-2.5">
+                <p className="font-mono-tech text-[10px] tracking-[0.12em] text-[#6E6E6E] uppercase">
+                  Sample Request Input
+                </p>
+                <p className="mt-1 font-mono-tech text-[11.5px] leading-[1.55] text-[#D4D4D4]">
+                  {branch.requestSample}
+                </p>
+              </div>
+
+              {/* Live Step-by-Step Execution Log */}
+              <div className="mt-3.5 space-y-2">
+                {shownEvents.map((ev, idx) => {
+                  const isLast = idx === shownEvents.length - 1;
+                  const isErrorRow = status === "failed" && isLast;
+                  const isDoneRow = status === "completed" || (!isLast && status !== "idle");
+                  return (
+                    <div
+                      key={`${branch.id}-${simulateFailure ? "fail" : "ok"}-${idx}`}
+                      className={`border px-3.5 py-2.5 transition-colors ${
+                        isErrorRow
+                          ? "border-[#EF4444]/60 bg-[#140707]"
+                          : isLast && (status === "active" || status === "processing")
+                            ? "border-[#3B82F6] bg-[#050914]"
+                            : "border-[#1D1D1D] bg-[#050505]"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span
+                          className={`font-mono-tech text-[10px] font-medium tracking-[0.12em] uppercase ${
+                            isErrorRow
+                              ? "text-[#F87171]"
+                              : isDoneRow
+                                ? "text-[#34D399]"
+                                : "text-[#60A5FA]"
+                          }`}
+                        >
+                          [{ev.tag}]
+                        </span>
+                        <span className="font-mono-tech text-[10px] text-[#666666]">
+                          STAGE 0{idx + 1}
+                        </span>
+                      </div>
+                      <p className="mt-1 font-mono-tech text-[11.5px] leading-[1.5] text-[#C8C8C8]">
+                        {ev.message}
+                        {isLast && (status === "active" || status === "processing") && (
+                          <span className="gyra-cursor ml-1.5" aria-hidden="true" />
+                        )}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Outcome Footer */}
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-[#181818] pt-3 font-mono-tech text-[10.5px]">
+              <span
+                className={
+                  status === "failed"
+                    ? "text-[#F87171]"
+                    : status === "completed"
+                      ? "text-[#34D399]"
+                      : "text-[#8E8E8E]"
+                }
+              >
+                {status === "failed"
+                  ? branch.failureSummary
+                  : status === "completed"
+                    ? branch.successSummary
+                    : "Tracing request through Gyra Intelligence Core..."}
+              </span>
+              <span className="text-[#595959] uppercase">Architecture Preview</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <section className="border-b border-[#1F1F1F] bg-black">
-      <div className="mx-auto max-w-[1380px] px-5 pb-10 pt-8 sm:px-8 lg:pb-12 lg:pt-9">
-        {/* 1. Centered Hero Header & Primary Start / Explore Actions */}
+      <div className="mx-auto max-w-[1380px] px-5 pb-12 pt-8 sm:px-8 lg:pb-16 lg:pt-10">
+        {/* Centered Hero Header & Actions */}
         <div className="mx-auto flex max-w-[820px] flex-col items-center text-center">
-          <h1 className="font-display text-[clamp(2.65rem,4.9vw,4.15rem)] font-bold leading-[0.93] tracking-[-0.02em] text-white uppercase [text-wrap:balance]">
+          <h1 className="font-display text-[clamp(2.65rem,4.9vw,4.25rem)] font-bold leading-[0.93] tracking-[-0.02em] text-white uppercase [text-wrap:balance]">
             One intelligence.
             <br />
             Every medium.
@@ -311,23 +790,23 @@ export function HeroWorkbench({
           <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
             <a
               href={resolveGyraRoute("/dashboard", routeBase)}
-              className="font-mono-tech inline-flex min-h-[42px] shrink-0 items-center justify-center whitespace-nowrap bg-[#FF3D00] px-6 text-[12px] font-medium tracking-[0.1em] text-white uppercase transition-colors duration-150 hover:bg-[#FF551F] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white"
+              className="font-mono-tech inline-flex min-h-[42px] shrink-0 items-center justify-center whitespace-nowrap bg-[#2563EB] px-6 text-[12px] font-medium tracking-[0.1em] text-white uppercase transition-colors duration-150 hover:bg-[#3B82F6] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white"
             >
               {isAuthenticated ? "Open Dashboard" : "Start with Gyra"}
             </a>
             <a
               href={resolveGyraRoute("/api", routeBase)}
-              className="font-mono-tech inline-flex min-h-[42px] shrink-0 items-center justify-center whitespace-nowrap border border-[#3A3A3A] bg-black px-6 text-[12px] font-medium tracking-[0.1em] text-white uppercase transition-colors duration-150 hover:border-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#FF3D00]"
+              className="font-mono-tech inline-flex min-h-[42px] shrink-0 items-center justify-center whitespace-nowrap border border-[#3A3A3A] bg-black px-6 text-[12px] font-medium tracking-[0.1em] text-white uppercase transition-colors duration-150 hover:border-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#3B82F6]"
             >
               Explore API
             </a>
             <button
               type="button"
               onClick={copyQuickCurl}
-              className="font-mono-tech inline-flex min-h-[42px] items-center gap-2 border border-[#1F1F1F] bg-[#060606] px-4 text-[11px] tracking-[0.08em] text-[#8E8E8E] uppercase transition-colors hover:border-[#3A3A3A] hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#FF3D00]"
+              className="font-mono-tech inline-flex min-h-[42px] items-center gap-2 border border-[#1F1F1F] bg-[#060606] px-4 text-[11px] tracking-[0.08em] text-[#8E8E8E] uppercase transition-colors hover:border-[#3A3A3A] hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#3B82F6]"
             >
               {copiedCmd ? (
-                <Check className="h-3.5 w-3.5 text-[#FF3D00]" />
+                <Check className="h-3.5 w-3.5 text-[#3B82F6]" />
               ) : (
                 <Terminal className="h-3.5 w-3.5 text-[#7A7A7A]" />
               )}
@@ -337,616 +816,550 @@ export function HeroWorkbench({
           </div>
         </div>
 
-        {/* 2. Centerpiece Digital Intelligence Flow Tree (Genvia AI -> Gyra Core -> 4 Separate Interactive Branches) */}
+        {/* ========================================================================
+            GYRA INTELLIGENCE ARCHITECTURE — 5-LEVEL HIERARCHICAL FLOW VISUALIZATION
+            1. GENVIA (Parent AI Company — ownership crest, NOT an execution node)
+            2. GYRA (AI Platform — platform boundary)
+            3. GYRA INTELLIGENCE CORE (Central Engine Hub)
+            4. UNDERSTAND -> ORCHESTRATE -> EXECUTE (Live Segmented Pipeline Rail)
+            5. GYRA CHAT | GYRA IMAGE | GYRA VIDEO | GYRA API (Selectable Branches)
+           ======================================================================== */}
         <div
-          ref={stageRef}
-          className="mt-7 scroll-mt-20 border border-[#1F1F1F] bg-[#020202] sm:mt-8"
+          aria-label="Gyra Intelligence Architecture"
+          className="mt-9 sm:mt-10"
         >
-          {selectedBranch === null ? (
-            /* ==================== STATE A: LIVE INTERACTIVE TREE OVERVIEW ==================== */
-            <div className="relative pt-5 sm:pt-6">
-              {/* Top Telemetry Corner Labels */}
-              <div className="flex flex-wrap items-center justify-between gap-2 px-5 pb-3.5 sm:px-7">
-                <span className="font-mono-tech text-[10px] tracking-[0.14em] text-[#737373] uppercase">
-                  [ LIVE INTELLIGENCE ARCHITECTURE ]
+          {/* LEVEL 1: GENVIA — Parent AI Company (Visually Distinct Ownership Crest, NOT an engine card) */}
+          <div className="flex flex-col items-center">
+            <div className="flex items-center gap-3">
+              <span className="hidden h-px w-10 bg-[#242424] sm:block" aria-hidden="true" />
+              <div className="flex items-center gap-2.5 border-b border-[#262626] pb-1.5">
+                <span className="font-display text-[15px] font-bold tracking-[0.22em] text-white uppercase">
+                  GENVIA
                 </span>
-                <span className="font-mono-tech text-[10px] tracking-[0.12em] text-[#A3A3A3] uppercase">
-                  CLICK ANY BRANCH TO INSPECT LIVE FLOW
+                <span className="text-[#3A3A3A]" aria-hidden="true">
+                  /
+                </span>
+                <span className="font-mono-tech text-[10px] tracking-[0.16em] text-[#7A7A7A] uppercase">
+                  Parent AI Company
+                </span>
+              </div>
+              <span className="hidden h-px w-10 bg-[#242424] sm:block" aria-hidden="true" />
+            </div>
+
+            {/* Quiet structural ownership connector (NOT an active engine pulse) */}
+            <div className="flex flex-col items-center" aria-hidden="true">
+              <div className="h-5 w-px border-l border-dashed border-[#333333]" />
+              <div className="h-1.5 w-1.5 border border-[#444444] bg-black" />
+            </div>
+          </div>
+
+          {/* LEVEL 2: GYRA — AI Platform Outer Architectural Frame */}
+          <div className="border border-[#222222] bg-[#020202]">
+            {/* Platform Top Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#1A1A1A] bg-[#050505] px-4 py-2.5 sm:px-6">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <span className="h-2 w-2 bg-[#2563EB]" aria-hidden="true" />
+                <span className="font-display text-[17px] font-bold tracking-[0.08em] text-white uppercase">
+                  GYRA
+                </span>
+                <span className="font-mono-tech text-[10px] tracking-[0.14em] text-[#8A8A8A] uppercase">
+                  AI Platform
+                </span>
+                <span className="hidden font-mono-tech text-[10px] tracking-[0.1em] text-[#555555] uppercase md:inline">
+                  · Web · Android · Telegram · REST API
                 </span>
               </div>
 
-              {/* Root Node: Genvia AI Company (Centered) */}
-              <div className="flex flex-col items-center px-5">
-                <div className="relative flex items-center gap-2.5 border border-[#2C2C2C] bg-black px-4 py-1.5">
-                  <span className="h-1.5 w-1.5 bg-[#FF3D00]" aria-hidden="true" />
-                  <span className="font-mono-tech text-[11px] font-medium tracking-[0.18em] text-white uppercase">
-                    Genvia AI Company
-                  </span>
-                  <span className="hidden font-mono-tech text-[10px] tracking-[0.12em] text-[#666666] uppercase sm:inline">
-                    · ECOSYSTEM ROOT
-                  </span>
-                  <span className="pointer-events-none absolute -left-px -top-px h-2 w-2 border-l border-t border-[#FF3D00]" />
-                  <span className="pointer-events-none absolute -bottom-px -right-px h-2 w-2 border-b border-r border-[#FF3D00]" />
-                </div>
+              <div className="flex items-center gap-2">
+                <span
+                  className={`font-mono-tech border px-2.5 py-0.5 text-[10px] tracking-[0.12em] uppercase ${getStatusBadgeStyle(
+                    status,
+                  )}`}
+                >
+                  STATE: {getStatusLabel(status)}
+                </span>
+                {selectedBranch && (
+                  <button
+                    type="button"
+                    onClick={resetToIdle}
+                    className="font-mono-tech border border-[#2A2A2A] bg-black px-2.5 py-0.5 text-[10px] tracking-[0.1em] text-[#A3A3A3] uppercase transition-colors hover:border-white hover:text-white"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+            </div>
 
-                {/* Animated Digital Trunk Stem (Genvia AI -> Gyra Core) */}
-                <div className="relative h-6 w-6" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" className="h-full w-full overflow-visible">
-                    <line x1="12" y1="0" x2="12" y2="24" stroke="#262626" strokeWidth="1.5" />
-                    <line
-                      x1="12"
-                      y1="0"
-                      x2="12"
-                      y2="24"
-                      stroke="#FF3D00"
-                      strokeWidth="1.75"
-                      className="gyra-trace-pulse"
-                    />
-                    <rect x="9.5" y="21" width="5" height="5" fill="#FF3D00" />
-                  </svg>
-                </div>
+            {/* Platform Interior */}
+            <div className="pt-5 sm:pt-6">
+              {/* LEVEL 3 & LEVEL 4: GYRA INTELLIGENCE CORE + UNDERSTAND -> ORCHESTRATE -> EXECUTE */}
+              <div className="flex flex-col items-center px-4 sm:px-6">
+                {/* Core Processor Chassis */}
+                <div
+                  className={`relative w-full max-w-[780px] border bg-[#060606] transition-colors duration-200 ${
+                    status === "failed"
+                      ? "border-[#EF4444]/60"
+                      : status === "completed"
+                        ? "border-[#10B981]/50"
+                        : status === "active" || status === "processing"
+                          ? "border-[#3B82F6]"
+                          : "border-[#2D2D2D]"
+                  }`}
+                >
+                  {/* Top Precision Accent Rail */}
+                  <div
+                    className={`h-[2px] w-full transition-colors duration-200 ${
+                      status === "failed"
+                        ? "bg-[#EF4444]"
+                        : status === "completed"
+                          ? "bg-[#10B981]"
+                          : "bg-[#2563EB]"
+                    }`}
+                    aria-hidden="true"
+                  />
 
-                {/* Central Hub: GYRA Intelligence Core */}
-                <div className="relative w-full max-w-[680px] border border-[#303030] bg-[#060606]">
-                  <div className="h-[2px] w-full bg-[#FF3D00]" aria-hidden="true" />
+                  {/* Corner hardware ticks */}
+                  <span className="pointer-events-none absolute -bottom-px -left-px h-2 w-2 border-b border-l border-[#3B82F6]" />
+                  <span className="pointer-events-none absolute -bottom-px -right-px h-2 w-2 border-b border-r border-[#3B82F6]" />
 
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#1A1A1A] px-4 py-2.5">
+                  {/* Level 3 Header: GYRA INTELLIGENCE CORE */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#191919] px-4 py-2.5 sm:px-5">
                     <div className="flex items-center gap-2.5">
-                      <span className="flex h-7 w-7 items-center justify-center border border-[#FF3D00]/50 bg-[#FF3D00]/10 text-[#FF3D00]">
+                      <span className="flex h-7 w-7 items-center justify-center border border-[#3B82F6]/45 bg-[#2563EB]/12 text-[#60A5FA]">
                         <Cpu className="h-3.5 w-3.5" />
                       </span>
-                      <div className="flex flex-wrap items-baseline gap-2 text-left">
-                        <span className="font-display text-[20px] font-bold leading-none tracking-[0.04em] text-white uppercase">
-                          GYRA
-                        </span>
-                        <span className="font-mono-tech text-[10px] tracking-[0.14em] text-[#8E8E8E] uppercase">
-                          INTELLIGENCE CORE
-                        </span>
+                      <div className="text-left">
+                        <p className="font-mono-tech text-[11px] font-medium tracking-[0.14em] text-white uppercase">
+                          Gyra Intelligence Core
+                        </p>
+                        <p className="font-mono-tech text-[10px] tracking-[0.06em] text-[#737373]">
+                          {selectedBranch
+                            ? `Active Route → ${selectedBranch.name} (${selectedBranch.role})`
+                            : "Standby · Select any product branch below to trace a request"}
+                        </p>
                       </div>
                     </div>
 
-                    <span className="font-mono-tech border border-[#262626] bg-black px-2 py-0.5 text-[10px] tracking-[0.12em] text-[#FF3D00] uppercase">
-                      4 SEPARATE ENGINES
+                    <span className="font-mono-tech text-[10px] tracking-[0.12em] text-[#60A5FA] uppercase">
+                      {selectedBranch
+                        ? `${activeEvents.length} / ${
+                            (simulateFailure
+                              ? selectedBranch.failureEvents
+                              : selectedBranch.successEvents
+                            ).length
+                          } STAGES`
+                        : "4 PRODUCT BRANCHES"}
                     </span>
                   </div>
 
-                  {/* Internal 3-Chamber Intelligent Flow Strip */}
-                  <div className="grid grid-cols-1 divide-y divide-[#181818] sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-                    <div className="px-3.5 py-2 text-left">
-                      <p className="font-mono-tech text-[10px] tracking-[0.12em] text-[#FF3D00] uppercase">
-                        01 · Understand
-                      </p>
-                      <p className="mt-0.5 text-[11.5px] text-[#A3A3A3]">
-                        Prompts, files, frames & payloads
-                      </p>
-                    </div>
-                    <div className="px-3.5 py-2 text-left">
-                      <p className="font-mono-tech text-[10px] tracking-[0.12em] text-[#FF3D00] uppercase">
-                        02 · Plan & Route
-                      </p>
-                      <p className="mt-0.5 text-[11.5px] text-[#A3A3A3]">
-                        Selects agent, model, or media queue
-                      </p>
-                    </div>
-                    <div className="px-3.5 py-2 text-left">
-                      <p className="font-mono-tech text-[10px] tracking-[0.12em] text-[#FF3D00] uppercase">
-                        03 · Execute
-                      </p>
-                      <p className="mt-0.5 text-[11.5px] text-[#A3A3A3]">
-                        Streams verified code, media, or JSON
-                      </p>
+                  {/* Level 4: UNDERSTAND -> ORCHESTRATE -> EXECUTE Segmented Flow Rail (NOT 3 cards) */}
+                  <div className="bg-black px-4 py-3 sm:px-5">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-0">
+                      {PIPELINE_STAGES.map((stage, idx) => {
+                        const stageStatus = getStageState(idx);
+                        const isLastStage = idx === PIPELINE_STAGES.length - 1;
+                        return (
+                          <div
+                            key={stage.id}
+                            className="flex flex-1 items-center"
+                          >
+                            <div
+                              className={`flex flex-1 items-center justify-between gap-2 border-l-2 px-3 py-1.5 transition-colors duration-200 ${
+                                stageStatus === "failed"
+                                  ? "border-[#EF4444] bg-[#140707]"
+                                  : stageStatus === "completed"
+                                    ? "border-[#10B981] bg-[#04110C]"
+                                    : stageStatus === "processing" || stageStatus === "active"
+                                      ? "border-[#3B82F6] bg-[#050C1D]"
+                                      : "border-[#262626] bg-[#060606]"
+                              }`}
+                            >
+                              <div className="min-w-0 text-left">
+                                <div className="flex items-center gap-1.5">
+                                  <span
+                                    className={`font-mono-tech text-[10px] tracking-[0.1em] ${
+                                      stageStatus === "failed"
+                                        ? "text-[#F87171]"
+                                        : stageStatus === "completed"
+                                          ? "text-[#34D399]"
+                                          : stageStatus === "processing" || stageStatus === "active"
+                                            ? "text-[#60A5FA]"
+                                            : "text-[#666666]"
+                                    }`}
+                                  >
+                                    {stage.num}
+                                  </span>
+                                  <span className="font-mono-tech text-[11px] font-medium tracking-[0.12em] text-white uppercase">
+                                    {stage.label}
+                                  </span>
+                                </div>
+                                <p className="truncate text-[11px] text-[#808080]">
+                                  {stage.caption}
+                                </p>
+                              </div>
+
+                              <span
+                                className={`font-mono-tech shrink-0 text-[10px] uppercase ${
+                                  stageStatus === "failed"
+                                    ? "text-[#F87171]"
+                                    : stageStatus === "completed"
+                                      ? "text-[#34D399]"
+                                      : stageStatus === "processing" || stageStatus === "active"
+                                        ? "text-[#60A5FA]"
+                                        : "text-[#4A4A4A]"
+                                }`}
+                              >
+                                {stageStatus === "completed"
+                                  ? "✓"
+                                  : stageStatus === "failed"
+                                    ? "✕"
+                                    : stageStatus === "processing" || stageStatus === "active"
+                                      ? "●"
+                                      : "—"}
+                              </span>
+                            </div>
+
+                            {!isLastStage && (
+                              <div
+                                aria-hidden="true"
+                                className="hidden shrink-0 items-center px-1.5 sm:flex"
+                              >
+                                <span
+                                  className={`h-px w-4 transition-colors ${
+                                    stageStatus === "completed"
+                                      ? "bg-[#10B981]"
+                                      : stageStatus === "processing"
+                                        ? "bg-[#3B82F6]"
+                                        : "bg-[#262626]"
+                                  }`}
+                                />
+                                <ChevronRight
+                                  className={`-ml-1 h-3.5 w-3.5 transition-colors ${
+                                    stageStatus === "completed"
+                                      ? "text-[#10B981]"
+                                      : stageStatus === "processing"
+                                        ? "text-[#3B82F6]"
+                                        : "text-[#3A3A3A]"
+                                  }`}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* DESKTOP: Orthogonal 4-Branch Digital Circuit Tree SVG */}
+              {/* ================================================================
+                  DESKTOP: LEVEL 5 BRANCHING CONNECTOR PATHS + 4 SELECTABLE NODES
+                 ================================================================ */}
               <div className="hidden md:block">
-                <div className="relative h-[56px] w-full" aria-hidden="true">
+                <div className="relative h-[60px] w-full" aria-hidden="true">
                   <svg
-                    viewBox="0 0 1200 56"
+                    viewBox="0 0 1200 60"
                     preserveAspectRatio="none"
                     className="h-full w-full"
                   >
-                    {/* Base dark circuit bus lines */}
+                    {/* Base muted circuit trunk & horizontal manifold */}
                     <path
-                      d="M 600 0 L 600 28"
+                      d="M 600 0 L 600 30"
                       fill="none"
-                      stroke="#2B2B2B"
+                      stroke="#262626"
                       strokeWidth="1.5"
                       vectorEffect="non-scaling-stroke"
                     />
                     <path
-                      d="M 150 28 L 1050 28"
+                      d="M 150 30 L 1050 30"
                       fill="none"
-                      stroke="#2B2B2B"
+                      stroke="#262626"
                       strokeWidth="1.5"
                       vectorEffect="non-scaling-stroke"
                     />
+
                     {BRANCHES.map((branch) => {
                       const x = branchCoords[branch.id];
+                      const isSelected = selectedBranchId === branch.id;
                       const isHovered = hoveredBranchId === branch.id;
-                      const pathD = `M 600 0 L 600 28 L ${x} 28 L ${x} 56`;
+                      const isHighlighted = isSelected || isHovered;
+                      const anyFocus = Boolean(selectedBranchId || hoveredBranchId);
+                      const pathD = `M 600 0 L 600 30 L ${x} 30 L ${x} 60`;
+                      const strokeColor = isSelected ? activeTraceColor : "#3B82F6";
+
                       return (
                         <g key={branch.id}>
+                          {/* Base drop trace */}
                           <path
-                            d={`M ${x} 28 L ${x} 56`}
+                            d={`M ${x} 30 L ${x} 60`}
                             fill="none"
-                            stroke="#2B2B2B"
+                            stroke="#262626"
                             strokeWidth="1.5"
                             vectorEffect="non-scaling-stroke"
                           />
-                          {isHovered && (
+                          {/* Illuminated solid route for active/selected or hovered branch */}
+                          {isHighlighted && (
                             <path
                               d={pathD}
                               fill="none"
-                              stroke="#FF3D00"
-                              strokeWidth="2"
+                              stroke={strokeColor}
+                              strokeWidth={isSelected ? "2.2" : "1.8"}
+                              strokeOpacity={isSelected ? "0.95" : "0.75"}
                               vectorEffect="non-scaling-stroke"
                             />
                           )}
-                          <path
-                            d={pathD}
-                            fill="none"
-                            stroke="#FF3D00"
-                            strokeWidth={isHovered ? "2.4" : "1.75"}
-                            strokeOpacity={hoveredBranchId && !isHovered ? "0.25" : "0.95"}
-                            vectorEffect="non-scaling-stroke"
-                            className={branch.traceClass}
-                          />
+                          {/* Subtle animated pulse along idle paths or fast pulse during processing */}
+                          {(!selectedBranchId || (isSelected && (status === "active" || status === "processing"))) && (
+                            <path
+                              d={pathD}
+                              fill="none"
+                              stroke={strokeColor}
+                              strokeWidth={isSelected ? "2.5" : "1.6"}
+                              strokeOpacity={anyFocus && !isHighlighted ? "0.2" : "0.9"}
+                              vectorEffect="non-scaling-stroke"
+                              className={
+                                isSelected ? "gyra-trace-pulse-fast" : branch.traceClass
+                              }
+                            />
+                          )}
                         </g>
                       );
                     })}
                   </svg>
 
-                  {/* Crisp non-stretched junction squares at exact percentages */}
+                  {/* Center manifold junction pin */}
                   <span
-                    className="pointer-events-none absolute left-1/2 top-[25px] h-1.5 w-1.5 -translate-x-1/2 bg-[#FF3D00]"
+                    style={{
+                      backgroundColor: selectedBranchId ? activeTraceColor : "#3B82F6",
+                    }}
+                    className="pointer-events-none absolute left-1/2 top-[27px] h-1.5 w-1.5 -translate-x-1/2"
                   />
+
+                  {/* 4 Exact Branch Terminal Pins */}
                   {[12.5, 37.5, 62.5, 87.5].map((pct, idx) => {
                     const branch = BRANCHES[idx];
+                    const isSelected = selectedBranchId === branch.id;
                     const isHovered = hoveredBranchId === branch.id;
                     return (
                       <span
                         key={branch.id}
-                        style={{ left: `${pct}%` }}
-                        className={`pointer-events-none absolute bottom-[-3px] h-2 w-2 -translate-x-1/2 border transition-colors ${
-                          isHovered
-                            ? "border-[#FF3D00] bg-[#FF3D00]"
-                            : "border-[#FF3D00]/80 bg-black"
-                        }`}
+                        style={{
+                          left: `${pct}%`,
+                          borderColor: isSelected
+                            ? activeTraceColor
+                            : isHovered
+                              ? "#3B82F6"
+                              : "#2D2D2D",
+                          backgroundColor: isSelected ? activeTraceColor : "#000000",
+                        }}
+                        className="pointer-events-none absolute bottom-[-3px] h-2 w-2 -translate-x-1/2 border transition-colors"
                       />
                     );
                   })}
                 </div>
 
-                {/* 4 Separate Desktop Interactive Branch Modules (Border-Collapsed Industrial Grid) */}
+                {/* 4 Selectable & Expandable Desktop Product Branches */}
                 <div className="grid grid-cols-4 divide-x divide-[#1F1F1F] border-t border-[#1F1F1F]">
                   {BRANCHES.map((branch) => {
+                    const isSelected = selectedBranchId === branch.id;
                     const isHovered = hoveredBranchId === branch.id;
+                    const branchStatus: ExecutionStatus = isSelected ? status : "idle";
+
                     return (
                       <button
                         key={branch.id}
                         type="button"
-                        onClick={() => openBranch(branch.id)}
+                        aria-expanded={isSelected}
+                        onClick={() => selectBranch(branch.id)}
                         onMouseEnter={() => setHoveredBranchId(branch.id)}
                         onMouseLeave={() => setHoveredBranchId(null)}
                         onFocus={() => setHoveredBranchId(branch.id)}
                         onBlur={() => setHoveredBranchId(null)}
-                        className={`group flex flex-col justify-between p-5 text-left transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[#FF3D00] ${
-                          isHovered ? "bg-[#090909]" : "bg-black hover:bg-[#080808]"
+                        className={`group relative flex flex-col justify-between p-5 text-left transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[#3B82F6] ${
+                          isSelected
+                            ? "bg-[#060B18]"
+                            : isHovered
+                              ? "bg-[#080808]"
+                              : "bg-black hover:bg-[#070707]"
                         }`}
                       >
+                        {/* Active Top Indicator Line */}
+                        {isSelected && (
+                          <span
+                            aria-hidden="true"
+                            style={{ backgroundColor: activeTraceColor }}
+                            className="pointer-events-none absolute inset-x-0 top-0 h-[2px]"
+                          />
+                        )}
+
                         <div>
                           <div className="flex items-center justify-between gap-2">
-                            <span className="font-mono-tech text-[11px] tracking-[0.14em] text-[#FF3D00]">
-                              {branch.index}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono-tech text-[11px] tracking-[0.14em] text-[#3B82F6]">
+                                {branch.index}
+                              </span>
+                              <span className="font-mono-tech text-[10px] tracking-[0.08em] text-[#666666] uppercase">
+                                {branch.role}
+                              </span>
+                            </div>
+
                             <span
                               className={`flex h-7 w-7 items-center justify-center border transition-colors ${
-                                isHovered
-                                  ? "border-[#FF3D00] bg-[#FF3D00] text-white"
-                                  : "border-[#262626] bg-[#060606] text-[#B3B3B3]"
+                                isSelected
+                                  ? "border-[#3B82F6] bg-[#2563EB] text-white"
+                                  : isHovered
+                                    ? "border-[#3B82F6]/60 bg-[#0A1020] text-[#60A5FA]"
+                                    : "border-[#242424] bg-[#060606] text-[#A3A3A3]"
                               }`}
                             >
                               <BranchIcon id={branch.id} className="h-3.5 w-3.5" />
                             </span>
                           </div>
 
-                          <h2 className="font-display mt-3.5 text-[25px] font-bold leading-none tracking-[-0.01em] text-white uppercase">
+                          <h2 className="font-display mt-3.5 text-[24px] font-bold leading-none tracking-[-0.01em] text-white uppercase">
                             {branch.name}
                           </h2>
 
-                          <p className="mt-1 font-mono-tech text-[10.5px] tracking-[0.06em] text-[#8E8E8E]">
-                            {branch.engineTag}
-                          </p>
-
-                          <p className="mt-2.5 text-[13px] leading-[1.5] text-[#A3A3A3]">
+                          <p className="mt-2 text-[12.5px] leading-[1.5] text-[#9A9A9A]">
                             {branch.summary}
                           </p>
                         </div>
 
-                        <div className="mt-4 flex items-center justify-between border-t border-[#181818] pt-3 font-mono-tech text-[10.5px] tracking-[0.1em] uppercase">
-                          <span className="text-[#737373] transition-colors group-hover:text-white">
-                            Inspect Flow
+                        <div className="mt-4 flex items-center justify-between border-t border-[#181818] pt-3 font-mono-tech text-[10px] tracking-[0.1em] uppercase">
+                          <span
+                            className={
+                              isSelected
+                                ? status === "failed"
+                                  ? "text-[#F87171]"
+                                  : status === "completed"
+                                    ? "text-[#34D399]"
+                                    : "text-[#60A5FA]"
+                                : "text-[#737373] transition-colors group-hover:text-white"
+                            }
+                          >
+                            {isSelected ? getStatusLabel(branchStatus) : "Select Branch"}
                           </span>
-                          <ChevronRight className="h-3.5 w-3.5 text-[#FF3D00] transition-transform group-hover:translate-x-0.5" />
+                          <ChevronDown
+                            className={`h-3.5 w-3.5 text-[#3B82F6] transition-transform duration-150 ${
+                              isSelected ? "rotate-180" : ""
+                            }`}
+                          />
                         </div>
                       </button>
                     );
                   })}
                 </div>
+
+                {/* Desktop Expanded Branch Detail + Compact Live Execution Console (or Idle Footer Bar) */}
+                {selectedBranch ? (
+                  renderBranchDetailsPanel(selectedBranch, false)
+                ) : (
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#1A1A1A] bg-[#040404] px-6 py-3 font-mono-tech text-[11px]">
+                    <div className="flex items-center gap-2.5 text-[#8A8A8A]">
+                      <Terminal className="h-3.5 w-3.5 text-[#3B82F6]" />
+                      <span>
+                        EXECUTION CONSOLE: <span className="text-white">IDLE</span> — Select any
+                        branch above to trace a request through Understand → Orchestrate → Execute.
+                      </span>
+                    </div>
+                    <span className="text-[10px] tracking-[0.1em] text-[#5E5E5E] uppercase">
+                      Interactive Architecture Preview
+                    </span>
+                  </div>
+                )}
               </div>
 
-              {/* MOBILE: Native Vertical Digital Spine & Branching Cards (< 768px) */}
-              <div className="px-5 pb-6 pt-5 md:hidden">
-                <div className="relative pl-7">
-                  {/* Continuous vertical digital bus spine */}
+              {/* ================================================================
+                  MOBILE: VERTICAL INTERACTIVE TREE WITH EXPANDABLE NODES (< 768px)
+                 ================================================================ */}
+              <div className="px-4 pb-5 pt-4 md:hidden">
+                <div className="relative pl-6">
+                  {/* Continuous vertical digital bus rail */}
                   <div
                     aria-hidden="true"
-                    className="pointer-events-none absolute bottom-6 left-[7px] top-0 w-[2px] overflow-hidden bg-[#262626]"
+                    className="pointer-events-none absolute bottom-5 left-[6px] top-0 w-[2px] overflow-hidden bg-[#242424]"
                   >
-                    <div className="gyra-spine-pulse h-20 w-full bg-gradient-to-b from-transparent via-[#FF3D00] to-transparent" />
+                    <div className="gyra-spine-pulse h-20 w-full bg-gradient-to-b from-transparent via-[#3B82F6] to-transparent" />
                   </div>
 
                   <div className="space-y-3">
-                    {BRANCHES.map((branch) => (
-                      <div key={branch.id} className="relative">
-                        {/* Horizontal PCB tap from spine to card */}
-                        <span
-                          aria-hidden="true"
-                          className="pointer-events-none absolute -left-[21px] top-1/2 h-[2px] w-[21px] -translate-y-1/2 bg-[#2B2B2B]"
-                        />
-                        <span
-                          aria-hidden="true"
-                          className="pointer-events-none absolute -left-[24px] top-1/2 h-2 w-2 -translate-y-1/2 border border-[#FF3D00] bg-black"
-                        />
-
-                        <button
-                          type="button"
-                          onClick={() => openBranch(branch.id)}
-                          className="group flex w-full items-center justify-between gap-3 border border-[#242424] bg-black p-4 text-left transition-colors active:bg-[#0D0D0D] hover:border-[#FF3D00]/70 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#FF3D00]"
-                        >
-                          <div className="flex items-start gap-3.5">
-                            <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center border border-[#2A2A2A] bg-[#070707] text-[#FF3D00]">
-                              <BranchIcon id={branch.id} className="h-4 w-4" />
-                            </span>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-mono-tech text-[10px] tracking-[0.12em] text-[#FF3D00]">
-                                  {branch.index}
-                                </span>
-                                <span className="font-display text-[22px] font-bold leading-none text-white uppercase">
-                                  {branch.name}
-                                </span>
-                              </div>
-                              <p className="mt-1 font-mono-tech text-[10px] tracking-[0.06em] text-[#8A8A8A]">
-                                {branch.engineTag}
-                              </p>
-                              <p className="mt-1.5 text-[13px] leading-[1.45] text-[#A3A3A3]">
-                                {branch.summary}
-                              </p>
-                            </div>
-                          </div>
-
-                          <ChevronRight className="h-4 w-4 shrink-0 text-[#FF3D00]" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            /* ==================== STATE B: FOCUSED BRANCH LIVE FLOW (WITH BACK TO TREE) ==================== */
-            <div className="bg-black">
-              {/* Top Interactive Navigation & Breadcrumb Bar */}
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#1F1F1F] bg-[#050505] px-4 py-3.5 sm:px-6">
-                <div className="flex flex-wrap items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={backToTree}
-                    className="font-mono-tech inline-flex min-h-[36px] items-center gap-2 border border-[#333333] bg-black px-3.5 text-[11px] font-medium tracking-[0.1em] text-white uppercase transition-colors hover:border-[#FF3D00] hover:text-[#FF3D00] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#FF3D00]"
-                  >
-                    <ArrowLeft className="h-3.5 w-3.5" />
-                    <span>Back to Tree</span>
-                  </button>
-
-                  <div className="hidden items-center gap-2 font-mono-tech text-[11px] tracking-[0.1em] uppercase sm:flex">
-                    <span className="text-[#6E6E6E]">Genvia AI</span>
-                    <ChevronRight className="h-3 w-3 text-[#444444]" />
-                    <span className="text-[#999999]">Gyra Core</span>
-                    <ChevronRight className="h-3 w-3 text-[#444444]" />
-                    <span className="text-[#FF3D00]">{selectedBranch.name}</span>
-                  </div>
-                </div>
-
-                {/* Sibling Branch Switcher + Replay */}
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <div
-                    role="tablist"
-                    aria-label="Switch Gyra branch"
-                    className="flex items-center border border-[#222222] bg-black p-0.5"
-                  >
                     {BRANCHES.map((branch) => {
-                      const active = branch.id === selectedBranch.id;
+                      const isSelected = selectedBranchId === branch.id;
                       return (
-                        <button
-                          key={branch.id}
-                          type="button"
-                          role="tab"
-                          aria-selected={active}
-                          onClick={() => openBranch(branch.id)}
-                          className={`font-mono-tech px-2.5 py-1.5 text-[10px] tracking-[0.1em] uppercase transition-colors ${
-                            active
-                              ? "bg-[#FF3D00] text-white"
-                              : "text-[#808080] hover:text-white"
-                          }`}
-                        >
-                          {branch.shortLabel}
-                        </button>
+                        <div key={branch.id} className="relative">
+                          {/* Horizontal PCB connector arm from vertical spine */}
+                          <span
+                            aria-hidden="true"
+                            style={{
+                              backgroundColor: isSelected ? activeTraceColor : "#2A2A2A",
+                            }}
+                            className="pointer-events-none absolute -left-[18px] top-[28px] h-[2px] w-[18px]"
+                          />
+                          <span
+                            aria-hidden="true"
+                            style={{
+                              borderColor: isSelected ? activeTraceColor : "#3B82F6",
+                              backgroundColor: isSelected ? activeTraceColor : "#000000",
+                            }}
+                            className="pointer-events-none absolute -left-[21px] top-[25px] h-2 w-2 border"
+                          />
+
+                          <div
+                            className={`border transition-colors ${
+                              isSelected ? "border-[#3B82F6]/70 bg-[#060B18]" : "border-[#222222] bg-black"
+                            }`}
+                          >
+                            <button
+                              type="button"
+                              aria-expanded={isSelected}
+                              onClick={() => selectBranch(branch.id)}
+                              className="flex w-full items-center justify-between gap-3 p-4 text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#3B82F6]"
+                            >
+                              <div className="flex items-start gap-3">
+                                <span
+                                  className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center border ${
+                                    isSelected
+                                      ? "border-[#3B82F6] bg-[#2563EB] text-white"
+                                      : "border-[#262626] bg-[#070707] text-[#60A5FA]"
+                                  }`}
+                                >
+                                  <BranchIcon id={branch.id} className="h-4 w-4" />
+                                </span>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-mono-tech text-[10px] text-[#3B82F6]">
+                                      {branch.index}
+                                    </span>
+                                    <span className="font-display text-[21px] font-bold leading-none text-white uppercase">
+                                      {branch.name}
+                                    </span>
+                                  </div>
+                                  <p className="mt-1 font-mono-tech text-[10px] tracking-[0.06em] text-[#7A7A7A] uppercase">
+                                    {branch.role}
+                                  </p>
+                                  <p className="mt-1 text-[12.5px] leading-[1.45] text-[#A3A3A3]">
+                                    {branch.summary}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <ChevronDown
+                                className={`h-4 w-4 shrink-0 text-[#3B82F6] transition-transform ${
+                                  isSelected ? "rotate-180" : ""
+                                }`}
+                              />
+                            </button>
+
+                            {isSelected && renderBranchDetailsPanel(branch, true)}
+                          </div>
+                        </div>
                       );
                     })}
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={replayFlow}
-                    aria-label="Replay execution flow"
-                    className="font-mono-tech inline-flex min-h-[32px] items-center gap-1.5 border border-[#262626] bg-black px-3 text-[10px] tracking-[0.1em] text-[#CCCCCC] uppercase transition-colors hover:border-[#FF3D00] hover:text-white"
-                  >
-                    <RotateCcw className="h-3 w-3" />
-                    <span className="hidden sm:inline">Replay</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* 3-Stage Live Flow Body: Input -> Gyra Core Processing -> Live Output */}
-              <div className="grid grid-cols-1 divide-y divide-[#1F1F1F] lg:grid-cols-12 lg:divide-x lg:divide-y-0">
-                {/* Stage 01: Input Request (3 cols) */}
-                <div className="flex flex-col justify-between bg-[#030303] p-5 sm:p-6 lg:col-span-3">
-                  <div>
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-mono-tech text-[10px] tracking-[0.14em] text-[#FF3D00] uppercase">
-                        01 · {selectedBranch.inputLabel}
-                      </span>
-                    </div>
-
-                    <div className="mt-4 border border-[#242424] bg-black p-4">
-                      <div className="flex items-center justify-between border-b border-[#181818] pb-2 font-mono-tech text-[10px] text-[#7A7A7A]">
-                        <span>{selectedBranch.name}</span>
-                        <span className="text-[#CCCCCC]">{selectedBranch.inputMeta}</span>
-                      </div>
-                      <p className="mt-3 whitespace-pre-line font-mono-tech text-[12px] leading-[1.65] text-[#D4D4D4]">
-                        {selectedBranch.inputBody}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 border-t border-[#181818] pt-4">
-                    <p className="font-mono-tech text-[10px] tracking-[0.1em] text-[#6E6E6E] uppercase">
-                      ENGINE TARGET
-                    </p>
-                    <p className="mt-1 font-mono-tech text-[12px] text-white">
-                      {selectedBranch.engineTag}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Stage 02: Gyra Core Execution Trace (4 cols) */}
-                <div className="flex flex-col justify-between bg-black p-5 sm:p-6 lg:col-span-4">
-                  <div>
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-mono-tech text-[10px] tracking-[0.14em] text-[#FF3D00] uppercase">
-                        02 · {selectedBranch.pipelineTitle}
-                      </span>
-                      <span className="font-mono-tech text-[10px] tracking-[0.1em] text-[#8A8A8A] uppercase">
-                        {isFlowComplete ? "COMPLETED" : "ROUTING..."}
-                      </span>
-                    </div>
-
-                    <ol className="mt-4 space-y-2.5">
-                      {selectedBranch.steps.map((step, idx) => {
-                        const reached = idx < completedSteps;
-                        const isActiveStep = idx === completedSteps - 1 && !isFlowComplete;
-                        return (
-                          <li
-                            key={step.id}
-                            className={`border p-3 transition-colors duration-200 ${
-                              reached
-                                ? isActiveStep
-                                  ? "border-[#FF3D00] bg-[#0B0605]"
-                                  : "border-[#262626] bg-[#060606]"
-                                : "border-[#151515] bg-black opacity-45"
-                            }`}
-                          >
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-2">
-                                <span
-                                  className={`font-mono-tech text-[11px] ${
-                                    reached ? "text-[#FF3D00]" : "text-[#555555]"
-                                  }`}
-                                >
-                                  {reached ? "✓" : `0${idx + 1}`}
-                                </span>
-                                <span className="font-mono-tech text-[11px] font-medium tracking-[0.06em] text-white uppercase">
-                                  {step.stage}
-                                </span>
-                              </div>
-                              <span className="font-mono-tech text-[10px] text-[#7A7A7A]">
-                                {step.timing}
-                              </span>
-                            </div>
-                            <p className="mt-1.5 pl-5 text-[12.5px] leading-[1.45] text-[#A3A3A3]">
-                              {step.detail}
-                              {isActiveStep && (
-                                <span className="gyra-cursor ml-1.5" aria-hidden="true" />
-                              )}
-                            </p>
-                          </li>
-                        );
-                      })}
-                    </ol>
-                  </div>
-
-                  <div className="mt-6 flex items-center justify-between border-t border-[#181818] pt-3.5 font-mono-tech text-[10px] tracking-[0.1em] uppercase">
-                    <span className="text-[#737373]">FLOW STATUS</span>
-                    <span className="text-[#FF3D00]">
-                      {isFlowComplete ? "VERIFIED OUTPUT READY" : "EXECUTING STAGE"}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Stage 03: Live Artifact Output (5 cols) */}
-                <div className="flex flex-col justify-between bg-[#030303] p-5 sm:p-6 lg:col-span-5">
-                  <div>
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-mono-tech text-[10px] tracking-[0.14em] text-[#FF3D00] uppercase">
-                        03 · LIVE OUTPUT
-                      </span>
-                      <span className="font-mono-tech border border-[#262626] bg-black px-2 py-0.5 text-[10px] tracking-[0.1em] text-white uppercase">
-                        {selectedBranch.outputBadge}
-                      </span>
-                    </div>
-
-                    <div className="mt-4">
-                      {selectedBranch.id === "chat" && (
-                        <div className="relative border border-[#262626] bg-black">
-                          <div className="flex items-center justify-between border-b border-[#1A1A1A] px-3.5 py-2 font-mono-tech text-[10px]">
-                            <span className="text-[#D4D4D4]">{selectedBranch.outputLabel}</span>
-                            <span className="text-[#FF3D00]">TYPESCRIPT · STRICT</span>
-                          </div>
-                          <pre className="overflow-x-auto px-4 py-3.5 font-mono-tech text-[11px] leading-[1.6] text-[#C8C8C8]">
-                            <code>{`export async function POST(req: Request) {
-  const sig = req.headers.get("x-hmac-256");
-  const raw = await req.text();
-  const mac = createHmac("sha256", SECRET)
-    .update(raw).digest();
-  if (!timingSafeEqual(buf(sig), mac)) {
-    return Response.json(
-      { error: "unauthorized" },
-      { status: 401 }
-    );
-  }
-  return Response.json({ ok: true });
-}`}</code>
-                          </pre>
-                          <div
-                            aria-hidden="true"
-                            className="gyra-dither-sweep gyra-scan-motion pointer-events-none absolute inset-y-0 w-20"
-                          />
-                        </div>
-                      )}
-
-                      {selectedBranch.id === "image" && (
-                        <div className="relative aspect-[4/3] w-full overflow-hidden border border-[#262626] bg-black">
-                          <img
-                            src="/showcase/edit-after.jpg"
-                            alt="Gyra Pro Ultra tungsten dusk studio edit"
-                            referrerPolicy="no-referrer"
-                            className="h-full w-full object-cover"
-                          />
-                          <div
-                            className="absolute inset-0 overflow-hidden"
-                            style={{ clipPath: "inset(0 52% 0 0)" }}
-                          >
-                            <img
-                              src="/showcase/edit-before.jpg"
-                              alt="Original overcast daylight studio"
-                              referrerPolicy="no-referrer"
-                              className="h-full w-full object-cover"
-                            />
-                          </div>
-                          <div
-                            aria-hidden="true"
-                            className="pointer-events-none absolute inset-y-0 left-[48%] w-[2px] bg-[#FF3D00]"
-                          />
-                          <div
-                            aria-hidden="true"
-                            className="gyra-dither-sweep pointer-events-none absolute inset-y-0 left-[48%] w-16 opacity-80"
-                          />
-                          <span className="font-mono-tech absolute bottom-2.5 left-2.5 bg-black/90 px-2 py-0.5 text-[10px] text-[#CCCCCC] uppercase">
-                            Original
-                          </span>
-                          <span className="font-mono-tech absolute bottom-2.5 right-2.5 bg-[#FF3D00] px-2 py-0.5 text-[10px] font-medium text-white uppercase">
-                            Pro Ultra
-                          </span>
-                        </div>
-                      )}
-
-                      {selectedBranch.id === "video" && (
-                        <div className="relative aspect-[16/10] w-full overflow-hidden border border-[#262626] bg-black">
-                          <video
-                            src="/products-hero-bg.mp4"
-                            poster="/products-hero-poster.jpg"
-                            autoPlay
-                            muted
-                            loop
-                            playsInline
-                            className="h-full w-full object-cover"
-                          />
-                          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/30" />
-                          <span className="font-mono-tech absolute left-2.5 top-2.5 border border-[#FF3D00]/70 bg-black/85 px-2 py-0.5 text-[10px] text-white uppercase">
-                            {selectedBranch.outputLabel}
-                          </span>
-                          <div className="font-mono-tech absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between text-[10px] text-[#D4D4D4]">
-                            <span>720P · 24 FPS · 121 FRAMES</span>
-                            <span className="text-[#FF3D00]">GYRA STUDIO</span>
-                          </div>
-                        </div>
-                      )}
-
-                      {selectedBranch.id === "api" && (
-                        <div className="relative border border-[#262626] bg-black">
-                          <div className="flex items-center justify-between border-b border-[#1A1A1A] px-3.5 py-2 font-mono-tech text-[10px]">
-                            <span className="text-white">{selectedBranch.outputLabel}</span>
-                            <span className="text-[#FF3D00]">410MS · 200 OK</span>
-                          </div>
-                          <pre className="overflow-x-auto px-4 py-3.5 font-mono-tech text-[11px] leading-[1.6] text-[#C8C8C8]">
-                            <code>{`{
-  "id": "chatcmpl-gyra-9041",
-  "object": "chat.completion",
-  "model": "gyra-super2.0",
-  "choices": [{
-    "message": {
-      "role": "assistant",
-      "content": "Idempotency key verified..."
-    },
-    "finish_reason": "stop"
-  }]
-}`}</code>
-                          </pre>
-                          <div
-                            aria-hidden="true"
-                            className="gyra-dither-sweep gyra-scan-motion pointer-events-none absolute inset-y-0 w-20"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Direct Branch Actions */}
-                  <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[#181818] pt-4">
-                    <a
-                      href={selectedBranch.sectionHref}
-                      className="font-mono-tech inline-flex items-center gap-1.5 text-[11px] tracking-[0.1em] text-[#A3A3A3] uppercase transition-colors hover:text-white"
-                    >
-                      <span>{selectedBranch.sectionCta}</span>
-                      <ArrowDown className="h-3.5 w-3.5 text-[#FF3D00]" />
-                    </a>
-
-                    <a
-                      href={resolveGyraRoute(selectedBranch.appRoute, routeBase)}
-                      className="font-mono-tech inline-flex items-center gap-1.5 border border-[#FF3D00] bg-[#FF3D00] px-4 py-2 text-[11px] font-medium tracking-[0.1em] text-white uppercase transition-colors hover:bg-[#FF551F]"
-                    >
-                      <span>{selectedBranch.appCta}</span>
-                      <ArrowUpRight className="h-3.5 w-3.5" />
-                    </a>
-                  </div>
                 </div>
               </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
 
@@ -959,7 +1372,7 @@ export function HeroWorkbench({
                 key={item}
                 className="font-mono-tech flex shrink-0 items-center gap-2 whitespace-nowrap text-[11px] tracking-[0.09em] text-[#8E8E8E]"
               >
-                <span className="h-1.5 w-1.5 shrink-0 bg-[#FF3D00]" aria-hidden="true" />
+                <span className="h-1.5 w-1.5 shrink-0 bg-[#3B82F6]" aria-hidden="true" />
                 <span>{item}</span>
               </div>
             ))}

@@ -39,7 +39,7 @@ export function ImageShowcase({ routeBase = "" }: ImageShowcaseProps) {
         {/* Header Row */}
         <div className="grid grid-cols-1 items-end gap-6 lg:grid-cols-12">
           <div className="lg:col-span-7">
-            <p className="font-mono-tech text-[12px] tracking-[0.14em] text-[#FF3D00] uppercase">
+            <p className="font-mono-tech text-[12px] tracking-[0.14em] text-[#3B82F6] uppercase">
               [ 02 · Gyra Image ]
             </p>
             <h2 className="font-display mt-3.5 text-[clamp(2.35rem,4.2vw,3.75rem)] font-bold leading-[0.98] tracking-[-0.02em] text-white uppercase [text-wrap:balance]">
@@ -53,7 +53,7 @@ export function ImageShowcase({ routeBase = "" }: ImageShowcaseProps) {
             </p>
             <a
               href={resolveGyraRoute("/dashboard", routeBase)}
-              className="font-mono-tech mt-4 inline-flex items-center gap-1.5 text-[12px] tracking-[0.1em] text-white uppercase underline decoration-[#FF3D00] underline-offset-4 transition-colors hover:text-[#FF3D00]"
+              className="font-mono-tech mt-4 inline-flex items-center gap-1.5 text-[12px] tracking-[0.1em] text-white uppercase underline decoration-[#3B82F6] underline-offset-4 transition-colors hover:text-[#3B82F6]"
             >
               Create with Gyra Image
               <ArrowUpRight className="h-3.5 w-3.5" />
@@ -71,9 +71,9 @@ export function ImageShowcase({ routeBase = "" }: ImageShowcaseProps) {
                 role="tab"
                 aria-selected={mode === "edit"}
                 onClick={() => setMode("edit")}
-                className={`font-mono-tech min-h-[34px] border px-3.5 text-[11px] tracking-[0.08em] uppercase transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#FF3D00] ${
+                className={`font-mono-tech min-h-[34px] border px-3.5 text-[11px] tracking-[0.08em] uppercase transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#3B82F6] ${
                   mode === "edit"
-                    ? "border-[#FF3D00] bg-[#FF3D00] font-medium text-white"
+                    ? "border-[#3B82F6] bg-[#2563EB] font-medium text-white"
                     : "border-[#242424] bg-black text-[#8A8A8A] hover:border-[#444] hover:text-white"
                 }`}
               >
@@ -84,9 +84,9 @@ export function ImageShowcase({ routeBase = "" }: ImageShowcaseProps) {
                 role="tab"
                 aria-selected={mode === "generate"}
                 onClick={() => setMode("generate")}
-                className={`font-mono-tech min-h-[34px] border px-3.5 text-[11px] tracking-[0.08em] uppercase transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#FF3D00] ${
+                className={`font-mono-tech min-h-[34px] border px-3.5 text-[11px] tracking-[0.08em] uppercase transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#3B82F6] ${
                   mode === "generate"
-                    ? "border-[#FF3D00] bg-[#FF3D00] font-medium text-white"
+                    ? "border-[#3B82F6] bg-[#2563EB] font-medium text-white"
                     : "border-[#242424] bg-black text-[#8A8A8A] hover:border-[#444] hover:text-white"
                 }`}
               >
@@ -147,11 +147,11 @@ export function ImageShowcase({ routeBase = "" }: ImageShowcaseProps) {
 
                   {/* Razor Signal Vermilion Split Hairline + Square Hardware Handle */}
                   <div
-                    className="pointer-events-none absolute inset-y-0 z-10 w-[2px] bg-[#FF3D00]"
+                    className="pointer-events-none absolute inset-y-0 z-10 w-[2px] bg-[#2563EB]"
                     style={{ left: `${splitPct}%` }}
                     aria-hidden="true"
                   >
-                    <div className="absolute left-1/2 top-1/2 flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center border border-[#FF3D00] bg-black text-white">
+                    <div className="absolute left-1/2 top-1/2 flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center border border-[#3B82F6] bg-black text-white">
                       <MoveHorizontal className="h-4 w-4" />
                     </div>
                   </div>
@@ -159,7 +159,7 @@ export function ImageShowcase({ routeBase = "" }: ImageShowcaseProps) {
                   <div className="font-mono-tech pointer-events-none absolute left-3 top-3 border border-[#303030] bg-black/90 px-2.5 py-1 text-[10px] tracking-[0.08em] text-[#D4D4D4] uppercase">
                     {IMAGE_EDIT_SHOWCASE.beforeLabel}
                   </div>
-                  <div className="font-mono-tech pointer-events-none absolute right-3 top-3 bg-[#FF3D00] px-2.5 py-1 text-[10px] font-medium tracking-[0.08em] text-white uppercase">
+                  <div className="font-mono-tech pointer-events-none absolute right-3 top-3 bg-[#2563EB] px-2.5 py-1 text-[10px] font-medium tracking-[0.08em] text-white uppercase">
                     {IMAGE_EDIT_SHOWCASE.afterLabel}
                   </div>
                 </div>
@@ -212,7 +212,7 @@ export function ImageShowcase({ routeBase = "" }: ImageShowcaseProps) {
               {/* Right 4 cols: Edit Specification Ledger */}
               <div className="flex flex-col justify-between bg-black p-5 sm:p-6 lg:col-span-4">
                 <div>
-                  <p className="font-mono-tech text-[10px] tracking-[0.12em] text-[#FF3D00] uppercase">
+                  <p className="font-mono-tech text-[10px] tracking-[0.12em] text-[#3B82F6] uppercase">
                     Edit Instruction
                   </p>
                   <p className="mt-2.5 text-[15px] leading-[1.65] text-white">
@@ -264,7 +264,7 @@ export function ImageShowcase({ routeBase = "" }: ImageShowcaseProps) {
                     className="h-full w-full object-cover"
                   />
                   <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/45 to-transparent p-5">
-                    <p className="font-mono-tech text-[10px] tracking-[0.12em] text-[#FF3D00] uppercase">
+                    <p className="font-mono-tech text-[10px] tracking-[0.12em] text-[#3B82F6] uppercase">
                       {selectedSpecimen.category} · {selectedSpecimen.resolution}
                     </p>
                     <p className="font-display mt-1 text-[22px] font-bold text-white uppercase">
@@ -289,9 +289,9 @@ export function ImageShowcase({ routeBase = "" }: ImageShowcaseProps) {
                           type="button"
                           onClick={() => setSelectedId(item.id)}
                           aria-pressed={active}
-                          className={`group overflow-hidden border text-left transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#FF3D00] ${
+                          className={`group overflow-hidden border text-left transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#3B82F6] ${
                             active
-                              ? "border-[#FF3D00] bg-[#0B0B0B]"
+                              ? "border-[#3B82F6] bg-[#0B0B0B]"
                               : "border-[#222222] bg-black hover:border-[#444444]"
                           }`}
                         >
@@ -314,7 +314,7 @@ export function ImageShowcase({ routeBase = "" }: ImageShowcaseProps) {
                               {item.category}
                             </p>
                             {active && (
-                              <span className="font-mono-tech text-[9px] font-medium text-[#FF3D00] uppercase">
+                              <span className="font-mono-tech text-[9px] font-medium text-[#3B82F6] uppercase">
                                 Active
                               </span>
                             )}
@@ -336,7 +336,7 @@ export function ImageShowcase({ routeBase = "" }: ImageShowcaseProps) {
 
                 <a
                   href={resolveGyraRoute("/dashboard", routeBase)}
-                  className="font-mono-tech mt-6 inline-flex min-h-[44px] w-full items-center justify-center gap-2 bg-[#FF3D00] px-4 text-[12px] font-medium tracking-[0.08em] text-white uppercase transition-colors hover:bg-[#FF551F]"
+                  className="font-mono-tech mt-6 inline-flex min-h-[44px] w-full items-center justify-center gap-2 bg-[#2563EB] px-4 text-[12px] font-medium tracking-[0.08em] text-white uppercase transition-colors hover:bg-[#3B82F6]"
                 >
                   Generate in Gyra
                   <ArrowUpRight className="h-3.5 w-3.5" />

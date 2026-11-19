@@ -56,7 +56,7 @@ export function CapabilityMatrix() {
                     <div className="h-[1px] w-1/2 bg-[#1E1E1E]" />
                     <div className="flex items-center justify-between pt-2 text-[11px] text-[#808080]">
                       <span>isolated linux terminal · preview</span>
-                      <span className="text-[#FF3D00]">exit 0</span>
+                      <span className="text-[#3B82F6]">exit 0</span>
                     </div>
                   </div>
                 </div>
@@ -80,7 +80,7 @@ export function CapabilityMatrix() {
                       key={route.path}
                       type="button"
                       onClick={() => setActiveEndpoint(idx as 0 | 1 | 2)}
-                      className="grid w-full grid-cols-12 items-center text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#FF3D00]"
+                      className="grid w-full grid-cols-12 items-center text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#3B82F6]"
                     >
                       <span
                         className={`font-mono-tech col-span-3 border px-3 py-2.5 text-[11px] uppercase transition-colors ${
@@ -93,21 +93,21 @@ export function CapabilityMatrix() {
                       </span>
                       <span
                         className={`col-span-1 h-[1px] transition-colors ${
-                          active ? "bg-[#FF3D00]" : "bg-[#242424]"
+                          active ? "bg-[#2563EB]" : "bg-[#242424]"
                         }`}
                         aria-hidden="true"
                       />
                       <span
                         className={`font-mono-tech col-span-8 flex items-center justify-between border px-3.5 py-2.5 text-[11px] transition-colors ${
                           active
-                            ? "border-[#FF3D00] bg-[#FF3D00]/8 text-white"
+                            ? "border-[#3B82F6] bg-[#2563EB]/12 text-white"
                             : "border-[#1F1F1F] bg-black text-[#737373] hover:text-[#CCCCCC]"
                         }`}
                       >
                         <span className="truncate">{route.path}</span>
                         <span
                           className={`ml-2 hidden shrink-0 text-[10px] sm:inline ${
-                            active ? "text-[#FF3D00]" : "text-[#555555]"
+                            active ? "text-[#3B82F6]" : "text-[#555555]"
                           }`}
                         >
                           {route.target}
@@ -153,7 +153,7 @@ export function CapabilityMatrix() {
                     <div className="text-[#8A8A8A]">system-spec.pdf</div>
                     <div className="flex items-center justify-between text-white">
                       <span>webhook-schema.ts</span>
-                      <span className="text-[10px] text-[#FF3D00]">INDEXED</span>
+                      <span className="text-[10px] text-[#3B82F6]">INDEXED</span>
                     </div>
                     <div className="text-[#8A8A8A]">pricing-matrix.csv</div>
                   </div>
@@ -190,11 +190,11 @@ export function CapabilityMatrix() {
                   <line x1="0" y1="96" x2="320" y2="96" stroke="#1F1F1F" strokeWidth="1" />
                   <polyline
                     fill="none"
-                    stroke="#FF3D00"
+                    stroke="#3B82F6"
                     strokeWidth="1.6"
                     points="0,92 32,76 64,84 96,46 128,68 160,52 192,78 224,28 256,64 288,42 320,34"
                   />
-                  <circle cx="224" cy="28" r="3.5" fill="#000000" stroke="#FF3D00" strokeWidth="1.8" />
+                  <circle cx="224" cy="28" r="3.5" fill="#000000" stroke="#3B82F6" strokeWidth="1.8" />
                 </svg>
               </div>
 
@@ -216,8 +216,8 @@ export function CapabilityMatrix() {
                   <p className="mt-1.5 text-white">POST /api/v1/chat</p>
                   <p className="mt-1 text-[#8A8A8A]">Authorization: Bearer $GYRA_KEY</p>
                 </div>
-                <div className="h-7 w-[1px] bg-[#FF3D00]" aria-hidden="true" />
-                <div className="w-full border border-[#FF3D00]/60 bg-black px-4 py-2.5 font-mono-tech text-[10px] tracking-[0.08em] text-[#D4D4D4] uppercase">
+                <div className="h-7 w-[1px] bg-[#2563EB]" aria-hidden="true" />
+                <div className="w-full border border-[#3B82F6]/60 bg-black px-4 py-2.5 font-mono-tech text-[10px] tracking-[0.08em] text-[#D4D4D4] uppercase">
                   Server-verified scope · wallet balance ok
                 </div>
               </div>
