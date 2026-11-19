@@ -561,6 +561,7 @@ export function SynapticFlowHero({ routeBase = "" }: SynapticFlowHeroProps) {
 
   // React UI state synchronized smoothly with the physics-driven canvas flow
   const [autoMode, setAutoMode] = useState(true);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const [faultMode, setFaultMode] = useState(false);
   const [activeBranchId, setActiveBranchId] = useState<SynapticBranchId | null>("chat");
   const [activeLeafName, setActiveLeafName] = useState<string | null>(null);
@@ -615,6 +616,16 @@ export function SynapticFlowHero({ routeBase = "" }: SynapticFlowHeroProps) {
     autoDurationMs: 0,
     autoRemainingMs: 0,
   });
+
+  // Respect prefers-reduced-motion on mount without changing visual design for standard users
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (mq.matches) {
+      setPrefersReducedMotion(true);
+      setAutoMode(false);
+      engineRef.current.autoMode = false;
+    }
+  }, []);
 
   // Sync toggles cleanly into engineRef
   useEffect(() => {
@@ -2260,7 +2271,12 @@ export function SynapticFlowHero({ routeBase = "" }: SynapticFlowHeroProps) {
                         <span>{copiedCode ? "Copied" : "Copy"}</span>
                       </button>
                     </div>
-                    <pre className="overflow-x-auto font-mono-tech text-[11px] leading-[1.62] text-[#D4E4F0]">
+                    <pre
+                      role="region"
+                      aria-label="Gyra Chat verified TypeScript output"
+                      tabIndex={0}
+                      className="overflow-x-auto font-mono-tech text-[11px] leading-[1.62] text-[#D4E4F0] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#5B9EC2]"
+                    >
                       <code>{`export async function POST(req: Request) {
   const valid = timingSafeEqual(sigBuf, expectedBuf);
   if (!valid || Math.abs(now - ts) > 300_000) {
@@ -2273,23 +2289,37 @@ export function SynapticFlowHero({ routeBase = "" }: SynapticFlowHeroProps) {
                 ) : activeProduct.id === "image" ? (
                   <div className="grid grid-cols-2 gap-2.5">
                     <div className="relative aspect-[16/10] overflow-hidden border border-[#1C3346] bg-black">
-                      <img
-                        src="/showcase/edit-before.jpg"
-                        alt="Original overcast architectural interior"
-                        referrerPolicy="no-referrer"
-                        className="h-full w-full object-cover"
-                      />
+                      <picture className="block h-full w-full">
+                        <source srcSet="/showcase/edit-before.webp" type="image/webp" />
+                        <img
+                          src="/showcase/edit-before.jpg"
+                          alt="Original overcast architectural interior"
+                          width={1200}
+                          height={896}
+                          loading="lazy"
+                          decoding="async"
+                          referrerPolicy="no-referrer"
+                          className="h-full w-full object-cover"
+                        />
+                      </picture>
                       <span className="font-mono-tech absolute bottom-1.5 left-1.5 bg-black/85 px-1.5 py-0.5 text-[9px] text-[#D4E4F0] uppercase">
                         Original · Daylight
                       </span>
                     </div>
                     <div className="relative aspect-[16/10] overflow-hidden border border-[#34D399]/50 bg-black">
-                      <img
-                        src="/showcase/edit-after.jpg"
-                        alt="Gyra Pro Ultra tungsten dusk edit"
-                        referrerPolicy="no-referrer"
-                        className="h-full w-full object-cover"
-                      />
+                      <picture className="block h-full w-full">
+                        <source srcSet="/showcase/edit-after.webp" type="image/webp" />
+                        <img
+                          src="/showcase/edit-after.jpg"
+                          alt="Gyra Pro Ultra tungsten dusk edit"
+                          width={1200}
+                          height={896}
+                          loading="lazy"
+                          decoding="async"
+                          referrerPolicy="no-referrer"
+                          className="h-full w-full object-cover"
+                        />
+                      </picture>
                       <span className="font-mono-tech absolute bottom-1.5 left-1.5 bg-[#1F5B7C] px-1.5 py-0.5 text-[9px] text-white uppercase">
                         Pro Ultra · 2700K Dusk
                       </span>
@@ -2301,10 +2331,14 @@ export function SynapticFlowHero({ routeBase = "" }: SynapticFlowHeroProps) {
                       <video
                         src="/products-hero-bg.mp4"
                         poster="/showcase/video-ref-lagos.jpg"
-                        autoPlay
+                        width={720}
+                        height={1280}
+                        preload="metadata"
+                        autoPlay={!prefersReducedMotion}
                         muted
                         loop
                         playsInline
+                        aria-hidden="true"
                         className="h-full w-full object-cover"
                       />
                       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
@@ -2331,7 +2365,12 @@ export function SynapticFlowHero({ routeBase = "" }: SynapticFlowHeroProps) {
                     </div>
                   </div>
                 ) : (
-                  <pre className="overflow-x-auto font-mono-tech text-[11px] leading-[1.62] text-[#D4E4F0]">
+                  <pre
+                    role="region"
+                    aria-label="Gyra OpenAI-compatible API JSON response"
+                    tabIndex={0}
+                    className="overflow-x-auto font-mono-tech text-[11px] leading-[1.62] text-[#D4E4F0] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#5B9EC2]"
+                  >
                     <code>{`{
   "id": "chatcmpl-gyra-v1",
   "object": "chat.completion",

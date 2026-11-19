@@ -145,7 +145,7 @@ export function ChatShowcase({ routeBase = "" }: ChatShowcaseProps) {
           : Math.round(70 + (visibleLines / Math.max(1, outputLines.length)) * 30);
 
   return (
-    <section id="chat" className="border-b border-[#1F1F1F] bg-black py-24 lg:py-32">
+    <section id="chat" className="gyra-band-defer border-b border-[#1F1F1F] bg-black py-24 lg:py-32">
       <div className="mx-auto max-w-[1380px] px-5 sm:px-8">
         {/* Header Row */}
         <div className="grid grid-cols-1 items-end gap-6 lg:grid-cols-12">
@@ -182,9 +182,11 @@ export function ChatShowcase({ routeBase = "" }: ChatShowcaseProps) {
                 return (
                   <button
                     key={item.id}
+                    id={`gyra-chat-tab-${item.id}`}
                     type="button"
                     role="tab"
                     aria-selected={selected}
+                    aria-controls="gyra-chat-tabpanel"
                     onClick={() => startLiveRun(item.id, modelTier)}
                     className={`font-mono-tech min-h-[34px] border px-3 text-[11px] tracking-[0.06em] uppercase transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#5B9EC2] ${
                       selected
@@ -262,7 +264,12 @@ export function ChatShowcase({ routeBase = "" }: ChatShowcaseProps) {
           </div>
 
           {/* Two-Column Execution Body */}
-          <div className="grid grid-cols-1 divide-y divide-[#1F1F1F] lg:grid-cols-12 lg:divide-x lg:divide-y-0">
+          <div
+            id="gyra-chat-tabpanel"
+            role="tabpanel"
+            aria-labelledby={`gyra-chat-tab-${scenario.id}`}
+            className="grid grid-cols-1 divide-y divide-[#1F1F1F] lg:grid-cols-12 lg:divide-x lg:divide-y-0"
+          >
             {/* Left 4 cols: 6-Agent Pipeline Rail */}
             <div className="flex flex-col justify-between bg-black p-5 sm:p-6 lg:col-span-4">
               <div>
@@ -404,7 +411,12 @@ export function ChatShowcase({ routeBase = "" }: ChatShowcaseProps) {
                       )}
                     </button>
                   </div>
-                  <pre className="min-h-[210px] max-h-[300px] overflow-x-auto overflow-y-auto p-4 font-mono-tech text-[12px] leading-[1.65] text-[#E0E0E0]">
+                  <pre
+                    role="region"
+                    aria-label={`Gyra Chat output for ${scenario.label}`}
+                    tabIndex={0}
+                    className="min-h-[210px] max-h-[300px] overflow-x-auto overflow-y-auto p-4 font-mono-tech text-[12px] leading-[1.65] text-[#E0E0E0] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[#5B9EC2]"
+                  >
                     {displayedOutput ? (
                       <code>
                         {displayedOutput}

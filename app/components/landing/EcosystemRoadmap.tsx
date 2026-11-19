@@ -13,9 +13,14 @@ import { GyraLogoMark } from "./GyraLogoMark";
 
 export interface EcosystemRoadmapProps {
   routeBase?: string;
+  /** When false, render LandingFooter separately outside <main> for clean landmark semantics */
+  includeFooter?: boolean;
 }
 
-export function EcosystemRoadmap({ routeBase = "" }: EcosystemRoadmapProps) {
+export function EcosystemRoadmap({
+  routeBase = "",
+  includeFooter = true,
+}: EcosystemRoadmapProps) {
   const [copiedEndpoint, setCopiedEndpoint] = useState(false);
 
   const handleCopyEndpoint = async () => {
@@ -31,7 +36,10 @@ export function EcosystemRoadmap({ routeBase = "" }: EcosystemRoadmapProps) {
   return (
     <>
       {/* Ecosystem & Honest Roadmap Matrix (E2B Border-Collapsed Tile Grid) */}
-      <section id="ecosystem" className="border-b border-[#1F1F1F] bg-black py-24 lg:py-32">
+      <section
+        id="ecosystem"
+        className="gyra-band-defer border-b border-[#1F1F1F] bg-black py-24 lg:py-32"
+      >
         <div className="mx-auto max-w-[1380px] px-5 sm:px-8">
           <div className="mx-auto max-w-3xl text-center">
             <p className="font-mono-tech text-[12px] tracking-[0.14em] text-[#8A8A8A] uppercase">
@@ -182,6 +190,13 @@ export function EcosystemRoadmap({ routeBase = "" }: EcosystemRoadmapProps) {
       </section>
 
       {/* Pitch-Black Architectural Footer */}
+      {includeFooter && <LandingFooter routeBase={routeBase} />}
+    </>
+  );
+}
+
+export function LandingFooter({ routeBase = "" }: { routeBase?: string }) {
+  return (
       <footer className="bg-black py-16">
         <div className="mx-auto max-w-[1380px] px-5 sm:px-8">
           <div className="grid grid-cols-2 gap-10 md:grid-cols-6">
@@ -342,6 +357,5 @@ export function EcosystemRoadmap({ routeBase = "" }: EcosystemRoadmapProps) {
           </div>
         </div>
       </footer>
-    </>
   );
 }

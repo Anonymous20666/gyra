@@ -143,6 +143,13 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
     remaining: number;
   }>({ id: null, startedAt: 0, duration: 3600, remaining: 3600 });
 
+  // Respect prefers-reduced-motion on initial mount
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setAutoCascade(false);
+    }
+  }, []);
+
   // Visibility-safe gentle cascade cycling through Chat -> Image -> Video -> API
   useEffect(() => {
     if (!autoCascade) {
@@ -215,7 +222,10 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
   };
 
   return (
-    <section id="architecture" className="border-b border-[#1F1F1F] bg-black py-24 lg:py-32">
+    <section
+      id="architecture"
+      className="gyra-band-defer border-b border-[#1F1F1F] bg-black py-24 lg:py-32"
+    >
       <div className="mx-auto max-w-[1380px] px-5 sm:px-8">
         {/* Section Heading */}
         <div className="flex flex-wrap items-end justify-between gap-6">
@@ -277,9 +287,14 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
             <svg
               viewBox="0 0 840 650"
               className="h-auto w-full max-w-[760px] select-none overflow-visible"
-              role="img"
-              aria-label="Living 3D isometric machined silicon architecture of Gyra: Genvia parent crest above, Gyra Intelligence Core silicon wafer in middle, and four elevated product plinths below."
+              role="group"
+              aria-labelledby="gyra-arch-svg-title"
             >
+              <title id="gyra-arch-svg-title">
+                Living 3D isometric machined silicon architecture of Gyra: Genvia parent crest
+                above, Gyra Intelligence Core silicon wafer in middle, and four elevated product
+                plinths below.
+              </title>
               <defs>
                 <linearGradient id="gyraWaferTop" x1="0" y1="0" x2="1" y2="1">
                   <stop offset="0%" stopColor="#296E93" />
@@ -462,7 +477,7 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
                     selectModule("genvia");
                   }
                 }}
-                className="cursor-pointer focus:outline-none"
+                className="cursor-pointer focus:outline-none focus-visible:outline-2 focus-visible:outline-[#5B9EC2]"
                 style={{
                   transform: exploded ? "translateY(-18px)" : "translateY(0px)",
                   transition: "transform 480ms cubic-bezier(0.16, 1, 0.3, 1)",
@@ -498,7 +513,7 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
                     selectModule("core");
                   }
                 }}
-                className="cursor-pointer focus:outline-none"
+                className="cursor-pointer focus:outline-none focus-visible:outline-2 focus-visible:outline-[#5B9EC2]"
                 style={{
                   transform: exploded ? "translateY(-4px)" : "translateY(0px)",
                   transition: "transform 480ms cubic-bezier(0.16, 1, 0.3, 1)",
@@ -598,7 +613,7 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
                           selectModule(m.id);
                         }
                       }}
-                      className="cursor-pointer focus:outline-none"
+                      className="cursor-pointer focus:outline-none focus-visible:outline-2 focus-visible:outline-[#5B9EC2]"
                       style={{
                         transform: isAct ? "translateY(-10px)" : "translateY(0px)",
                         opacity: isProductActive && !isAct ? 0.56 : 1,
@@ -648,11 +663,13 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
                   return (
                     <button
                       key={id}
+                      id={`gyra-arch-tab-${id}`}
                       type="button"
                       role="tab"
                       aria-selected={selected}
+                      aria-controls="gyra-arch-tabpanel"
                       onClick={() => selectModule(id)}
-                      className={`font-mono-tech border-b border-r border-[#192836] px-2 py-2.5 text-[10.5px] tracking-[0.06em] uppercase transition-colors cursor-pointer sm:border-b-0 last:border-r-0 ${
+                      className={`font-mono-tech border-b border-r border-[#192836] px-2 py-2.5 text-[10.5px] tracking-[0.06em] uppercase transition-colors cursor-pointer sm:border-b-0 last:border-r-0 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[#5B9EC2] ${
                         selected
                           ? "bg-[#1F5B7C] font-medium text-white"
                           : "text-[#8398AB] hover:bg-[#081521] hover:text-white"
@@ -664,7 +681,12 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
                 })}
               </div>
 
-              <div className="mt-7">
+              <div
+                id="gyra-arch-tabpanel"
+                role="tabpanel"
+                aria-labelledby={`gyra-arch-tab-${activeId}`}
+                className="mt-7"
+              >
                 <p className="font-mono-tech text-[11px] tracking-[0.13em] text-[#5B9EC2] uppercase">
                   {active.kicker}
                 </p>

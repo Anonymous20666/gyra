@@ -38,7 +38,10 @@ export function DeveloperQuickstart({ routeBase = "" }: DeveloperQuickstartProps
   };
 
   return (
-    <section id="developers" className="border-b border-[#1F1F1F] bg-black py-24 lg:py-32">
+    <section
+      id="developers"
+      className="gyra-band-defer border-b border-[#1F1F1F] bg-black py-24 lg:py-32"
+    >
       <div className="mx-auto max-w-[1380px] px-5 sm:px-8">
         {/* Header Row */}
         <div className="grid grid-cols-1 items-end gap-6 lg:grid-cols-12">
@@ -86,9 +89,11 @@ export function DeveloperQuickstart({ routeBase = "" }: DeveloperQuickstartProps
                 return (
                   <button
                     key={item.id}
+                    id={`gyra-api-tab-${item.id}`}
                     type="button"
                     role="tab"
                     aria-selected={selected}
+                    aria-controls="gyra-api-tabpanel"
                     onClick={() => setEndpointId(item.id)}
                     className={`font-mono-tech min-h-[34px] border px-3 text-[11px] tracking-[0.06em] uppercase transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#5B9EC2] ${
                       selected
@@ -155,12 +160,25 @@ export function DeveloperQuickstart({ routeBase = "" }: DeveloperQuickstartProps
           </div>
 
           {/* Split Code + Response */}
-          <div className="grid grid-cols-1 divide-y divide-[#1F1F1F] lg:grid-cols-12 lg:divide-x lg:divide-y-0">
+          <div
+            id="gyra-api-tabpanel"
+            role="tabpanel"
+            aria-labelledby={`gyra-api-tab-${activeExample.id}`}
+            className="grid grid-cols-1 divide-y divide-[#1F1F1F] lg:grid-cols-12 lg:divide-x lg:divide-y-0"
+          >
             <div className="bg-[#030303] p-5 sm:p-6 lg:col-span-7">
-              <p className="font-mono-tech mb-3 text-[10px] tracking-[0.12em] text-[#737373] uppercase">
+              <p
+                id="gyra-api-request-caption"
+                className="font-mono-tech mb-3 text-[10px] tracking-[0.12em] text-[#737373] uppercase"
+              >
                 Request ({language})
               </p>
-              <pre className="overflow-x-auto font-mono-tech text-[12px] leading-[1.7] text-[#E5E5E5]">
+              <pre
+                role="region"
+                aria-labelledby="gyra-api-request-caption"
+                tabIndex={0}
+                className="overflow-x-auto font-mono-tech text-[12px] leading-[1.7] text-[#E5E5E5] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#5B9EC2]"
+              >
                 <code>{activeCode}</code>
               </pre>
             </div>
@@ -168,10 +186,17 @@ export function DeveloperQuickstart({ routeBase = "" }: DeveloperQuickstartProps
             <div className="flex flex-col justify-between bg-black p-5 sm:p-6 lg:col-span-5">
               <div>
                 <div className="mb-3 flex items-center justify-between font-mono-tech text-[10px] tracking-[0.12em] uppercase">
-                  <span className="text-[#737373]">Response Payload</span>
+                  <span id="gyra-api-response-caption" className="text-[#737373]">
+                    Response Payload
+                  </span>
                   <span className="text-[#5B9EC2]">200 OK · JSON</span>
                 </div>
-                <pre className="overflow-x-auto border border-[#1A1A1A] bg-[#040404] p-4 font-mono-tech text-[12px] leading-[1.65] text-[#CCCCCC]">
+                <pre
+                  role="region"
+                  aria-labelledby="gyra-api-response-caption"
+                  tabIndex={0}
+                  className="overflow-x-auto border border-[#1A1A1A] bg-[#040404] p-4 font-mono-tech text-[12px] leading-[1.65] text-[#CCCCCC] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#5B9EC2]"
+                >
                   <code>{activeExample.sampleResponse}</code>
                 </pre>
               </div>
