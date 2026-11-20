@@ -12,11 +12,10 @@ export interface NavbarProps {
 }
 
 const NAV_ITEMS = [
-  { label: "Chat", href: "#chat" },
-  { label: "Image", href: "#image" },
-  { label: "Video", href: "#video" },
+  { label: "Playground", href: "/playground" },
+  { label: "Models", href: "/models" },
   { label: "Platform", href: "#architecture" },
-  { label: "API", href: "#developers" },
+  { label: "API", href: "/api" },
 ] as const;
 
 const THEME_OPTIONS: readonly {
@@ -42,7 +41,7 @@ export function Navbar({ isAuthenticated = false, routeBase = "" }: NavbarProps)
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [mobileOpen]);
 
-  const primaryHref = resolveGyraRoute("/dashboard", routeBase);
+  const primaryHref = resolveGyraRoute("/workspace", routeBase);
   const loginHref = resolveGyraRoute("/login", routeBase);
   const docsHref = resolveGyraRoute("/docs", routeBase);
 
@@ -122,7 +121,7 @@ export function Navbar({ isAuthenticated = false, routeBase = "" }: NavbarProps)
             href={primaryHref}
             className="font-mono-tech inline-flex shrink-0 items-center justify-center whitespace-nowrap bg-[#0B1218] px-4 py-2 text-[12px] font-medium tracking-[0.08em] text-white uppercase transition-colors duration-150 hover:bg-[#1B587A] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#1F5B7C] dark:bg-white dark:text-black dark:hover:bg-[#E5E5E5] dark:focus-visible:ring-[#5B9EC2]"
           >
-            {isAuthenticated ? "Dashboard" : "Open Gyra"}
+            {isAuthenticated ? "Workspace" : "Open Gyra"}
           </a>
         </div>
 
@@ -214,7 +213,7 @@ export function Navbar({ isAuthenticated = false, routeBase = "" }: NavbarProps)
                 isAuthenticated ? "col-span-2" : ""
               }`}
             >
-              {isAuthenticated ? "Dashboard" : "Open Gyra"}
+              {isAuthenticated ? "Workspace" : "Open Gyra"}
             </a>
           </div>
         </div>

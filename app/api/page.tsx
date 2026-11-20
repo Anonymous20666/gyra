@@ -1,492 +1,800 @@
 "use client";
 
 import Link from "next/link";
-import Logo from "../Logo";
-import FeatureGrid from "../components/FeatureGrid";
-import ApiCategorySection from "../components/ApiCategorySection";
-import { API_CATEGORIES } from "../lib/apiCategories";
+import { useEffect, useState } from "react";
+import {
+  ArrowUpRight,
+  BookOpen,
+  Code2,
+  KeyRound,
+  RefreshCw,
+  SlidersHorizontal,
+  Terminal,
+} from "lucide-react";
+import { PlatformShell } from "../components/platform/PlatformShell";
+import { CodeSnippetBlock } from "../components/platform/CodeSnippetBlock";
+import { getAccessToken, supabase } from "../supabase";
 
-export default function ApiPage() {
-  return (
-    <main className="min-h-screen bg-black text-white overflow-hidden">
-      {/* Ambient glow */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1100px] h-[1100px] bg-blue-500/8 rounded-full blur-[180px]" />
-        <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-purple-500/6 rounded-full blur-[160px]" />
-      </div>
+type ApiTab = "overview" | "quickstart" | "reference" | "examples" | "history" | "usage";
 
-      {/* Nav */}
-      <nav className="relative z-30 flex items-center justify-between px-6 md:px-12 py-5 border-b border-white/5 backdrop-blur-sm bg-black/40 sticky top-0">
-        <Link href="/" className="flex items-center gap-3">
-          <Logo size={28} animated={false} />
-          <span className="font-bold tracking-widest text-sm">GYRA</span>
-          <span className="text-zinc-600 text-xs tracking-widest">API</span>
-        </Link>
+interface KeyRow {
+  id: string;
+  name: string;
+  category: string;
+  keyPreview: string;
+  active: boolean;
+  request_count: number;
+  last_used: string | null;
+}
 
-        <div className="hidden md:flex items-center gap-8 text-sm text-zinc-400">
-          {API_CATEGORIES.map((c) => (
-            <a
-              key={c.id}
-              href={`#${c.id}`}
-              className="hover:text-white transition-colors flex items-center gap-2"
-            >
-              {c.name.replace("Gyra ", "").replace(" API", "")}
-              {c.status === "live" ? (
-                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-              ) : (
-                <span className="w-1.5 h-1.5 rounded-full bg-zinc-600" />
-              )}
-            </a>
-          ))}
-        </div>
+interface ActivityRow {
+  id: string;
+  endpoint: string;
+  category: string;
+  status_code: number;
+  cost_usd: number;
+  created_at: string;
+}
 
-        <div className="flex items-center gap-3">
-          <Link
-            href="/dashboard"
-            className="text-sm text-zinc-400 hover:text-white transition-colors hidden md:block"
-          >
-            Sign in
-          </Link>
-          <Link
-            href="/api-keys"
-            className="bg-white text-black px-4 py-2 rounded-full text-sm font-medium hover:bg-zinc-200 transition-colors"
-          >
-            Get API key
-          </Link>
-        </div>
-      </nav>
+interface WalletState {
+  ai: number;
+  media: number;
+  network: number;
+}
 
-      {/* ============ HERO WITH VIDEO ============ */}
-      <section className="relative z-10 w-full min-h-[80vh] flex items-center overflow-hidden">
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="auto"
-          poster="/api-hero-poster.jpg"
-          className="absolute inset-0 w-full h-full object-cover z-0"
-        >
-          <source src="/api-hero-bg.mp4" type="video/mp4" />
-        </video>
+const TABS: readonly { id: ApiTab; label: string }[] = [
+  { id: "overview", label: "Overview" },
+  { id: "quickstart", label: "Quickstart" },
+  { id: "reference", label: "API Reference" },
+  { id: "examples", label: "Code Examples" },
+  { id: "history", label: "Request History" },
+  { id: "usage", label: "Usage & Stats" },
+];
 
-        <div
-          aria-hidden
-          className="absolute inset-0 z-[1]"
-          style={{
-            background:
-              "linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.72) 50%, rgba(0,0,0,0.94) 100%)",
-          }}
-        />
+const VERIFIED_ENDPOINTS = [
+  {
+    method: "POST",
+    path: "/api/v1/chat",
+    auth: "Bearer gyra_... (+ optional x-gyra-user-token)",
+    summary: "Developer chat completion endpoint supporting streaming SSE or JSON responses.",
+  },
+  {
+    method: "POST",
+    path: "/api/chat",
+    auth: "Session or x-gyra-user-token",
+    summary: "Streaming chat endpoint with reasoning mode (think) and live web search.",
+  },
+  {
+    method: "POST",
+    path: "/api/fal/proxy",
+    auth: "Bearer <supabase_jwt> + x-fal-target-url",
+    summary: "Authenticated proxy for FLUX.1 Dev and FLUX 1.1 Pro Ultra image generation.",
+  },
+  {
+    method: "POST",
+    path: "/api/v1/video/generate",
+    auth: "x-gyra-user-token (SuperGyra + $2.00 credits)",
+    summary: "Queues a 720p LTX-Video 13B generation job and returns requestId.",
+  },
+  {
+    method: "GET",
+    path: "/api/v1/video/status/[id]",
+    auth: "Public status poll by requestId",
+    summary: "Returns queued, in_progress, completed (with videoUrl), or error status.",
+  },
+  {
+    method: "GET",
+    path: "/api/models",
+    auth: "Public",
+    summary: "Returns the authoritative Gyra model registry, parameters, and availability.",
+  },
+  {
+    method: "GET / POST",
+    path: "/api/keys",
+    auth: "Bearer <supabase_jwt>",
+    summary: "Lists masked API keys or creates a new scoped key (ai, media, network, utilities).",
+  },
+] as const;
 
-        <div
-          aria-hidden
-          className="absolute inset-0 z-[2] pointer-events-none"
-          style={{
-            background:
-              "radial-gradient(ellipse at 30% 50%, rgba(59,130,246,0.18) 0%, transparent 60%)",
-          }}
-        />
+const ERROR_CODES = [
+  { code: "400", name: "invalid_request", meaning: "Malformed JSON body, empty prompt, or unsupported parameter." },
+  { code: "401", name: "unauthorized", meaning: "Missing, expired, or revoked Bearer API key or Supabase token." },
+  { code: "402", name: "insufficient_credits", meaning: "Free limit reached or wallet balance below operation cost." },
+  { code: "403", name: "upgrade_required", meaning: "Endpoint or model (e.g. gyra-super2.0, LTX-Video) requires SuperGyra." },
+  { code: "429", name: "rate_limited", meaning: "Request burst exceeded account or upstream rate ceiling." },
+  { code: "500", name: "internal_error", meaning: "Upstream inference or provider error; credits are auto-refunded on job failure." },
+] as const;
 
-        <div className="relative z-10 max-w-6xl mx-auto px-6 md:px-12 py-24 w-full">
-          <div className="max-w-3xl">
-            <p className="text-xs tracking-[0.4em] text-white/50 uppercase mb-8">
-              The Gyra Developer Platform
-            </p>
+export default function ApiPlatformPage() {
+  const [tab, setTab] = useState<ApiTab>("overview");
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [keys, setKeys] = useState<KeyRow[]>([]);
+  const [activity, setActivity] = useState<ActivityRow[]>([]);
+  const [wallets, setWallets] = useState<WalletState | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [baseUrl, setBaseUrl] = useState("https://gyra.ai");
 
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tighter leading-[0.95] mb-8 text-white drop-shadow-[0_4px_30px_rgba(0,0,0,0.6)]">
-              Four APIs.
-              <br />
-              One platform.
-            </h1>
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setBaseUrl(window.location.origin);
+    }
+  }, []);
 
-            <p className="text-base md:text-xl text-white/75 max-w-2xl leading-relaxed mb-12">
-              AI, media intelligence, network tools, and utilities — all under
-              one developer platform. OpenAI-compatible. Free to start. Built
-              for Nigeria and the world.
-            </p>
+  const loadDeveloperData = async () => {
+    setLoading(true);
+    const { data } = await supabase.auth.getUser();
+    const token = await getAccessToken();
+    setUserEmail(data.user?.email ?? null);
 
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Link
-                href="/api-keys"
-                className="bg-white text-black px-8 py-4 rounded-full font-medium hover:bg-zinc-200 transition-colors text-center"
-              >
-                Get your free API key
-              </Link>
-              <Link
-                href="#ai"
-                className="border border-white/20 hover:border-white/50 text-white px-8 py-4 rounded-full font-medium transition-colors backdrop-blur-sm bg-white/5 text-center"
-              >
-                Explore APIs ↓
-              </Link>
-            </div>
-          </div>
-        </div>
+    if (!token) {
+      setLoading(false);
+      return;
+    }
 
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 animate-bounce opacity-40">
-          <svg
-            className="w-5 h-5 text-white"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M19 14l-7 7m0 0l-7-7m7 7V3"
-            />
-          </svg>
-        </div>
-      </section>
+    const headers = { Authorization: `Bearer ${token}` };
+    const [keysRes, actRes, walRes] = await Promise.allSettled([
+      fetch("/api/keys", { headers }),
+      fetch("/api/me/activity", { headers }),
+      fetch("/api/me/wallets", { headers }),
+    ]);
 
-      {/* ============ STAT STRIP ============ */}
-      <section className="relative z-10 border-y border-white/5 py-8">
-        <div className="max-w-6xl mx-auto px-6 md:px-12">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {[
-              { value: "4", label: "API Categories" },
-              { value: "24+", label: "Endpoints" },
-              { value: "<200ms", label: "Avg Latency" },
-              { value: "99.9%", label: "Uptime" },
-            ].map((s) => (
-              <div key={s.label} className="text-center">
-                <p className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-1">
-                  {s.value}
-                </p>
-                <p className="text-[10px] text-zinc-500 uppercase tracking-widest">
-                  {s.label}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+    if (keysRes.status === "fulfilled" && keysRes.value.ok) {
+      const j = await keysRes.value.json().catch(() => null);
+      if (Array.isArray(j?.keys)) setKeys(j.keys);
+    }
+    if (actRes.status === "fulfilled" && actRes.value.ok) {
+      const j = await actRes.value.json().catch(() => null);
+      if (Array.isArray(j?.activity)) setActivity(j.activity);
+    }
+    if (walRes.status === "fulfilled" && walRes.value.ok) {
+      const j = await walRes.value.json().catch(() => null);
+      if (j && !j.error) {
+        setWallets({
+          ai: Number(j.ai || 0),
+          media: Number(j.media || 0),
+          network: Number(j.network || 0),
+        });
+      }
+    }
+    setLoading(false);
+  };
 
-      {/* ============ LOGO STRIP ============ */}
-      <section className="relative z-10 border-b border-white/5 py-12">
-        <div className="max-w-6xl mx-auto px-6 md:px-12">
-          <p className="text-center text-xs text-zinc-500 tracking-[0.3em] uppercase mb-8">
-            Works with your stack
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-8 md:gap-14">
-            {[
-              "Next.js",
-              "React",
-              "Python",
-              "Node.js",
-              "Expo",
-              "Vercel AI SDK",
-              "LangChain",
-              "Curl",
-            ].map((name) => (
-              <span
-                key={name}
-                className="text-zinc-600 hover:text-zinc-400 transition-colors text-sm font-medium tracking-wide"
-              >
-                {name}
-              </span>
-            ))}
-          </div>
-        </div>
-      </section>
+  useEffect(() => {
+    loadDeveloperData();
+  }, []);
 
-      {/* ============ CATEGORY SECTIONS ============ */}
-      {API_CATEGORIES.map((category, i) => (
-        <ApiCategorySection
-          key={category.id}
-          category={category}
-          index={i}
-          reversed={i % 2 === 1}
-        />
-      ))}
+  const activeKeys = keys.filter((k) => k.active);
+  const totalRequests = keys.reduce((acc, k) => acc + Number(k.request_count || 0), 0);
+  const totalBalance = wallets ? wallets.ai + wallets.media + wallets.network : null;
 
-      {/* ============ CONSTELLATION ============ */}
-      <section className="relative z-10 border-t border-white/5 max-w-6xl mx-auto px-6 md:px-12 py-24">
-        <div className="text-center mb-16">
-          <p className="text-xs tracking-[0.3em] text-zinc-500 uppercase mb-4">
-            The Gyra Ecosystem
-          </p>
-          <h2 className="text-3xl md:text-5xl font-bold tracking-tighter max-w-2xl mx-auto leading-tight">
-            One intelligence layer.
-            <br />
-            Every modality.
-          </h2>
-        </div>
-
-        <div className="relative max-w-3xl mx-auto">
-          <svg
-            viewBox="0 0 800 500"
-            className="w-full h-auto"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <defs>
-              <radialGradient id="glow" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.35" />
-                <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
-              </radialGradient>
-            </defs>
-
-            <circle cx="400" cy="250" r="200" fill="url(#glow)" />
-
-            <ellipse
-              cx="400"
-              cy="250"
-              rx="320"
-              ry="200"
-              fill="none"
-              stroke="rgba(255,255,255,0.08)"
-              strokeWidth="1"
-              strokeDasharray="4 6"
-            />
-            <ellipse
-              cx="400"
-              cy="250"
-              rx="220"
-              ry="140"
-              fill="none"
-              stroke="rgba(255,255,255,0.1)"
-              strokeWidth="1"
-              strokeDasharray="4 6"
-            />
-
-            {[
-              { x: 120, y: 200 },
-              { x: 680, y: 200 },
-              { x: 200, y: 380 },
-              { x: 600, y: 380 },
-              { x: 400, y: 80 },
-              { x: 400, y: 430 },
-            ].map((pt, i) => (
-              <line
-                key={i}
-                x1="400"
-                y1="250"
-                x2={pt.x}
-                y2={pt.y}
-                stroke="rgba(59,130,246,0.25)"
-                strokeWidth="1"
-              />
-            ))}
-
-            {[
-              { x: 120, y: 200, label: "Chat" },
-              { x: 680, y: 200, label: "Vision" },
-              { x: 200, y: 380, label: "Voice" },
-              { x: 600, y: 380, label: "Files" },
-              { x: 400, y: 80, label: "Video" },
-              { x: 400, y: 430, label: "Search" },
-            ].map((s, i) => (
-              <g key={i}>
-                <circle
-                  cx={s.x}
-                  cy={s.y}
-                  r="34"
-                  fill="#0a0a0a"
-                  stroke="rgba(59,130,246,0.4)"
-                  strokeWidth="1.5"
-                />
-                <text
-                  x={s.x}
-                  y={s.y + 4}
-                  textAnchor="middle"
-                  fill="#a1a1aa"
-                  fontSize="11"
-                  fontFamily="system-ui"
-                >
-                  {s.label}
-                </text>
-              </g>
-            ))}
-
-            <circle
-              cx="400"
-              cy="250"
-              r="56"
-              fill="#0a0a0a"
-              stroke="rgba(59,130,246,0.6)"
-              strokeWidth="2"
-            />
-            <circle cx="400" cy="250" r="48" fill="url(#glow)" />
-            <text
-              x="400"
-              y="257"
-              textAnchor="middle"
-              fill="white"
-              fontSize="26"
-              fontWeight="700"
-              fontFamily="system-ui"
-            >
-              G
-            </text>
-          </svg>
-        </div>
-      </section>
-
-      {/* ============ FEATURES ============ */}
-      <section className="relative z-10 border-t border-white/5 py-24">
-        <div className="max-w-6xl mx-auto px-6 md:px-12">
-          <div className="text-center mb-16">
-            <p className="text-xs tracking-[0.3em] text-zinc-500 uppercase mb-4">
-              Why developers choose Gyra
-            </p>
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tighter">
-              Built for builders.
-            </h2>
-          </div>
-
-          <FeatureGrid
-            features={[
-              {
-                icon: "⚡",
-                title: "One key. Four APIs.",
-                desc: "AI, Media, Network, and Utilities — all under one developer account with per-category access.",
-              },
-              {
-                icon: "🌍",
-                title: "Nigeria-first.",
-                desc: "Naira pricing, Nigerian English, Yoruba, Igbo, Hausa, and Pidgin understood natively.",
-              },
-              {
-                icon: "🔒",
-                title: "Secure by default.",
-                desc: "Keys stored hashed, revocable instantly, never logged in plaintext. Rate limits enforced server-side.",
-              },
-              {
-                icon: "🎬",
-                title: "Media intelligence.",
-                desc: "Video transcripts, summaries, music metadata — the legitimate way to work with media APIs.",
-              },
-              {
-                icon: "📊",
-                title: "Real analytics.",
-                desc: "Every request logged. Per-key usage, error rates, latency, and top endpoints.",
-              },
-              {
-                icon: "💰",
-                title: "Credits, not subscriptions.",
-                desc: "Pay only for what you use. Top up anytime. No lock-in, no hidden fees.",
-              },
-            ]}
-          />
-        </div>
-      </section>
-
-      {/* ============ CODE EXAMPLE ============ */}
-      <section className="relative z-10 border-t border-white/5 py-24">
-        <div className="max-w-4xl mx-auto px-6 md:px-12">
-          <div className="text-center mb-12">
-            <p className="text-xs tracking-[0.3em] text-zinc-500 uppercase mb-4">
-              Get started in 30 seconds
-            </p>
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tighter">
-              Three lines of code.
-            </h2>
-          </div>
-
-          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-800 bg-black">
-              <span className="text-xs text-zinc-500 font-mono">javascript</span>
-              <button className="text-xs text-zinc-400 hover:text-white transition-colors">
-                Copy
-              </button>
-            </div>
-            <pre className="p-5 text-xs md:text-sm font-mono text-zinc-300 overflow-x-auto leading-relaxed">
-{`const res = await fetch("https://gyra.ng/api/v1/chat", {
+  const chatQuickstartTabs = [
+    {
+      id: "curl",
+      label: "cURL",
+      code: `curl -X POST ${baseUrl}/api/v1/chat \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer YOUR_GYRA_API_KEY" \\
+  -d '{
+    "model": "gyra-1.0",
+    "stream": false,
+    "messages": [
+      { "role": "user", "content": "Explain SSE streaming in one sentence." }
+    ]
+  }'`,
+    },
+    {
+      id: "ts",
+      label: "TypeScript",
+      code: `const response = await fetch("${baseUrl}/api/v1/chat", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
-    "Authorization": "Bearer gyra_xxxxx",
+    Authorization: \`Bearer \${process.env.GYRA_API_KEY}\`,
   },
   body: JSON.stringify({
-    messages: [{ role: "user", content: "Hello Gyra!" }],
+    model: "gyra-1.0",
+    stream: false,
+    messages: [
+      { role: "user", content: "Explain SSE streaming in one sentence." },
+    ],
   }),
 });
 
-const data = await res.json();
-console.log(data.choices[0].message.content);`}
-            </pre>
-          </div>
+if (!response.ok) {
+  const err = await response.json();
+  throw new Error(err?.error?.message || "Gyra API request failed");
+}
 
-          <div className="text-center mt-10">
-            <Link
-              href="/docs"
-              className="text-blue-400 hover:text-blue-300 text-sm inline-flex items-center gap-1"
-            >
-              More examples in the docs <span>→</span>
-            </Link>
-          </div>
+const data = await response.json();
+console.log(data);`,
+    },
+    {
+      id: "py",
+      label: "Python",
+      code: `import os
+import requests
+
+res = requests.post(
+    "${baseUrl}/api/v1/chat",
+    headers={
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {os.environ['GYRA_API_KEY']}",
+    },
+    json={
+        "model": "gyra-1.0",
+        "stream": False,
+        "messages": [
+            {"role": "user", "content": "Explain SSE streaming in one sentence."}
+        ],
+    },
+    timeout=60,
+)
+res.raise_for_status()
+print(res.json())`,
+    },
+  ];
+
+  const videoExampleTabs = [
+    {
+      id: "curl",
+      label: "cURL",
+      code: `# 1. Queue 720p video synthesis (LTX-Video 13B)
+curl -X POST ${baseUrl}/api/v1/video/generate \\
+  -H "Content-Type: application/json" \\
+  -H "x-gyra-user-token: YOUR_SUPABASE_ACCESS_TOKEN" \\
+  -d '{
+    "prompt": "Slow dolly shot over rain-slicked asphalt reflecting neon signage at night",
+    "aspectRatio": "16:9"
+  }'
+
+# 2. Poll job status until status == "completed"
+curl ${baseUrl}/api/v1/video/status/REQUEST_ID`,
+    },
+    {
+      id: "ts",
+      label: "TypeScript",
+      code: `const queued = await fetch("${baseUrl}/api/v1/video/generate", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "x-gyra-user-token": supabaseAccessToken,
+  },
+  body: JSON.stringify({
+    prompt: "Slow dolly shot over rain-slicked asphalt reflecting neon signage at night",
+    aspectRatio: "16:9",
+  }),
+}).then((r) => r.json());
+
+// Poll /api/v1/video/status/:id
+const status = await fetch(\`${baseUrl}/api/v1/video/status/\${queued.requestId}\`).then((r) =>
+  r.json(),
+);
+console.log(status.status, status.videoUrl);`,
+    },
+  ];
+
+  const imageExampleTabs = [
+    {
+      id: "ts",
+      label: "TypeScript",
+      code: `const res = await fetch("${baseUrl}/api/fal/proxy", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: \`Bearer \${supabaseAccessToken}\`,
+    "x-fal-target-url": "https://fal.run/fal-ai/flux/dev",
+  },
+  body: JSON.stringify({
+    prompt: "Editorial architectural concrete pavilion at dawn, soft fog, 35mm film",
+    image_size: "landscape_16_9",
+    num_inference_steps: 28,
+    guidance_scale: 3.5,
+    num_images: 1,
+  }),
+});
+
+const result = await res.json();
+console.log(result.images?.[0]?.url);`,
+    },
+    {
+      id: "curl",
+      label: "cURL",
+      code: `curl -X POST ${baseUrl}/api/fal/proxy \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer YOUR_SUPABASE_ACCESS_TOKEN" \\
+  -H "x-fal-target-url: https://fal.run/fal-ai/flux/dev" \\
+  -d '{
+    "prompt": "Editorial architectural concrete pavilion at dawn, soft fog, 35mm film",
+    "image_size": "landscape_16_9",
+    "num_inference_steps": 28,
+    "guidance_scale": 3.5,
+    "num_images": 1
+  }'`,
+    },
+  ];
+
+  return (
+    <PlatformShell
+      title="Developer API Platform"
+      description="Authenticate requests, inspect real endpoints, copy verified SDK snippets, and audit account usage."
+      actions={
+        <div className="flex items-center gap-2">
+          <Link
+            href="/docs"
+            className="hidden sm:inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-black/[0.1] dark:border-white/[0.1] bg-white dark:bg-[#0B1219] text-[12px] font-medium text-[#0B1220] dark:text-[#F8FAFC]"
+          >
+            <BookOpen className="h-3.5 w-3.5" />
+            <span>Full Docs</span>
+          </Link>
+          <Link
+            href="/api-keys"
+            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-[#0B1220] dark:bg-white text-white dark:text-[#04080D] text-[12px] font-semibold"
+          >
+            <KeyRound className="h-3.5 w-3.5" />
+            <span>Manage Keys</span>
+          </Link>
         </div>
-      </section>
-
-      {/* ============ CTA ============ */}
-      <section className="relative z-10 border-t border-white/5 py-24">
-        <div className="max-w-3xl mx-auto px-6 md:px-12 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold tracking-tighter leading-tight mb-6">
-            Start building with Gyra.
-          </h2>
-          <p className="text-zinc-400 mb-10 leading-relaxed">
-            Get your free API key in 30 seconds. No credit card required.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              href="/api-keys"
-              className="bg-white text-black px-8 py-4 rounded-full font-medium hover:bg-zinc-200 transition-colors"
-            >
-              Get API key
-            </Link>
-            <Link
-              href="/docs"
-              className="border border-white/10 hover:border-white/30 text-white px-8 py-4 rounded-full font-medium transition-colors"
-            >
-              Read the docs
-            </Link>
-          </div>
+      }
+    >
+      <div className="space-y-6">
+        {/* Sub-navigation Tabs */}
+        <div
+          className="flex flex-wrap items-center gap-1 border-b border-black/[0.08] dark:border-white/[0.08] pb-2"
+          role="tablist"
+          aria-label="API sections"
+        >
+          {TABS.map((t) => {
+            const active = tab === t.id;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setTab(t.id)}
+                className={`h-8 px-3 rounded-md text-[12.5px] font-medium transition-colors ${
+                  active
+                    ? "bg-[#1F5B7C]/12 dark:bg-[#5B9EC2]/18 text-[#1F5B7C] dark:text-[#5B9EC2]"
+                    : "text-[#475569] dark:text-white/60 hover:bg-black/[0.04] dark:hover:bg-white/[0.05]"
+                }`}
+              >
+                {t.label}
+              </button>
+            );
+          })}
         </div>
-      </section>
 
-      {/* Footer */}
-      <footer className="relative z-10 border-t border-white/5 py-10">
-        <div className="max-w-6xl mx-auto px-6 md:px-12 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="flex items-center gap-3">
-            <Logo size={24} animated={false} />
-            <div>
-              <p className="font-bold tracking-widest text-xs">GYRA</p>
-              <p className="text-[10px] text-zinc-600 tracking-wider">
-                INTELLIGENCE, SIMPLIFIED.
-              </p>
+        {/* OVERVIEW */}
+        {tab === "overview" && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 border border-black/[0.08] dark:border-white/[0.08] rounded-lg bg-white dark:bg-[#060C12] divide-y sm:divide-y-0 sm:divide-x divide-black/[0.08] dark:divide-white/[0.08]">
+              <div className="p-4 space-y-1">
+                <span className="text-[11px] font-mono uppercase tracking-[0.12em] text-[#64748B] dark:text-white/45">
+                  Active API Keys
+                </span>
+                <p className="text-[22px] font-semibold font-mono text-[#0B1220] dark:text-[#F8FAFC]">
+                  {userEmail ? activeKeys.length : "—"}
+                </p>
+                <Link
+                  href="/api-keys"
+                  className="inline-flex items-center gap-1 text-[12px] text-[#1F5B7C] dark:text-[#5B9EC2] hover:underline"
+                >
+                  <span>Create or revoke keys</span>
+                  <ArrowUpRight className="h-3 w-3" />
+                </Link>
+              </div>
+              <div className="p-4 space-y-1">
+                <span className="text-[11px] font-mono uppercase tracking-[0.12em] text-[#64748B] dark:text-white/45">
+                  Recorded Key Requests
+                </span>
+                <p className="text-[22px] font-semibold font-mono text-[#0B1220] dark:text-[#F8FAFC]">
+                  {userEmail ? totalRequests.toLocaleString() : "—"}
+                </p>
+                <span className="text-[12px] text-[#64748B] dark:text-white/45">
+                  Aggregated across active & revoked keys
+                </span>
+              </div>
+              <div className="p-4 space-y-1">
+                <span className="text-[11px] font-mono uppercase tracking-[0.12em] text-[#64748B] dark:text-white/45">
+                  Available Credit Balance
+                </span>
+                <p className="text-[22px] font-semibold font-mono text-[#0B1220] dark:text-[#F8FAFC]">
+                  {totalBalance !== null ? `$${totalBalance.toFixed(2)}` : "—"}
+                </p>
+                <Link
+                  href="/credits"
+                  className="inline-flex items-center gap-1 text-[12px] text-[#1F5B7C] dark:text-[#5B9EC2] hover:underline"
+                >
+                  <span>Manage wallets</span>
+                  <ArrowUpRight className="h-3 w-3" />
+                </Link>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              <div className="lg:col-span-7 space-y-3">
+                <h2 className="text-[15px] font-semibold text-[#0B1220] dark:text-[#F8FAFC]">
+                  Quickstart Call
+                </h2>
+                <CodeSnippetBlock title="POST /api/v1/chat" tabs={chatQuickstartTabs} />
+              </div>
+
+              <div className="lg:col-span-5 rounded-lg bg-white dark:bg-[#060C12] border border-black/[0.08] dark:border-white/[0.08] p-4 space-y-3">
+                <h2 className="text-[14px] font-semibold text-[#0B1220] dark:text-[#F8FAFC]">
+                  Key Prefix Scoping
+                </h2>
+                <p className="text-[12.5px] text-[#475569] dark:text-white/60 leading-relaxed">
+                  Gyra separates API credentials by product domain so you can isolate keys per service and revoke them independently.
+                </p>
+                <dl className="divide-y divide-black/[0.06] dark:divide-white/[0.06] text-[12px]">
+                  {[
+                    { prefix: "gyra_", scope: "AI Chat, reasoning, vision, voice, video" },
+                    { prefix: "gyramedia_", scope: "Media download, audio & transcription APIs" },
+                    { prefix: "gyranet_", scope: "Network & intelligence utilities" },
+                    { prefix: "gyrautils_", scope: "Developer utility endpoints" },
+                  ].map((item) => (
+                    <div key={item.prefix} className="py-2 flex items-baseline justify-between gap-3">
+                      <dt className="font-mono font-semibold text-[#1F5B7C] dark:text-[#5B9EC2]">
+                        {item.prefix}
+                      </dt>
+                      <dd className="text-right text-[#475569] dark:text-white/65">{item.scope}</dd>
+                    </div>
+                  ))}
+                </dl>
+                <div className="pt-2 flex items-center gap-3">
+                  <Link
+                    href="/api-keys"
+                    className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-[#1F5B7C] dark:text-[#5B9EC2] hover:underline"
+                  >
+                    <KeyRound className="h-3.5 w-3.5" />
+                    <span>Issue a key</span>
+                  </Link>
+                  <Link
+                    href="/playground"
+                    className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-[#475569] dark:text-white/65 hover:underline"
+                  >
+                    <SlidersHorizontal className="h-3.5 w-3.5" />
+                    <span>Test in Playground</span>
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-6 text-xs text-zinc-500">
-            <Link href="/docs" className="hover:text-white transition-colors">
-              Docs
-            </Link>
-            <Link href="/products" className="hover:text-white transition-colors">
-              Products
-            </Link>
-            <Link href="/status" className="hover:text-white transition-colors">
-              Status
-            </Link>
-            <Link
-              href="/changelog"
-              className="hover:text-white transition-colors"
-            >
-              Changelog
-            </Link>
-            <a
-              href="https://t.me/Gyra_AiBot"
-              target="_blank"
-              rel="noreferrer"
-              className="hover:text-white transition-colors"
-            >
-              Telegram
-            </a>
+        )}
+
+        {/* QUICKSTART */}
+        {tab === "quickstart" && (
+          <div className="max-w-4xl space-y-6">
+            <div className="space-y-2">
+              <h2 className="text-[16px] font-semibold text-[#0B1220] dark:text-[#F8FAFC]">
+                1. Issue a Scoped API Key
+              </h2>
+              <p className="text-[13px] text-[#475569] dark:text-white/65 leading-relaxed">
+                Open{" "}
+                <Link href="/api-keys" className="text-[#1F5B7C] dark:text-[#5B9EC2] hover:underline font-medium">
+                  API Keys
+                </Link>{" "}
+                and generate a key under the <code className="font-mono text-[12px]">ai</code> category. Store it in an environment variable such as{" "}
+                <code className="font-mono text-[12px]">GYRA_API_KEY</code> — never commit secrets to client-side bundles.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <h2 className="text-[16px] font-semibold text-[#0B1220] dark:text-[#F8FAFC]">
+                2. Send Your First Chat Completion
+              </h2>
+              <CodeSnippetBlock title="Chat Completion" tabs={chatQuickstartTabs} />
+            </div>
+
+            <div className="space-y-2">
+              <h2 className="text-[16px] font-semibold text-[#0B1220] dark:text-[#F8FAFC]">
+                3. Inspect Available Models Dynamically
+              </h2>
+              <CodeSnippetBlock
+                title="GET /api/models"
+                tabs={[
+                  {
+                    id: "curl",
+                    label: "cURL",
+                    code: `curl ${baseUrl}/api/models`,
+                  },
+                  {
+                    id: "ts",
+                    label: "TypeScript",
+                    code: `const { models } = await fetch("${baseUrl}/api/models").then((r) => r.json());
+console.log(models.map((m: { id: string; availability: string }) => [m.id, m.availability]));`,
+                  },
+                ]}
+              />
+            </div>
           </div>
-        </div>
-        <p className="mt-8 text-[11px] text-zinc-700 text-center">
-          © 2026 Gyra · Genvia AI Company. All rights reserved.
-        </p>
-      </footer>
-    </main>
+        )}
+
+        {/* REFERENCE */}
+        {tab === "reference" && (
+          <div className="space-y-6">
+            <div className="rounded-lg bg-white dark:bg-[#060C12] border border-black/[0.08] dark:border-white/[0.08] overflow-x-auto">
+              <table className="w-full text-left border-collapse text-[12.5px]">
+                <thead>
+                  <tr className="bg-[#F8FAFC] dark:bg-white/[0.03] border-b border-black/[0.07] dark:border-white/[0.07] text-[10.5px] font-mono uppercase tracking-[0.12em] text-[#64748B] dark:text-white/45">
+                    <th className="py-2.5 px-4">Method</th>
+                    <th className="py-2.5 px-4">Endpoint</th>
+                    <th className="py-2.5 px-4">Authentication</th>
+                    <th className="py-2.5 px-4">Description</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-black/[0.06] dark:divide-white/[0.06]">
+                  {VERIFIED_ENDPOINTS.map((ep) => (
+                    <tr key={ep.path}>
+                      <td className="py-3 px-4 font-mono font-semibold text-[#1F5B7C] dark:text-[#5B9EC2] whitespace-nowrap">
+                        {ep.method}
+                      </td>
+                      <td className="py-3 px-4 font-mono text-[#0B1220] dark:text-[#F8FAFC] whitespace-nowrap">
+                        {ep.path}
+                      </td>
+                      <td className="py-3 px-4 font-mono text-[11.5px] text-[#475569] dark:text-white/60">
+                        {ep.auth}
+                      </td>
+                      <td className="py-3 px-4 text-[#334155] dark:text-white/75">{ep.summary}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="space-y-3">
+              <h2 className="text-[15px] font-semibold text-[#0B1220] dark:text-[#F8FAFC]">
+                Standard Error Responses
+              </h2>
+              <div className="rounded-lg bg-white dark:bg-[#060C12] border border-black/[0.08] dark:border-white/[0.08] overflow-x-auto">
+                <table className="w-full text-left border-collapse text-[12.5px]">
+                  <thead>
+                    <tr className="bg-[#F8FAFC] dark:bg-white/[0.03] border-b border-black/[0.07] dark:border-white/[0.07] text-[10.5px] font-mono uppercase tracking-[0.12em] text-[#64748B] dark:text-white/45">
+                      <th className="py-2.5 px-4">HTTP</th>
+                      <th className="py-2.5 px-4">Error Code</th>
+                      <th className="py-2.5 px-4">Cause</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-black/[0.06] dark:divide-white/[0.06]">
+                    {ERROR_CODES.map((er) => (
+                      <tr key={er.code}>
+                        <td className="py-2.5 px-4 font-mono font-semibold text-[#0B1220] dark:text-[#F8FAFC]">
+                          {er.code}
+                        </td>
+                        <td className="py-2.5 px-4 font-mono text-[#1F5B7C] dark:text-[#5B9EC2]">
+                          {er.name}
+                        </td>
+                        <td className="py-2.5 px-4 text-[#475569] dark:text-white/65">{er.meaning}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* CODE EXAMPLES */}
+        {tab === "examples" && (
+          <div className="max-w-4xl space-y-6">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Terminal className="h-4 w-4 text-[#1F5B7C] dark:text-[#5B9EC2]" />
+                <h2 className="text-[15px] font-semibold text-[#0B1220] dark:text-[#F8FAFC]">
+                  Chat Completions (/api/v1/chat)
+                </h2>
+              </div>
+              <CodeSnippetBlock title="Chat API" tabs={chatQuickstartTabs} />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Code2 className="h-4 w-4 text-[#1F5B7C] dark:text-[#5B9EC2]" />
+                <h2 className="text-[15px] font-semibold text-[#0B1220] dark:text-[#F8FAFC]">
+                  FLUX Image Synthesis (/api/fal/proxy)
+                </h2>
+              </div>
+              <CodeSnippetBlock title="Image Proxy" tabs={imageExampleTabs} />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Code2 className="h-4 w-4 text-[#1F5B7C] dark:text-[#5B9EC2]" />
+                <h2 className="text-[15px] font-semibold text-[#0B1220] dark:text-[#F8FAFC]">
+                  Video Generation & Polling (/api/v1/video/generate)
+                </h2>
+              </div>
+              <CodeSnippetBlock title="Video API" tabs={videoExampleTabs} />
+            </div>
+          </div>
+        )}
+
+        {/* REQUEST HISTORY */}
+        {tab === "history" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="text-[13px] text-[#475569] dark:text-white/65">
+                Live request telemetry returned from <code className="font-mono text-[12px]">GET /api/me/activity</code>.
+              </p>
+              <button
+                type="button"
+                onClick={loadDeveloperData}
+                className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-black/[0.1] dark:border-white/[0.1] text-[12px] font-medium text-[#0B1220] dark:text-[#F8FAFC]"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                <span>Refresh</span>
+              </button>
+            </div>
+
+            <div className="rounded-lg bg-white dark:bg-[#060C12] border border-black/[0.08] dark:border-white/[0.08] overflow-x-auto">
+              {loading ? (
+                <div className="p-8 text-center text-[13px] text-[#64748B] dark:text-white/50">
+                  Loading request logs...
+                </div>
+              ) : !userEmail ? (
+                <div className="p-8 text-center space-y-2">
+                  <p className="text-[13px] text-[#475569] dark:text-white/60">
+                    Sign in to view your account request history.
+                  </p>
+                  <Link
+                    href="/login"
+                    className="inline-flex items-center h-8 px-3 rounded-md bg-[#1F5B7C] text-white text-[12px] font-medium"
+                  >
+                    Sign In
+                  </Link>
+                </div>
+              ) : activity.length === 0 ? (
+                <div className="p-8 text-center text-[13px] text-[#64748B] dark:text-white/50">
+                  No recorded API requests yet.
+                </div>
+              ) : (
+                <table className="w-full text-left border-collapse text-[12.5px]">
+                  <thead>
+                    <tr className="bg-[#F8FAFC] dark:bg-white/[0.03] border-b border-black/[0.07] dark:border-white/[0.07] text-[10.5px] font-mono uppercase text-[#64748B] dark:text-white/45">
+                      <th className="py-2.5 px-4">Endpoint</th>
+                      <th className="py-2.5 px-4">Category</th>
+                      <th className="py-2.5 px-4">Status</th>
+                      <th className="py-2.5 px-4">Cost</th>
+                      <th className="py-2.5 px-4">Timestamp</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-black/[0.06] dark:divide-white/[0.06]">
+                    {activity.map((row) => (
+                      <tr key={row.id}>
+                        <td className="py-2.5 px-4 font-mono text-[#0B1220] dark:text-[#F8FAFC]">
+                          {row.endpoint}
+                        </td>
+                        <td className="py-2.5 px-4 font-mono uppercase text-[11px] text-[#64748B] dark:text-white/50">
+                          {row.category}
+                        </td>
+                        <td className="py-2.5 px-4 font-mono">
+                          <span
+                            className={
+                              row.status_code < 400
+                                ? "text-emerald-700 dark:text-emerald-400"
+                                : "text-red-600 dark:text-red-400"
+                            }
+                          >
+                            {row.status_code}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-4 font-mono text-[#0B1220] dark:text-[#F8FAFC]">
+                          ${row.cost_usd.toFixed(4)}
+                        </td>
+                        <td className="py-2.5 px-4 font-mono text-[11.5px] text-[#64748B] dark:text-white/45">
+                          {new Date(row.created_at).toLocaleString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* USAGE & STATS */}
+        {tab === "usage" && (
+          <div className="space-y-6">
+            {!userEmail ? (
+              <div className="p-6 rounded-lg bg-white dark:bg-[#060C12] border border-black/[0.08] dark:border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <p className="text-[13px] text-[#475569] dark:text-white/65">
+                  Sign in to inspect your real wallet balances and per-key request counters.
+                </p>
+                <Link
+                  href="/login"
+                  className="inline-flex items-center justify-center h-8 px-4 rounded-md bg-[#1F5B7C] text-white text-[12.5px] font-medium"
+                >
+                  Sign In
+                </Link>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {[
+                    { label: "AI Wallet", val: wallets?.ai ?? 0, desc: "Chat, vision & LTX video renders" },
+                    { label: "Media Wallet", val: wallets?.media ?? 0, desc: "Media API & transcription" },
+                    { label: "Network Wallet", val: wallets?.network ?? 0, desc: "Network endpoints" },
+                  ].map((w) => (
+                    <div
+                      key={w.label}
+                      className="p-4 rounded-lg bg-white dark:bg-[#060C12] border border-black/[0.08] dark:border-white/[0.08] space-y-1"
+                    >
+                      <span className="text-[11px] font-mono uppercase text-[#64748B] dark:text-white/45">
+                        {w.label}
+                      </span>
+                      <p className="text-[22px] font-mono font-semibold text-[#0B1220] dark:text-[#F8FAFC]">
+                        ${w.val.toFixed(2)}
+                      </p>
+                      <p className="text-[12px] text-[#64748B] dark:text-white/50">{w.desc}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="rounded-lg bg-white dark:bg-[#060C12] border border-black/[0.08] dark:border-white/[0.08] overflow-x-auto">
+                  <div className="px-4 py-3 border-b border-black/[0.07] dark:border-white/[0.07] flex items-center justify-between">
+                    <h2 className="text-[13.5px] font-semibold text-[#0B1220] dark:text-[#F8FAFC]">
+                      Per-Key Request Counters
+                    </h2>
+                    <Link
+                      href="/api-keys"
+                      className="text-[12px] text-[#1F5B7C] dark:text-[#5B9EC2] hover:underline"
+                    >
+                      Manage keys
+                    </Link>
+                  </div>
+                  {keys.length === 0 ? (
+                    <div className="p-6 text-[13px] text-[#64748B] dark:text-white/50">
+                      No API keys issued yet.
+                    </div>
+                  ) : (
+                    <table className="w-full text-left border-collapse text-[12.5px]">
+                      <thead>
+                        <tr className="bg-[#F8FAFC] dark:bg-white/[0.03] border-b border-black/[0.07] dark:border-white/[0.07] text-[10.5px] font-mono uppercase text-[#64748B] dark:text-white/45">
+                          <th className="py-2 px-4">Key Name</th>
+                          <th className="py-2 px-4">Scope</th>
+                          <th className="py-2 px-4">Masked Key</th>
+                          <th className="py-2 px-4">Status</th>
+                          <th className="py-2 px-4 text-right">Requests</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-black/[0.06] dark:divide-white/[0.06]">
+                        {keys.map((k) => (
+                          <tr key={k.id}>
+                            <td className="py-2.5 px-4 font-medium text-[#0B1220] dark:text-[#F8FAFC]">
+                              {k.name}
+                            </td>
+                            <td className="py-2.5 px-4 font-mono uppercase text-[11px] text-[#64748B] dark:text-white/50">
+                              {k.category}
+                            </td>
+                            <td className="py-2.5 px-4 font-mono text-[#475569] dark:text-white/65">
+                              {k.keyPreview}
+                            </td>
+                            <td className="py-2.5 px-4 font-mono text-[11px] uppercase">
+                              <span
+                                className={
+                                  k.active
+                                    ? "text-emerald-700 dark:text-emerald-400"
+                                    : "text-[#94A3B8] dark:text-white/35"
+                                }
+                              >
+                                {k.active ? "Active" : "Revoked"}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-4 font-mono text-right text-[#0B1220] dark:text-[#F8FAFC]">
+                              {Number(k.request_count || 0).toLocaleString()}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    </PlatformShell>
   );
 }

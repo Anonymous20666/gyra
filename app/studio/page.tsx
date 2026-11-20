@@ -288,10 +288,16 @@ export default function StudioPage() {
             <span className="text-xs text-blue-400">+</span>
           </Link>
           <Link
-            href="/dashboard"
+            href="/playground?mode=video"
             className="text-sm text-zinc-400 hover:text-white transition-colors"
           >
-            ← Back
+            Playground
+          </Link>
+          <Link
+            href="/workspace"
+            className="text-sm text-zinc-400 hover:text-white transition-colors"
+          >
+            Workspace
           </Link>
         </div>
       </div>

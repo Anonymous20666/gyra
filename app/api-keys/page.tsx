@@ -1,9 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import Logo from "../Logo";
-import { supabase, getAccessToken } from "../supabase";
+import { useEffect, useState } from "react";
+import {
+  AlertTriangle,
+  Check,
+  Copy,
+  Cpu,
+  Film,
+  Globe,
+  KeyRound,
+  Plus,
+  Trash2,
+  Wrench,
+  X,
+} from "lucide-react";
+import { PlatformShell } from "../components/platform/PlatformShell";
+import { getAccessToken, supabase } from "../supabase";
 
 type ApiKey = {
   id: string;
@@ -28,503 +41,529 @@ const CATEGORIES = [
   {
     id: "ai",
     label: "AI API",
-    icon: "🧠",
-    color: "blue",
-    description: "Chat, vision, files, voice, video",
+    description: "Chat, vision, files, voice, and video",
     prefix: "gyra_",
+    Icon: Cpu,
   },
   {
     id: "media",
     label: "Media API",
-    icon: "🎬",
-    color: "purple",
-    description: "YouTube, TikTok, music, transcription",
+    description: "Media extraction, audio, and transcription",
     prefix: "gyramedia_",
+    Icon: Film,
   },
   {
     id: "network",
     label: "Network API",
-    icon: "🌐",
-    color: "cyan",
-    description: "IP, DNS, WHOIS, SSL, screenshots",
+    description: "Network intelligence and lookups",
     prefix: "gyranet_",
+    Icon: Globe,
   },
   {
     id: "utilities",
     label: "Utilities API",
-    icon: "🛠️",
-    color: "amber",
-    description: "Files, images, QR codes, safety",
+    description: "Developer utility endpoints",
     prefix: "gyrautils_",
+    Icon: Wrench,
   },
-];
+] as const;
 
 export default function ApiKeysPage() {
-  const [user, setUser] = useState<any>(null);
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState("ai");
-  const [keyName, setKeyName] = useState("");
-  const [newKey, setNewKey] = useState<NewKey | null>(null);
-  const [copied, setCopied] = useState(false);
-  const [confirmRevokeId, setConfirmRevokeId] = useState<string | null>(null);
-  const [filterCategory, setFilterCategory] = useState<string | null>(null);
+  const [authed, setAuthed] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const load = async () => {
+  const [showCreate, setShowCreate] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newCategory, setNewCategory] = useState<string>("ai");
+  const [creating, setCreating] = useState(false);
+
+  const [createdKey, setCreatedKey] = useState<NewKey | null>(null);
+  const [copiedNew, setCopiedNew] = useState(false);
+
+  const [revokeTarget, setRevokeTarget] = useState<ApiKey | null>(null);
+  const [revokingId, setRevokingId] = useState<string | null>(null);
+
+  const loadKeys = async () => {
+    setLoading(true);
+    setErrorMsg(null);
+    const { data } = await supabase.auth.getUser();
     const token = await getAccessToken();
-    if (!token) {
+    if (!data.user || !token) {
+      setAuthed(false);
       setLoading(false);
       return;
     }
-    const res = await fetch("/api/keys", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const data = await res.json();
-    if (res.ok) setKeys(data.keys || []);
-    setLoading(false);
+
+    setAuthed(true);
+    try {
+      const res = await fetch("/api/keys", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setErrorMsg(json?.error?.message || "Failed to load API keys.");
+      } else {
+        setKeys(Array.isArray(json.keys) ? json.keys : []);
+      }
+    } catch {
+      setErrorMsg("Network error loading API keys.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
-    load();
+    loadKeys();
   }, []);
 
-  const createKey = async () => {
-    if (!keyName.trim()) {
-      alert("Please enter a name for this key.");
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (creating) return;
+    const token = await getAccessToken();
+    if (!token) {
+      setAuthed(false);
       return;
     }
 
     setCreating(true);
-
-    const token = await getAccessToken();
-    if (!token) {
+    setErrorMsg(null);
+    try {
+      const res = await fetch("/api/keys", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: newName.trim() || `${newCategory.toUpperCase()} Key`,
+          category: newCategory,
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setErrorMsg(json?.error?.message || "Unable to create API key.");
+      } else {
+        setCreatedKey({
+          id: json.id,
+          key: json.key,
+          name: json.name,
+          category: json.category,
+          created_at: json.created_at,
+        });
+        setNewName("");
+        setShowCreate(false);
+        await loadKeys();
+      }
+    } catch {
+      setErrorMsg("Network error creating API key.");
+    } finally {
       setCreating(false);
-      return;
-    }
-
-    const res = await fetch("/api/keys", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        name: keyName.trim(),
-        category: selectedCategory,
-      }),
-    });
-
-    const data = await res.json();
-    setCreating(false);
-
-    if (res.ok && data?.key) {
-      setNewKey(data);
-      setShowCreateModal(false);
-      setKeyName("");
-      load();
-    } else {
-      alert(data?.error?.message || "Could not create key.");
     }
   };
 
-  const revoke = async (id: string) => {
-    setConfirmRevokeId(null);
+  const handleRevoke = async (target: ApiKey) => {
     const token = await getAccessToken();
     if (!token) return;
-
-    const res = await fetch(`/api/keys/${id}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (res.ok) load();
-    else alert("Could not revoke key.");
-  };
-
-  const copyKey = async (text: string) => {
+    setRevokingId(target.id);
+    setErrorMsg(null);
     try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {}
+      const res = await fetch(`/api/keys/${encodeURIComponent(target.id)}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        setErrorMsg(json?.error?.message || "Failed to revoke API key.");
+      } else {
+        setRevokeTarget(null);
+        await loadKeys();
+      }
+    } catch {
+      setErrorMsg("Network error revoking API key.");
+    } finally {
+      setRevokingId(null);
+    }
   };
 
-  const categoryInfo = (id: string) =>
-    CATEGORIES.find((c) => c.id === id) || CATEGORIES[0];
+  const handleCopyCreatedKey = async () => {
+    if (!createdKey) return;
+    try {
+      await navigator.clipboard.writeText(createdKey.key);
+      setCopiedNew(true);
+      window.setTimeout(() => setCopiedNew(false), 1800);
+    } catch {
+      // Ignore clipboard failure
+    }
+  };
 
-  const filteredKeys = filterCategory
-    ? keys.filter((k) => k.category === filterCategory)
-    : keys;
-
-  const counts: Record<string, number> = {};
-  for (const k of keys) {
-    counts[k.category] = (counts[k.category] || 0) + 1;
-  }
-
-  // Not signed in
-  if (!user && !loading) {
-    return (
-      <main className="min-h-screen bg-black text-white flex items-center justify-center px-6">
-        <div className="text-center max-w-md">
-          <h1 className="text-2xl font-bold mb-3">Sign in to get an API key</h1>
-          <p className="text-zinc-500 text-sm mb-6">
-            API keys are tied to your Gyra account. Log in to continue.
-          </p>
-          <Link
-            href="/dashboard"
-            className="bg-white text-black px-6 py-3 rounded-full font-medium hover:bg-zinc-200 transition-colors inline-block"
-          >
-            Sign in →
-          </Link>
-        </div>
-      </main>
-    );
-  }
+  const activeKeys = keys.filter((k) => k.active);
+  const revokedKeys = keys.filter((k) => !k.active);
 
   return (
-    <main className="min-h-screen bg-black text-white">
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] bg-blue-500/8 rounded-full blur-[180px]" />
-      </div>
-
-      {/* Nav */}
-      <div className="relative z-10 border-b border-zinc-800/50 px-6 py-4 flex items-center justify-between sticky top-0 bg-black/80 backdrop-blur z-30">
-        <Link href="/" className="flex items-center gap-3">
-          <Logo size={26} animated={false} />
-          <span className="font-bold tracking-widest text-sm">GYRA</span>
-          <span className="text-zinc-600 text-xs tracking-widest">API KEYS</span>
-        </Link>
-        <Link
-          href="/api"
-          className="text-sm text-zinc-400 hover:text-white transition-colors"
-        >
-          ← Back to API
-        </Link>
-      </div>
-
-      <div className="relative z-10 max-w-4xl mx-auto px-6 py-12">
-        {/* Header */}
-        <div className="mb-10">
-          <h1 className="text-3xl font-bold tracking-tight mb-3">API Keys</h1>
-          <p className="text-zinc-400 text-sm leading-relaxed max-w-2xl">
-            Generate keys for each Gyra API category. Keys are shown only once —
-            copy and store them securely. Revoke instantly if compromised.
-          </p>
-        </div>
-
-        {/* Category filters */}
-        <div className="flex flex-wrap gap-2 mb-8">
+    <PlatformShell
+      title="API Keys"
+      description="Issue, monitor, and revoke scoped API credentials. Full secrets are shown once upon creation."
+      actions={
+        authed ? (
           <button
-            onClick={() => setFilterCategory(null)}
-            className={`px-4 py-2 rounded-full text-xs font-medium transition-colors ${
-              filterCategory === null
-                ? "bg-white text-black"
-                : "bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800"
-            }`}
+            type="button"
+            onClick={() => setShowCreate(true)}
+            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-[#0B1220] dark:bg-white text-white dark:text-[#04080D] text-[12px] font-semibold hover:opacity-90 transition-opacity"
           >
-            All ({keys.length})
+            <Plus className="h-3.5 w-3.5" />
+            <span>Create Key</span>
           </button>
-          {CATEGORIES.map((c) => (
+        ) : (
+          <Link
+            href="/login"
+            className="inline-flex items-center h-8 px-3 rounded-md bg-[#1F5B7C] text-white text-[12px] font-medium"
+          >
+            Sign In
+          </Link>
+        )
+      }
+    >
+      <div className="space-y-6">
+        {errorMsg && (
+          <div
+            role="alert"
+            className="p-3.5 rounded-lg border border-red-500/30 bg-red-500/[0.06] text-[13px] text-red-700 dark:text-red-300 flex items-center justify-between gap-3"
+          >
+            <span>{errorMsg}</span>
             <button
-              key={c.id}
-              onClick={() => setFilterCategory(c.id)}
-              className={`px-4 py-2 rounded-full text-xs font-medium transition-colors flex items-center gap-2 ${
-                filterCategory === c.id
-                  ? "bg-white text-black"
-                  : "bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800"
-              }`}
+              type="button"
+              onClick={() => setErrorMsg(null)}
+              aria-label="Dismiss error"
+              className="p-1"
             >
-              <span>{c.icon}</span>
-              {c.label} ({counts[c.id] || 0})
+              <X className="h-4 w-4" />
             </button>
-          ))}
-        </div>
+          </div>
+        )}
 
-        {/* New key banner */}
-        {newKey && (
-          <div className="mb-8 bg-blue-500/5 border border-blue-500/30 rounded-2xl p-6">
-            <div className="flex items-start gap-4 mb-4">
-              <span className="text-2xl">🔑</span>
-              <div className="flex-1">
-                <p className="font-semibold mb-1">
-                  Your new {categoryInfo(newKey.category).label} key is ready
+        {/* Newly minted secret reveal banner (shown once) */}
+        {createdKey && (
+          <div className="p-4 rounded-lg border border-emerald-500/35 bg-emerald-500/[0.07] space-y-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[13px] font-semibold text-emerald-900 dark:text-emerald-200">
+                  Save your secret key now — it will not be displayed again
                 </p>
-                <p className="text-xs text-blue-300/80">
-                  Copy it now. You won't see it again.
+                <p className="text-[12px] text-emerald-800/80 dark:text-emerald-300/80 mt-0.5">
+                  {createdKey.name} ({createdKey.category.toUpperCase()})
                 </p>
               </div>
+              <button
+                type="button"
+                onClick={() => setCreatedKey(null)}
+                aria-label="Close key reveal"
+                className="p-1 text-emerald-800 dark:text-emerald-300"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
-
-            <div className="flex items-center gap-2 bg-black border border-blue-500/30 rounded-xl p-3 mb-4">
-              <code className="text-xs font-mono text-blue-200 break-all flex-1">
-                {newKey.key}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <code className="flex-1 px-3 py-2 rounded-md bg-white dark:bg-[#04080D] border border-black/[0.1] dark:border-white/[0.1] font-mono text-[12.5px] text-[#0B1220] dark:text-[#F8FAFC] break-all">
+                {createdKey.key}
               </code>
               <button
-                onClick={() => copyKey(newKey.key)}
-                className="text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded-lg shrink-0 font-medium transition-colors"
+                type="button"
+                onClick={handleCopyCreatedKey}
+                className="inline-flex items-center justify-center gap-1.5 h-9 px-3.5 rounded-md bg-[#0B1220] dark:bg-white text-white dark:text-[#04080D] text-[12px] font-semibold shrink-0"
               >
-                {copied ? "✓ Copied" : "Copy"}
+                {copiedNew ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                <span>{copiedNew ? "Copied" : "Copy Secret"}</span>
               </button>
             </div>
-
-            <button
-              onClick={() => setNewKey(null)}
-              className="text-xs text-zinc-500 hover:text-white transition-colors"
-            >
-              I've saved it →
-            </button>
           </div>
         )}
 
-        {/* Create button */}
-        <div className="flex items-center justify-between mb-6">
-          <p className="text-sm font-medium text-zinc-400">
-            {filteredKeys.length}{" "}
-            {filteredKeys.length === 1 ? "key" : "keys"}
-            {filterCategory && ` in ${categoryInfo(filterCategory).label}`}
-          </p>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            disabled={creating}
-            className="bg-white text-black px-5 py-2.5 rounded-full text-sm font-medium hover:bg-zinc-200 transition-colors disabled:opacity-50"
-          >
-            + Create new key
-          </button>
+        {/* Scoped category reference */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {CATEGORIES.map(({ id, label, description, prefix, Icon }) => {
+            const count = activeKeys.filter((k) => k.category === id).length;
+            return (
+              <div
+                key={id}
+                className="p-3.5 rounded-lg bg-white dark:bg-[#060C12] border border-black/[0.08] dark:border-white/[0.08] space-y-2"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="inline-flex items-center gap-2 text-[13px] font-semibold text-[#0B1220] dark:text-[#F8FAFC]">
+                    <Icon className="h-4 w-4 text-[#1F5B7C] dark:text-[#5B9EC2]" />
+                    <span>{label}</span>
+                  </span>
+                  <span className="text-[11px] font-mono text-[#64748B] dark:text-white/45">
+                    {count}/10
+                  </span>
+                </div>
+                <p className="text-[12px] text-[#64748B] dark:text-white/55">{description}</p>
+                <p className="text-[11px] font-mono text-[#1F5B7C] dark:text-[#5B9EC2]">
+                  Prefix: {prefix}
+                </p>
+              </div>
+            );
+          })}
         </div>
 
-        {/* Keys list */}
-        {loading ? (
-          <p className="text-sm text-zinc-500">Loading…</p>
-        ) : filteredKeys.length === 0 ? (
-          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-12 text-center">
-            <div className="text-4xl mb-3 opacity-40">🔑</div>
-            <p className="font-medium mb-1">
-              {filterCategory
-                ? `No ${categoryInfo(filterCategory).label} keys yet`
-                : "No API keys yet"}
+        {/* Active Keys Table */}
+        {!authed ? (
+          <div className="p-8 rounded-lg bg-white dark:bg-[#060C12] border border-black/[0.08] dark:border-white/[0.08] text-center space-y-3">
+            <KeyRound className="h-6 w-6 mx-auto text-[#1F5B7C] dark:text-[#5B9EC2]" />
+            <p className="text-[14px] font-medium text-[#0B1220] dark:text-[#F8FAFC]">
+              Sign in to manage API keys
             </p>
-            <p className="text-xs text-zinc-500 mb-6">
-              Create your first key to start building with Gyra.
+            <p className="text-[12.5px] text-[#64748B] dark:text-white/50 max-w-md mx-auto">
+              API keys are bound to your authenticated Gyra account and credit wallets.
             </p>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="bg-white text-black px-6 py-3 rounded-full text-sm font-medium hover:bg-zinc-200 transition-colors"
+            <Link
+              href="/login"
+              className="inline-flex items-center h-9 px-4 rounded-md bg-[#1F5B7C] text-white text-[13px] font-medium"
             >
-              Create key
-            </button>
+              Sign In
+            </Link>
           </div>
         ) : (
-          <div className="flex flex-col gap-3">
-            {filteredKeys.map((k) => {
-              const cat = categoryInfo(k.category);
-              return (
-                <div
-                  key={k.id}
-                  className="bg-zinc-950 border border-zinc-800 rounded-2xl p-5"
+          <div className="rounded-lg bg-white dark:bg-[#060C12] border border-black/[0.08] dark:border-white/[0.08] overflow-hidden">
+            <div className="px-4 py-3 border-b border-black/[0.07] dark:border-white/[0.07] flex items-center justify-between">
+              <h2 className="text-[13.5px] font-semibold text-[#0B1220] dark:text-[#F8FAFC]">
+                Active Credentials ({activeKeys.length})
+              </h2>
+              <Link
+                href="/api"
+                className="text-[12px] text-[#1F5B7C] dark:text-[#5B9EC2] hover:underline"
+              >
+                API Quickstart
+              </Link>
+            </div>
+
+            {loading ? (
+              <div className="p-8 text-center text-[13px] text-[#64748B] dark:text-white/50">
+                Loading credentials...
+              </div>
+            ) : activeKeys.length === 0 ? (
+              <div className="p-8 text-center space-y-2">
+                <p className="text-[13.5px] text-[#475569] dark:text-white/65">
+                  No active API keys yet.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowCreate(true)}
+                  className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-[#1F5B7C] text-white text-[12px] font-medium"
                 >
-                  <div className="flex items-start justify-between gap-4 mb-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-1.5 flex-wrap">
-                        <p className="font-semibold text-sm">{k.name}</p>
-                        <span className="text-[10px] uppercase tracking-wider bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-full font-semibold flex items-center gap-1.5">
-                          <span>{cat.icon}</span>
-                          {cat.label}
-                        </span>
-                        {k.active ? (
-                          <span className="text-[10px] uppercase tracking-wider bg-green-500/10 text-green-400 border border-green-500/30 px-2 py-0.5 rounded-full font-semibold">
-                            Active
-                          </span>
-                        ) : (
-                          <span className="text-[10px] uppercase tracking-wider bg-zinc-800 text-zinc-500 px-2 py-0.5 rounded-full font-semibold">
-                            Inactive
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs font-mono text-zinc-500 truncate">
-                        {k.keyPreview}
-                      </p>
-                    </div>
-
-                    <button
-                      onClick={() => setConfirmRevokeId(k.id)}
-                      className="shrink-0 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-transparent hover:border-red-500/30 px-3 py-1.5 rounded-lg transition-colors"
-                    >
-                      Revoke
-                    </button>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-zinc-500 pt-3 border-t border-zinc-900">
-                    <span>
-                      Created {new Date(k.created_at).toLocaleDateString()}
-                    </span>
-                    <span>
-                      {k.last_used
-                        ? `Last used ${new Date(k.last_used).toLocaleDateString()}`
-                        : "Never used"}
-                    </span>
-                    <span>
-                      {k.request_count.toLocaleString()} request
-                      {k.request_count === 1 ? "" : "s"}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>Create your first key</span>
+                </button>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-[12.5px]">
+                  <thead>
+                    <tr className="bg-[#F8FAFC] dark:bg-white/[0.03] border-b border-black/[0.07] dark:border-white/[0.07] text-[10.5px] font-mono uppercase text-[#64748B] dark:text-white/45">
+                      <th className="py-2.5 px-4">Name</th>
+                      <th className="py-2.5 px-4">Category</th>
+                      <th className="py-2.5 px-4">Masked Key</th>
+                      <th className="py-2.5 px-4">Requests</th>
+                      <th className="py-2.5 px-4">Created</th>
+                      <th className="py-2.5 px-4 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-black/[0.06] dark:divide-white/[0.06]">
+                    {activeKeys.map((k) => (
+                      <tr key={k.id}>
+                        <td className="py-3 px-4 font-medium text-[#0B1220] dark:text-[#F8FAFC]">
+                          {k.name}
+                        </td>
+                        <td className="py-3 px-4 font-mono uppercase text-[11px] text-[#64748B] dark:text-white/55">
+                          {k.category}
+                        </td>
+                        <td className="py-3 px-4 font-mono text-[#475569] dark:text-white/70">
+                          {k.keyPreview}
+                        </td>
+                        <td className="py-3 px-4 font-mono text-[#0B1220] dark:text-[#F8FAFC]">
+                          {Number(k.request_count || 0).toLocaleString()}
+                        </td>
+                        <td className="py-3 px-4 font-mono text-[11.5px] text-[#64748B] dark:text-white/45">
+                          {new Date(k.created_at).toLocaleDateString()}
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <button
+                            type="button"
+                            onClick={() => setRevokeTarget(k)}
+                            className="inline-flex items-center gap-1 h-7 px-2.5 rounded border border-red-500/25 text-[11.5px] font-medium text-red-600 dark:text-red-400 hover:bg-red-500/[0.07]"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            <span>Revoke</span>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Security tips */}
-        <div className="mt-12 bg-zinc-950 border border-zinc-800 rounded-2xl p-6">
-          <p className="text-sm font-semibold mb-4 flex items-center gap-2">
-            <span>🛡️</span> Security best practices
-          </p>
-          <ul className="flex flex-col gap-3 text-sm text-zinc-400">
-            <li className="flex items-start gap-3">
-              <span className="text-zinc-600 mt-0.5">•</span>
-              <span>
-                Never share your API key in public — GitHub, screenshots, or
-                client-side code.
-              </span>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="text-zinc-600 mt-0.5">•</span>
-              <span>
-                Store keys in environment variables (e.g.{" "}
-                <code className="bg-zinc-900 border border-zinc-800 px-1.5 py-0.5 rounded text-xs font-mono text-blue-300">
-                  GYRA_MEDIA_KEY
-                </code>
-                ).
-              </span>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="text-zinc-600 mt-0.5">•</span>
-              <span>
-                Use separate keys for each API category — AI, Media, Network,
-                Utilities.
-              </span>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="text-zinc-600 mt-0.5">•</span>
-              <span>
-                Revoke immediately if a key is exposed. Rotation is instant.
-              </span>
-            </li>
-          </ul>
-        </div>
-      </div>
-
-      {/* ============================================================
-          Create key modal
-          ============================================================ */}
-      {showCreateModal && (
-        <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-6">
-          <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-8 max-w-md w-full">
-            <h2 className="text-xl font-bold mb-2">Create new API key</h2>
-            <p className="text-sm text-zinc-500 mb-6">
-              Choose a category and give this key a name.
-            </p>
-
-            {/* Category picker */}
-            <p className="text-xs text-zinc-500 uppercase tracking-wider mb-3">
-              Category
-            </p>
-            <div className="grid grid-cols-2 gap-2 mb-6">
-              {CATEGORIES.map((c) => (
-                <button
-                  key={c.id}
-                  onClick={() => setSelectedCategory(c.id)}
-                  className={`text-left p-3 rounded-xl border transition-all ${
-                    selectedCategory === c.id
-                      ? "border-white bg-white/5"
-                      : "border-zinc-800 bg-zinc-900/50 hover:border-zinc-600"
-                  }`}
-                >
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <span>{c.icon}</span>
-                    <span className="text-xs font-semibold">{c.label}</span>
-                  </div>
-                  <p className="text-[10px] text-zinc-500 leading-snug">
-                    {c.description}
-                  </p>
-                  <p className="text-[10px] font-mono text-zinc-600 mt-2">
-                    {c.prefix}...
-                  </p>
-                </button>
-              ))}
+        {/* Revoked history */}
+        {revokedKeys.length > 0 && (
+          <div className="rounded-lg bg-white dark:bg-[#060C12] border border-black/[0.08] dark:border-white/[0.08] overflow-hidden">
+            <div className="px-4 py-3 border-b border-black/[0.07] dark:border-white/[0.07]">
+              <h2 className="text-[13px] font-semibold text-[#64748B] dark:text-white/55">
+                Revoked Keys ({revokedKeys.length})
+              </h2>
             </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-[12px]">
+                <tbody className="divide-y divide-black/[0.06] dark:divide-white/[0.06]">
+                  {revokedKeys.map((k) => (
+                    <tr key={k.id} className="opacity-65">
+                      <td className="py-2.5 px-4 font-medium text-[#0B1220] dark:text-[#F8FAFC]">
+                        {k.name}
+                      </td>
+                      <td className="py-2.5 px-4 font-mono uppercase text-[11px]">{k.category}</td>
+                      <td className="py-2.5 px-4 font-mono">{k.keyPreview}</td>
+                      <td className="py-2.5 px-4 font-mono text-right">
+                        {Number(k.request_count || 0).toLocaleString()} reqs
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
-            {/* Name input */}
-            <p className="text-xs text-zinc-500 uppercase tracking-wider mb-2">
-              Key name
-            </p>
-            <input
-              type="text"
-              value={keyName}
-              onChange={(e) => setKeyName(e.target.value)}
-              placeholder="e.g. My Bot, Production, Testing"
-              maxLength={60}
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-sm outline-none focus:border-blue-500 mb-6"
-              autoFocus
-              onKeyDown={(e) => e.key === "Enter" && createKey()}
+        {/* Create Modal */}
+        {showCreate && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <button
+              type="button"
+              aria-label="Close modal"
+              className="fixed inset-0 bg-black/55"
+              onClick={() => setShowCreate(false)}
             />
+            <form
+              onSubmit={handleCreate}
+              className="relative z-10 w-full max-w-md rounded-lg bg-white dark:bg-[#081018] border border-black/[0.1] dark:border-white/[0.1] p-5 space-y-4 shadow-xl"
+            >
+              <div className="flex items-center justify-between">
+                <h2 className="text-[15px] font-semibold text-[#0B1220] dark:text-[#F8FAFC]">
+                  Create Scoped API Key
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setShowCreate(false)}
+                  aria-label="Close"
+                  className="p-1 text-[#64748B] dark:text-white/50"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
 
-            {/* Buttons */}
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  setShowCreateModal(false);
-                  setKeyName("");
-                }}
-                className="flex-1 border border-zinc-800 hover:border-zinc-600 py-3 rounded-full text-sm font-medium transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={createKey}
-                disabled={creating || !keyName.trim()}
-                className="flex-1 bg-white text-black py-3 rounded-full text-sm font-medium hover:bg-zinc-200 transition-colors disabled:opacity-40"
-              >
-                {creating ? "Creating…" : "Create key"}
-              </button>
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="key-name"
+                  className="block text-[12px] font-medium text-[#334155] dark:text-white/75"
+                >
+                  Key Label
+                </label>
+                <input
+                  id="key-name"
+                  type="text"
+                  maxLength={60}
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  placeholder="e.g. Production Backend"
+                  className="w-full h-9 px-3 rounded-md bg-[#F8FAFC] dark:bg-[#04080D] border border-black/[0.12] dark:border-white/[0.12] text-[13px] text-[#0B1220] dark:text-[#F8FAFC] focus:outline-none focus:border-[#1F5B7C] dark:focus:border-[#5B9EC2]"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="key-category"
+                  className="block text-[12px] font-medium text-[#334155] dark:text-white/75"
+                >
+                  API Scope
+                </label>
+                <select
+                  id="key-category"
+                  value={newCategory}
+                  onChange={(e) => setNewCategory(e.target.value)}
+                  className="w-full h-9 px-3 rounded-md bg-[#F8FAFC] dark:bg-[#04080D] border border-black/[0.12] dark:border-white/[0.12] text-[13px] text-[#0B1220] dark:text-[#F8FAFC]"
+                >
+                  {CATEGORIES.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.label} ({c.prefix})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCreate(false)}
+                  className="h-8 px-3 rounded-md border border-black/[0.1] dark:border-white/[0.1] text-[12.5px] font-medium text-[#334155] dark:text-white/75"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={creating}
+                  className="h-8 px-4 rounded-md bg-[#1F5B7C] text-white text-[12.5px] font-medium disabled:opacity-50"
+                >
+                  {creating ? "Creating..." : "Create Key"}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* Revoke Confirmation Modal */}
+        {revokeTarget && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <button
+              type="button"
+              aria-label="Close confirmation"
+              className="fixed inset-0 bg-black/55"
+              onClick={() => setRevokeTarget(null)}
+            />
+            <div className="relative z-10 w-full max-w-md rounded-lg bg-white dark:bg-[#081018] border border-black/[0.1] dark:border-white/[0.1] p-5 space-y-4 shadow-xl">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+                <div>
+                  <h2 className="text-[15px] font-semibold text-[#0B1220] dark:text-[#F8FAFC]">
+                    Revoke API Key?
+                  </h2>
+                  <p className="text-[12.5px] text-[#475569] dark:text-white/65 mt-1 leading-relaxed">
+                    Revoking <strong className="font-semibold">{revokeTarget.name}</strong> (
+                    <code className="font-mono text-[11.5px]">{revokeTarget.keyPreview}</code>) immediately invalidates all future requests using this credential.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setRevokeTarget(null)}
+                  className="h-8 px-3 rounded-md border border-black/[0.1] dark:border-white/[0.1] text-[12.5px] font-medium text-[#334155] dark:text-white/75"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={revokingId === revokeTarget.id}
+                  onClick={() => handleRevoke(revokeTarget)}
+                  className="h-8 px-4 rounded-md bg-red-600 text-white text-[12.5px] font-medium disabled:opacity-50"
+                >
+                  {revokingId === revokeTarget.id ? "Revoking..." : "Revoke Key"}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* ============================================================
-          Confirm revoke modal
-          ============================================================ */}
-      {confirmRevokeId && (
-        <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-6">
-          <div className="bg-zinc-950 border border-zinc-800 rounded-3xl p-8 max-w-md w-full text-center">
-            <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center mb-5 mx-auto">
-              <span className="text-2xl">⚠️</span>
-            </div>
-            <h2 className="text-xl font-bold mb-3">Revoke this key?</h2>
-            <p className="text-sm text-zinc-400 mb-8 leading-relaxed">
-              Any application using this key will stop working immediately.
-              This cannot be undone.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setConfirmRevokeId(null)}
-                className="flex-1 border border-zinc-800 hover:border-zinc-600 py-3 rounded-full text-sm font-medium transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => revoke(confirmRevokeId)}
-                className="flex-1 bg-red-600 hover:bg-red-500 py-3 rounded-full text-sm font-medium transition-colors"
-              >
-                Revoke key
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </main>
+        )}
+      </div>
+    </PlatformShell>
   );
 }

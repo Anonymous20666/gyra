@@ -178,6 +178,9 @@ export default function ConsolePage() {
             </span>
           </Link>
           <div className="flex items-center gap-6 text-sm text-zinc-400">
+            <Link href="/workspace" className="hover:text-white transition-colors">
+              Workspace
+            </Link>
             <Link href="/api" className="hover:text-white transition-colors">
               API
             </Link>
