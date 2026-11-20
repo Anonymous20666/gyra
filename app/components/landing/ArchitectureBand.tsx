@@ -4,6 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import { Layers, Pause, Play } from "lucide-react";
 import { computeRemainingMs } from "../../lib/carouselPhysics";
 import { resolveGyraRoute } from "../../lib/landingSimulations";
+import {
+  WAFER_RETURN_SPRING,
+  clampRadialOffset,
+  clampReleaseVelocity,
+  createSpring2D,
+  stepSpring2D,
+} from "../../lib/coreSpringPhysics";
 
 export interface ArchitectureBandProps {
   routeBase?: string;
@@ -132,9 +139,133 @@ const CONDUIT_PATHS: Record<"chat" | "image" | "video" | "api", string> = {
 
 export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
   const [activeId, setActiveId] = useState<CoreModuleId>("chat");
+  const [hoveredId, setHoveredId] = useState<CoreModuleId | null>(null);
   const [exploded, setExploded] = useState(false);
   const [autoCascade, setAutoCascade] = useState(true);
   const [activeDie, setActiveDie] = useState(2);
+  const [waferOffset, setWaferOffset] = useState({ x: 0, y: 0 });
+  const [waferDragging, setWaferDragging] = useState(false);
+
+  const svgRef = useRef<SVGSVGElement>(null);
+  const waferSpringRef = useRef(createSpring2D(0, 0));
+  const waferRafRef = useRef<number | null>(null);
+  const waferDragRef = useRef({
+    active: false,
+    pointerId: null as number | null,
+    startClientX: 0,
+    startClientY: 0,
+    lastX: 0,
+    lastY: 0,
+    lastTs: 0,
+    vx: 0,
+    vy: 0,
+    moved: false,
+  });
+
+  useEffect(() => {
+    return () => {
+      if (waferRafRef.current !== null) cancelAnimationFrame(waferRafRef.current);
+    };
+  }, []);
+
+  const startWaferReturnLoop = () => {
+    if (waferRafRef.current !== null) cancelAnimationFrame(waferRafRef.current);
+    let lastTs = performance.now();
+    const tick = (now: number) => {
+      const dt = Math.min(0.05, Math.max(0.004, (now - lastTs) / 1000));
+      lastTs = now;
+      const res = stepSpring2D(waferSpringRef.current, 0, 0, dt, WAFER_RETURN_SPRING);
+      waferSpringRef.current = res.state;
+      setWaferOffset({ x: res.state.x, y: res.state.y });
+      if (!res.settled) {
+        waferRafRef.current = requestAnimationFrame(tick);
+      } else {
+        waferRafRef.current = null;
+      }
+    };
+    waferRafRef.current = requestAnimationFrame(tick);
+  };
+
+  const clientToSvgDelta = (dxPx: number, dyPx: number) => {
+    const svg = svgRef.current;
+    if (!svg) return { dx: dxPx, dy: dyPx };
+    const rect = svg.getBoundingClientRect();
+    return {
+      dx: (dxPx / Math.max(1, rect.width)) * 840,
+      dy: (dyPx / Math.max(1, rect.height)) * 650,
+    };
+  };
+
+  const handleWaferPointerDown = (e: React.PointerEvent<SVGGElement>) => {
+    if (e.button !== 0 && e.pointerType === "mouse") return;
+    if (waferRafRef.current !== null) {
+      cancelAnimationFrame(waferRafRef.current);
+      waferRafRef.current = null;
+    }
+    const now = performance.now();
+    waferDragRef.current = {
+      active: true,
+      pointerId: e.pointerId,
+      startClientX: e.clientX,
+      startClientY: e.clientY,
+      lastX: waferSpringRef.current.x,
+      lastY: waferSpringRef.current.y,
+      lastTs: now,
+      vx: 0,
+      vy: 0,
+      moved: false,
+    };
+    setWaferDragging(true);
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // ignore synthetic events
+    }
+  };
+
+  const handleWaferPointerMove = (e: React.PointerEvent<SVGGElement>) => {
+    const d = waferDragRef.current;
+    if (!d.active) return;
+    const travel = Math.hypot(e.clientX - d.startClientX, e.clientY - d.startClientY);
+    if (travel > 5) d.moved = true;
+
+    const { dx, dy } = clientToSvgDelta(e.clientX - d.startClientX, e.clientY - d.startClientY);
+    const clamped = clampRadialOffset(dx, dy, 128);
+    const now = performance.now();
+    const dtMs = Math.max(4, now - d.lastTs);
+    d.vx = d.vx * 0.55 + (((clamped.x - d.lastX) / dtMs) * 1000) * 0.45;
+    d.vy = d.vy * 0.55 + (((clamped.y - d.lastY) / dtMs) * 1000) * 0.45;
+    d.lastX = clamped.x;
+    d.lastY = clamped.y;
+    d.lastTs = now;
+
+    waferSpringRef.current = { x: clamped.x, y: clamped.y, vx: 0, vy: 0 };
+    setWaferOffset({ x: clamped.x, y: clamped.y });
+  };
+
+  const handleWaferPointerUp = (e: React.PointerEvent<SVGGElement>) => {
+    const d = waferDragRef.current;
+    if (!d.active) return;
+    d.active = false;
+    setWaferDragging(false);
+    if (d.pointerId !== null) {
+      try {
+        if (e.currentTarget.hasPointerCapture(d.pointerId)) {
+          e.currentTarget.releasePointerCapture(d.pointerId);
+        }
+      } catch {
+        // ignore
+      }
+    }
+    if (d.moved) {
+      const vel = clampReleaseVelocity(d.vx * 0.35, d.vy * 0.35, 950);
+      waferSpringRef.current.vx = vel.x;
+      waferSpringRef.current.vy = vel.y;
+      startWaferReturnLoop();
+    } else {
+      selectModule("core");
+    }
+  };
 
   const timerRef = useRef<{
     id: number | null;
@@ -285,7 +416,17 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
             }}
           >
             <svg
+              ref={svgRef}
               viewBox="0 0 840 650"
+              data-wafer-state={
+                waferDragging
+                  ? "dragging"
+                  : Math.hypot(waferOffset.x, waferOffset.y) > 0.5
+                    ? "returning"
+                    : hoveredId === "core"
+                      ? "hover"
+                      : "idle"
+              }
               className="h-auto w-full max-w-[760px] select-none overflow-visible"
               role="group"
               aria-labelledby="gyra-arch-svg-title"
@@ -468,6 +609,8 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
               {/* STRATUM 0: GENVIA PARENT CREST */}
               <g
                 onClick={() => selectModule("genvia")}
+                onMouseEnter={() => setHoveredId("genvia")}
+                onMouseLeave={() => setHoveredId((prev) => (prev === "genvia" ? null : prev))}
                 role="button"
                 tabIndex={0}
                 aria-label="Inspect Genvia Parent AI Company"
@@ -479,8 +622,8 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
                 }}
                 className="cursor-pointer focus:outline-none focus-visible:outline-2 focus-visible:outline-[#5B9EC2]"
                 style={{
-                  transform: exploded ? "translateY(-18px)" : "translateY(0px)",
-                  transition: "transform 480ms cubic-bezier(0.16, 1, 0.3, 1)",
+                  transform: `translateY(${(exploded ? -18 : 0) + (hoveredId === "genvia" ? -6 : 0)}px)`,
+                  transition: "transform 320ms cubic-bezier(0.16, 1, 0.3, 1)",
                 }}
               >
                 <polygon
@@ -501,22 +644,52 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
                 </text>
               </g>
 
-              {/* STRATUM 1: GYRA INTELLIGENCE CORE MACHINED WAFER */}
+              {/* STRATUM 1: GYRA INTELLIGENCE CORE MACHINED WAFER (HOVER LIFT + FREE DRAG & ELASTIC RETURN) */}
+              {Math.hypot(waferOffset.x, waferOffset.y) > 2 && (
+                <g className="pointer-events-none" opacity="0.55">
+                  <polygon
+                    points="410,174 668,258 410,342 152,258"
+                    fill="none"
+                    stroke="#7EB8D8"
+                    strokeWidth="1.2"
+                    strokeDasharray="6 6"
+                  />
+                  <line
+                    x1="410"
+                    y1="258"
+                    x2={410 + waferOffset.x}
+                    y2={258 + waferOffset.y}
+                    stroke="#7EB8D8"
+                    strokeWidth="1.1"
+                    strokeDasharray="4 5"
+                  />
+                </g>
+              )}
               <g
-                onClick={() => selectModule("core")}
+                data-testid="arch-core-wafer"
+                onPointerDown={handleWaferPointerDown}
+                onPointerMove={handleWaferPointerMove}
+                onPointerUp={handleWaferPointerUp}
+                onPointerCancel={handleWaferPointerUp}
+                onMouseEnter={() => setHoveredId("core")}
+                onMouseLeave={() => setHoveredId((prev) => (prev === "core" ? null : prev))}
                 role="button"
                 tabIndex={0}
-                aria-label="Inspect Gyra Intelligence Core Wafer"
+                aria-label="Inspect or drag Gyra Intelligence Core Wafer"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
                     selectModule("core");
                   }
                 }}
-                className="cursor-pointer focus:outline-none focus-visible:outline-2 focus-visible:outline-[#5B9EC2]"
+                className="cursor-grab active:cursor-grabbing focus:outline-none focus-visible:outline-2 focus-visible:outline-[#5B9EC2]"
                 style={{
-                  transform: exploded ? "translateY(-4px)" : "translateY(0px)",
-                  transition: "transform 480ms cubic-bezier(0.16, 1, 0.3, 1)",
+                  touchAction: "none",
+                  transform: `translate3d(${waferOffset.x.toFixed(1)}px, ${(waferOffset.y + (exploded ? -4 : 0) + (hoveredId === "core" && !waferDragging ? -7 : 0)).toFixed(1)}px, 0)`,
+                  transition:
+                    waferDragging || Math.hypot(waferOffset.x, waferOffset.y) > 0.2
+                      ? "none"
+                      : "transform 320ms cubic-bezier(0.16, 1, 0.3, 1)",
                 }}
               >
                 <polygon points="410,204 662,286 410,368 158,286" fill="#000000" opacity="0.52" />
@@ -607,6 +780,8 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
                       tabIndex={0}
                       aria-label={`Inspect ${m.title}`}
                       onClick={() => selectModule(m.id)}
+                      onMouseEnter={() => setHoveredId(m.id)}
+                      onMouseLeave={() => setHoveredId((prev) => (prev === m.id ? null : prev))}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" || e.key === " ") {
                           e.preventDefault();
@@ -615,9 +790,13 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
                       }}
                       className="cursor-pointer focus:outline-none focus-visible:outline-2 focus-visible:outline-[#5B9EC2]"
                       style={{
-                        transform: isAct ? "translateY(-10px)" : "translateY(0px)",
-                        opacity: isProductActive && !isAct ? 0.56 : 1,
-                        transition: "transform 280ms cubic-bezier(0.16, 1, 0.3, 1), opacity 260ms ease",
+                        transform: isAct
+                          ? "translateY(-10px)"
+                          : hoveredId === m.id
+                            ? "translateY(-6px)"
+                            : "translateY(0px)",
+                        opacity: isProductActive && !isAct && hoveredId !== m.id ? 0.56 : 1,
+                        transition: "transform 260ms cubic-bezier(0.16, 1, 0.3, 1), opacity 240ms ease",
                       }}
                     >
                       <polygon
