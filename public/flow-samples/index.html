@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gyra Architecture Finalists · Compare 04, 05 & 04+05 Fusion</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #000000;
+      --bar: #05090E;
+      --border: #1B2734;
+      --steel: #1F5B7C;
+      --steel-bright: #5B9EC2;
+      --steel-ice: #9CC4DC;
+      --text: #F5F5F5;
+      --muted: #8B98A5;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: "DM Sans", system-ui, sans-serif; }
+    .font-display { font-family: "Barlow Semi Condensed", sans-serif; letter-spacing: -0.02em; }
+    .font-mono { font-family: "JetBrains Mono", monospace; font-variant-numeric: tabular-nums; }
+    .app { display: flex; flex-direction: column; height: 100vh; }
+    .topbar {
+      background: var(--bar);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      overflow-x: auto;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; white-space: nowrap; flex-shrink: 0; }
+    .brand img { width: 22px; height: 22px; object-fit: contain; }
+    .brand-title { font-size: 15px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+    .tabs { display: flex; gap: 6px; flex-shrink: 0; }
+    .tab {
+      background: #080F16; color: #A9BAC8; border: 1px solid var(--border);
+      padding: 8px 13px; font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase;
+      cursor: pointer; white-space: nowrap; transition: all 180ms ease;
+    }
+    .tab:hover { border-color: var(--steel-bright); color: #fff; }
+    .tab.active { background: var(--steel); border-color: var(--steel-ice); color: #fff; }
+    .actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .ext-link {
+      text-decoration: none; background: #070E15; color: var(--steel-ice);
+      border: 1px solid var(--border); padding: 8px 12px; font-size: 11px;
+      letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap;
+    }
+    .ext-link:hover { border-color: var(--steel-bright); color: #fff; }
+    .viewport { flex: 1; width: 100%; border: none; background: #000000; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <img src="/gyra-logo.png" alt="Gyra" onerror="this.style.display='none'" />
+        <span class="brand-title font-display">Gyra Compare Lab</span>
+      </div>
+
+      <nav class="tabs" id="tabs" aria-label="Advanced Architecture Finalists"></nav>
+
+      <div class="actions">
+        <a id="openDirect" class="ext-link font-mono" href="./v2-05-synaptic-canopy-pro.html" target="_blank" rel="noopener">Fullscreen ↗</a>
+        <a class="ext-link font-mono" href="/">Live Site</a>
+      </div>
+    </header>
+
+    <iframe id="frame" class="viewport" src="./v2-05-synaptic-canopy-pro.html" title="Gyra Advanced Prototype Comparison"></iframe>
+  </div>
+
+  <script>
+    const FINALISTS = [
+      { id: "05-pro", label: "A · Synaptic Flow + Wired Studio (Adv 05)", file: "./v2-05-synaptic-canopy-pro.html" },
+      { id: "04-pro", label: "B · Living 3D Core (Adv 04)", file: "./v2-04-living-3d-core.html" },
+      { id: "fusion", label: "C · Fusion (04 + 05 Extra)", file: "./v2-07-fusion-3d-synaptic.html" }
+    ];
+
+    const tabsEl = document.getElementById("tabs");
+    const frame = document.getElementById("frame");
+    const openDirect = document.getElementById("openDirect");
+
+    function selectIdx(idx) {
+      const s = FINALISTS[idx];
+      frame.src = s.file;
+      openDirect.href = s.file;
+      document.querySelectorAll(".tab").forEach((el, i) => el.classList.toggle("active", i === idx));
+      history.replaceState(null, "", "#" + s.id);
+    }
+
+    FINALISTS.forEach((s, idx) => {
+      const btn = document.createElement("button");
+      btn.className = "tab font-mono" + (idx === 0 ? " active" : "");
+      btn.textContent = s.label;
+      btn.addEventListener("click", () => selectIdx(idx));
+      tabsEl.appendChild(btn);
+    });
+
+    const hash = location.hash.replace("#", "");
+    const initialIdx = FINALISTS.findIndex(s => s.id === hash);
+    if (initialIdx >= 0) selectIdx(initialIdx);
+  </script>
+</body>
+</html>

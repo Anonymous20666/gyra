@@ -12,19 +12,20 @@ export function CapabilityMatrix() {
   ];
 
   return (
-    <section className="gyra-band-defer border-b border-[#1F1F1F] bg-black py-24 lg:py-32">
+    <section className="gyra-band-defer border-b border-[#DCE4EC] bg-[#F6F8FA] py-24 transition-colors duration-200 lg:py-32 dark:border-[#1F1F1F] dark:bg-black">
       <div className="mx-auto max-w-[1380px] px-5 sm:px-8">
         <div className="grid grid-cols-1 items-end gap-6 lg:grid-cols-12">
           <div className="lg:col-span-7">
             <p className="font-mono-tech text-[12px] tracking-[0.14em] text-[#8A8A8A] uppercase">
               [ Platform Primitives ]
             </p>
-            <h2 className="font-display mt-3.5 text-[clamp(2.35rem,4.2vw,3.75rem)] font-bold leading-[0.98] tracking-[-0.02em] text-white uppercase [text-wrap:balance]">
-              Everything an AI platform needs under one roof.
+            <h2 className="font-display mt-3.5 text-[clamp(2.35rem,4.2vw,3.75rem)] leading-[0.96] tracking-[-0.02em] uppercase [text-wrap:balance]">
+              <span className="font-light text-[#4A5C6E] dark:text-white/75">Everything an AI platform needs</span>{" "}
+              <span className="font-bold text-[#0B1218] dark:text-white">under one roof.</span>
             </h2>
           </div>
           <div className="lg:col-span-5 lg:pl-6">
-            <p className="text-[15px] leading-[1.65] text-[#9A9A9A]">
+            <p className="text-[15px] leading-[1.65] text-[#4A5B6B] dark:text-[#9A9A9A]">
               Execution sandboxes, file-grounded RAG projects, REST routing, live multi-channel
               streaming, and scoped API credentials — built into one coherent stack.
             </p>
@@ -32,12 +33,12 @@ export function CapabilityMatrix() {
         </div>
 
         {/* Seamless 1px Border-Collapsed Architectural Matrix (E2B Standard) */}
-        <div className="mt-12 border border-[#1F1F1F]">
+        <div className="mt-12 border border-[#D4DFE9] bg-white shadow-[0_18px_50px_-34px_rgba(11,18,24,0.14)] dark:border-[#1F1F1F] dark:bg-black dark:shadow-none">
           {/* Top Row: 2 Equal Architectural Cells */}
-          <div className="grid grid-cols-1 divide-y divide-[#1F1F1F] lg:grid-cols-2 lg:divide-x lg:divide-y-0">
+          <div className="grid grid-cols-1 divide-y divide-[#DCE4EC] dark:divide-[#1F1F1F] lg:grid-cols-2 lg:divide-x lg:divide-y-0">
             {/* Cell 1: Forge Sandbox Execution */}
-            <div className="flex flex-col justify-between bg-black p-6 sm:p-8">
-              <div className="border border-[#1F1F1F] bg-[#040404]">
+            <div className="flex flex-col justify-between bg-white p-6 sm:p-8 dark:bg-black">
+              <div className="border border-[#D4DFE9] bg-[#06090E] dark:border-[#1F1F1F] dark:bg-[#040404]">
                 <div className="flex items-center justify-between border-b border-[#191919] px-4 py-2.5 font-mono-tech text-[11px] text-[#737373]">
                   <span className="flex items-center gap-2">
                     <span className="h-2 w-2 border border-[#444444]" />
@@ -63,15 +64,15 @@ export function CapabilityMatrix() {
               </div>
 
               <div className="mt-7">
-                <h3 className="text-[16px] font-semibold text-white">Forge Coding Preview</h3>
-                <p className="mt-1 text-[14px] text-[#8A8A8A]">
+                <h3 className="text-[16px] font-semibold text-[#0B1218] dark:text-white">Forge Coding Preview</h3>
+                <p className="mt-1 text-[14px] text-[#4F6172] dark:text-[#8A8A8A]">
                   Autonomous coding workspace with an isolated Linux shell and iterative file tools.
                 </p>
               </div>
             </div>
 
             {/* Cell 2: Interactive Endpoint Routing */}
-            <div className="flex flex-col justify-between bg-black p-6 sm:p-8">
+            <div className="flex flex-col justify-between bg-white p-6 sm:p-8 dark:bg-black">
               <div className="space-y-3">
                 {routes.map((route, idx) => {
                   const active = activeEndpoint === idx;
@@ -121,7 +122,7 @@ export function CapabilityMatrix() {
                   <span className="col-span-3 text-[#666666] uppercase">Policy</span>
                   <div className="col-span-9 space-y-1">
                     <div className="flex gap-4">
-                      <span className="text-white">allow</span>
+                      <span className="text-[#0B1218] font-medium dark:text-white">allow</span>
                       <span className="text-[#8A8A8A]">gyra.ng/api/v1/*</span>
                     </div>
                     <div className="flex gap-4">
@@ -133,8 +134,8 @@ export function CapabilityMatrix() {
               </div>
 
               <div className="mt-7">
-                <h3 className="text-[16px] font-semibold text-white">Unified API Routing</h3>
-                <p className="mt-1 text-[14px] text-[#8A8A8A]">
+                <h3 className="text-[16px] font-semibold text-[#0B1218] dark:text-white">Unified API Routing</h3>
+                <p className="mt-1 text-[14px] text-[#4F6172] dark:text-[#8A8A8A]">
                   OpenAI-compatible chat, async video queues, and media intelligence behind one base URL.
                 </p>
               </div>
@@ -142,16 +143,16 @@ export function CapabilityMatrix() {
           </div>
 
           {/* Bottom Row: 3 Architectural Schematic Cells */}
-          <div className="grid grid-cols-1 divide-y divide-[#1F1F1F] border-t border-[#1F1F1F] lg:grid-cols-3 lg:divide-x lg:divide-y-0">
+          <div className="grid grid-cols-1 divide-y divide-[#DCE4EC] dark:divide-[#1F1F1F] border-t border-[#DCE4EC] dark:border-[#1F1F1F] lg:grid-cols-3 lg:divide-x lg:divide-y-0">
             {/* Cell 3: Projects RAG File Tree */}
-            <div className="flex flex-col justify-between bg-black p-6 sm:p-8">
+            <div className="flex flex-col justify-between bg-white p-6 sm:p-8 dark:bg-black">
               <div className="font-mono-tech text-[12px] leading-[2]">
                 <div className="text-[#666666]">/projects/q2-architecture</div>
                 <div className="border-l border-[#242424] pl-4">
-                  <div className="text-[#CCCCCC]">docs/</div>
+                  <div className="text-[#1D2B38] dark:text-[#CCCCCC]">docs/</div>
                   <div className="border-l border-[#242424] pl-4">
                     <div className="text-[#8A8A8A]">system-spec.pdf</div>
-                    <div className="flex items-center justify-between text-white">
+                    <div className="flex items-center justify-between text-[#0B1218] font-medium dark:text-white">
                       <span>webhook-schema.ts</span>
                       <span className="text-[10px] text-[#5B9EC2]">INDEXED</span>
                     </div>
@@ -164,18 +165,18 @@ export function CapabilityMatrix() {
               </div>
 
               <div className="mt-8">
-                <h3 className="text-[16px] font-semibold text-white">Projects RAG Storage</h3>
-                <p className="mt-1 text-[14px] text-[#8A8A8A]">
+                <h3 className="text-[16px] font-semibold text-[#0B1218] dark:text-white">Projects RAG Storage</h3>
+                <p className="mt-1 text-[14px] text-[#4F6172] dark:text-[#8A8A8A]">
                   Ground threads in uploaded PDFs, codebases, and notes with shareable links.
                 </p>
               </div>
             </div>
 
             {/* Cell 4: Live Multi-Channel Stream Polyline */}
-            <div className="flex flex-col justify-between bg-black p-6 sm:p-8">
+            <div className="flex flex-col justify-between bg-white p-6 sm:p-8 dark:bg-black">
               <div className="relative pt-4">
                 <div className="mb-2 flex items-center justify-end">
-                  <span className="font-mono-tech border border-[#2A2A2A] bg-black px-2 py-0.5 text-[10px] text-white">
+                  <span className="font-mono-tech border border-[#D4DFE9] bg-[#F4F7FA] px-2 py-0.5 text-[10px] text-[#0B1218] dark:border-[#2A2A2A] dark:bg-black dark:text-white">
                     SSE STREAM · LIVE
                   </span>
                 </div>
@@ -199,17 +200,17 @@ export function CapabilityMatrix() {
               </div>
 
               <div className="mt-6">
-                <h3 className="text-[16px] font-semibold text-white">Multi-Channel Delivery</h3>
-                <p className="mt-1 text-[14px] text-[#8A8A8A]">
-                  Real-time SSE responses across Web, Android, and @Gyra_AiBot on Telegram.
+                <h3 className="text-[16px] font-semibold text-[#0B1218] dark:text-white">Multi-Channel Delivery</h3>
+                <p className="mt-1 text-[14px] text-[#4F6172] dark:text-[#8A8A8A]">
+                  Real-time SSE responses across Web, Android, and @GyraAi on Telegram.
                 </p>
               </div>
             </div>
 
             {/* Cell 5: Scoped Keys & Auth Boundary */}
-            <div className="flex flex-col justify-between bg-black p-6 sm:p-8">
+            <div className="flex flex-col justify-between bg-white p-6 sm:p-8 dark:bg-black">
               <div className="flex flex-col items-center">
-                <div className="w-full border border-[#262626] bg-[#040404] p-4 font-mono-tech text-[11px]">
+                <div className="w-full border border-[#D4DFE9] bg-[#06090E] p-4 dark:border-[#262626] dark:bg-[#040404] font-mono-tech text-[11px]">
                   <p className="text-[10px] tracking-[0.1em] text-[#666666] uppercase">
                     Client Request
                   </p>
@@ -217,14 +218,14 @@ export function CapabilityMatrix() {
                   <p className="mt-1 text-[#8A8A8A]">Authorization: Bearer $GYRA_KEY</p>
                 </div>
                 <div className="h-7 w-[1px] bg-[#1F5B7C]" aria-hidden="true" />
-                <div className="w-full border border-[#5B9EC2]/60 bg-black px-4 py-2.5 font-mono-tech text-[10px] tracking-[0.08em] text-[#D4D4D4] uppercase">
+                <div className="w-full border border-[#1B587A]/45 bg-[#EDF4FA] px-4 py-2.5 font-mono-tech text-[10px] tracking-[0.08em] text-[#0B1218] uppercase dark:border-[#5B9EC2]/60 dark:bg-black dark:text-[#D4D4D4]">
                   Server-verified scope · wallet balance ok
                 </div>
               </div>
 
               <div className="mt-8">
-                <h3 className="text-[16px] font-semibold text-white">Scoped Keys & Credits</h3>
-                <p className="mt-1 text-[14px] text-[#8A8A8A]">
+                <h3 className="text-[16px] font-semibold text-[#0B1218] dark:text-white">Scoped Keys & Credits</h3>
+                <p className="mt-1 text-[14px] text-[#4F6172] dark:text-[#8A8A8A]">
                   Category-scoped API keys, strict proxy authentication, and transparent usage wallets.
                 </p>
               </div>

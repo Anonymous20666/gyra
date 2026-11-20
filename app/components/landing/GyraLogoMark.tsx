@@ -50,7 +50,7 @@ export function GyraLogoMark({
 
   return (
     <span
-      className={`relative inline-flex shrink-0 items-center justify-center overflow-hidden select-none ${className}`}
+      className={`relative inline-flex shrink-0 items-center justify-center overflow-hidden select-none bg-[#05080D] dark:bg-transparent border border-[#CBD6E2] dark:border-transparent p-[2px] dark:p-0 ${className}`}
       style={{ width: size, height: size }}
     >
       <picture className="block h-full w-full">
@@ -62,7 +62,7 @@ export function GyraLogoMark({
           height={size}
           decoding="async"
           draggable={false}
-          className="h-full w-full object-contain mix-blend-lighten contrast-[1.06] brightness-[1.08]"
+          className="h-full w-full object-contain mix-blend-lighten contrast-[1.14] brightness-[1.16]"
         />
       </picture>
 

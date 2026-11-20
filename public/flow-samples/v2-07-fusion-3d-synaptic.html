@@ -1,0 +1,1096 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fusion (04 + 05) · Living 3D Core + Floating-Orb Synaptic Tree · Gyra</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #000000;
+      --surface: #04080D;
+      --border: #172736;
+      --border-strong: #284C66;
+      --steel: #1F5B7C;
+      --steel-hover: #296E93;
+      --steel-bright: #5B9EC2;
+      --steel-ice: #9CC4DC;
+      --text: #F5F5F5;
+      --muted: #8B9AA8;
+      --ok: #34D399;
+      --err: #F87171;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: "DM Sans", system-ui, sans-serif;
+      min-height: 100%;
+      overflow-x: hidden;
+    }
+    .font-display { font-family: "Barlow Semi Condensed", sans-serif; letter-spacing: -0.02em; }
+    .font-mono { font-family: "JetBrains Mono", monospace; font-variant-numeric: tabular-nums; }
+
+    .page {
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 20px 24px 36px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .topbar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 16px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid #131E29;
+    }
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 10.5px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--steel-bright);
+      margin-bottom: 5px;
+    }
+    .kicker-dot {
+      width: 6px; height: 6px; border-radius: 999px;
+      background: var(--steel-ice);
+    }
+    .topbar h1 {
+      font-size: clamp(24px, 2.7vw, 35px);
+      line-height: 1.02;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #FFFFFF;
+    }
+    .topbar h1 span { color: var(--steel-bright); }
+    .topbar p {
+      font-size: 13.5px;
+      color: var(--muted);
+      margin-top: 5px;
+      max-width: 720px;
+      line-height: 1.45;
+    }
+    .controls { display: flex; flex-wrap: wrap; gap: 8px; }
+    .btn {
+      background: #060C13;
+      color: #D8E6F0;
+      border: 1px solid var(--border);
+      padding: 9px 14px;
+      font-size: 11px;
+      letter-spacing: 0.11em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 180ms ease;
+    }
+    .btn:hover { border-color: var(--steel-bright); background: #0B1B28; color: #FFFFFF; }
+    .btn.primary { background: var(--steel); border-color: var(--steel-ice); color: #FFFFFF; }
+    .btn.primary:hover { background: var(--steel-hover); }
+    .btn.danger { border-color: rgba(248, 113, 113, 0.45); color: #FCA5A5; }
+    .btn.danger.active { background: #311216; border-color: var(--err); color: #FFFFFF; }
+
+    /* Unified 3D Core + Floating-Orb Synaptic Stage */
+    .fusion-shell {
+      border: 1px solid var(--border);
+      background: #000000;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stage-wrap {
+      position: relative;
+      height: 572px;
+      overflow: hidden;
+      background: radial-gradient(ellipse 68% 54% at 50% 24%, rgba(31, 91, 124, 0.24) 0%, #02060B 56%, #000000 100%);
+    }
+
+    /* Full-stage 60fps Canvas draws the floating circular Product Orbs, 12 Sub-Engine Orbs & braided Bezier axons emerging from the 3D Wafer! */
+    #fusionCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      z-index: 2;
+      cursor: crosshair;
+    }
+
+    /* Upper Sculpted 3D Isometric Silicon Wafer (Adv 04) aligned precisely to Canvas bus pin origins */
+    .wafer-overlay {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 640px;
+      max-width: 94%;
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    .hud-top {
+      position: absolute;
+      top: 16px;
+      left: 18px;
+      right: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+      z-index: 5;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .hud-badge {
+      background: #03070C;
+      border: 1px solid #1C3244;
+      padding: 6px 12px;
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--steel-ice);
+    }
+    .hud-badge.ok { border-color: rgba(52, 211, 153, 0.55); color: #A7F3D0; }
+    .hud-badge.err { border-color: rgba(248, 113, 113, 0.6); color: #FECACA; }
+
+    /* Sleek Floating Verified Result Preview Card (Top-Right, appears when a branch runs) */
+    .result-card {
+      position: absolute;
+      top: 62px;
+      right: 20px;
+      width: 310px;
+      background: #04080D;
+      border: 1px solid var(--border-strong);
+      padding: 14px 16px;
+      z-index: 6;
+      opacity: 0;
+      transform: translateY(10px);
+      pointer-events: none;
+      transition: opacity 280ms ease, transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .result-card.visible {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+    .result-card.ok { border-color: rgba(52, 211, 153, 0.55); }
+    .result-card.err { border-color: rgba(248, 113, 113, 0.6); }
+    .rc-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--steel-ice);
+      margin-bottom: 8px;
+    }
+    .result-card.ok .rc-head { color: var(--ok); }
+    .result-card.err .rc-head { color: var(--err); }
+    .rc-dot {
+      display: inline-block;
+      width: 6px; height: 6px; border-radius: 999px;
+      background: currentColor;
+      margin-right: 6px;
+    }
+    .rc-title {
+      font-size: 18px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #FFFFFF;
+      line-height: 1.1;
+    }
+    .rc-prompt {
+      font-size: 11.5px;
+      color: #A7BAC9;
+      margin-top: 6px;
+      line-height: 1.45;
+      border-left: 2px solid var(--steel-bright);
+      padding-left: 9px;
+    }
+    .rc-output {
+      margin-top: 10px;
+      background: #020508;
+      border: 1px solid #152534;
+      padding: 9px 10px;
+      font-size: 10.5px;
+      line-height: 1.5;
+      color: #DCEAF4;
+      word-break: break-word;
+    }
+
+    /* Hover Tooltip for Any Orb */
+    .orb-tip {
+      position: absolute;
+      z-index: 7;
+      pointer-events: none;
+      background: #040910;
+      border: 1px solid var(--steel-bright);
+      padding: 9px 12px;
+      max-width: 245px;
+      opacity: 0;
+      transition: opacity 140ms ease;
+    }
+    .orb-tip.visible { opacity: 1; }
+    .orb-tip .ot-k { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--steel-bright); }
+    .orb-tip .ot-t { font-size: 14px; font-weight: 700; text-transform: uppercase; color: #FFFFFF; margin-top: 2px; }
+    .orb-tip .ot-d { font-size: 11.5px; color: #AFC2D1; margin-top: 3px; line-height: 1.4; }
+
+    /* Bottom Integrated Live Execution Console (Clean Developer Platform Bar) */
+    .console-bar {
+      border-top: 1px solid var(--border);
+      background: #03070C;
+      display: grid;
+      grid-template-columns: auto 1fr;
+    }
+    .console-selector {
+      border-right: 1px solid var(--border);
+      padding: 13px 18px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 8px;
+      min-width: 356px;
+    }
+    .cs-label {
+      font-size: 9.5px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--steel-bright);
+    }
+    .cs-btns {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 7px;
+    }
+    .cs-btn {
+      background: #060D15;
+      border: 1px solid #182A3B;
+      color: #B4C5D4;
+      padding: 8px 12px;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      white-space: nowrap;
+      transition: all 180ms ease;
+    }
+    .cs-btn:hover { border-color: var(--steel-bright); color: #FFFFFF; background: #0A1B29; }
+    .cs-btn.active { background: #0C2639; border-color: var(--steel-ice); color: #FFFFFF; }
+    .cs-btn.done { border-color: rgba(52, 211, 153, 0.55); color: #FFFFFF; }
+    .cs-btn.failed { border-color: rgba(248, 113, 113, 0.6); color: #FECACA; }
+    .cs-btn .pip { width: 6px; height: 6px; border-radius: 999px; background: #2A4F68; }
+    .cs-btn.active .pip { background: var(--steel-ice); }
+    .cs-btn.done .pip { background: var(--ok); }
+    .cs-btn.failed .pip { background: var(--err); }
+
+    .console-stream {
+      padding: 14px 20px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      align-items: stretch;
+    }
+    .stage-log {
+      border: 1px solid #142330;
+      background: #050B12;
+      padding: 11px 13px;
+      transition: border-color 220ms ease, background 220ms ease;
+    }
+    .stage-log.active { border-color: var(--steel-ice); background: #091D2C; }
+    .stage-log.done { border-color: rgba(52, 211, 153, 0.45); background: #041513; }
+    .stage-log.failed { border-color: rgba(248, 113, 113, 0.6); background: #1B0A0D; }
+    .sl-top {
+      display: flex;
+      justify-content: space-between;
+      font-size: 9.5px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--steel-bright);
+      margin-bottom: 5px;
+    }
+    .stage-log.done .sl-top { color: var(--ok); }
+    .stage-log.failed .sl-top { color: var(--err); }
+    .sl-head { font-size: 12.5px; font-weight: 600; color: #FFFFFF; line-height: 1.3; }
+    .sl-desc { font-size: 11px; color: #90A4B5; margin-top: 3px; line-height: 1.4; }
+
+    @media (max-width: 1080px) {
+      .result-card { position: static; width: auto; margin: 12px; display: none; }
+      .result-card.visible { display: block; opacity: 1; transform: none; }
+      .console-bar { grid-template-columns: 1fr; }
+      .console-selector { border-right: none; border-bottom: 1px solid var(--border); min-width: 0; }
+      .console-stream { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 720px) {
+      .page { padding: 14px 12px 26px; }
+      .stage-wrap { height: 540px; }
+      .wafer-overlay { width: 96%; top: 44px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="topbar">
+      <div>
+        <div class="kicker font-mono"><span class="kicker-dot"></span>EXTRA FUSION · ADV 04 (3D CORE) + ADV 05 (FLOATING-ORB SYNAPTIC TREE)</div>
+        <h1 class="font-display">Machined 3D Core <span>→ Floating-Orb Neural Canopy</span></h1>
+        <p>The best of both worlds in one unified scene: Genvia crowns the sculpted 3D Gyra Intelligence Core wafer above, while 60fps braided luminous Bezier axons emerge straight from its bus pins into floating circular Product &amp; Sub-Engine orbs below.</p>
+      </div>
+      <div class="controls">
+        <button class="btn primary font-mono" id="btnTour" type="button">Auto-Fusion Tour</button>
+        <button class="btn danger font-mono" id="btnFault" type="button" aria-pressed="false">Fault Guard: Off</button>
+        <button class="btn font-mono" id="btnReset" type="button">Reset Idle</button>
+      </div>
+    </header>
+
+    <section class="fusion-shell" id="fusionShell" data-state="idle">
+      <div class="stage-wrap" id="stageWrap">
+        <div class="hud-top">
+          <div class="hud-badge font-mono">3D SILICON CORE + 16 FLOATING SYNAPTIC ORBS</div>
+          <div class="hud-badge font-mono" id="fusionStatus">STANDBY · CLICK ANY FLOATING ORB OR SELECT BELOW</div>
+        </div>
+
+        <!-- Upper 3D Isometric Genvia Crest + Gyra Core Silicon Wafer -->
+        <svg class="wafer-overlay" viewBox="0 0 640 270" aria-label="Genvia and Gyra 3D Isometric Intelligence Core Wafer">
+          <defs>
+            <linearGradient id="fWaferTop" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#2B7298" />
+              <stop offset="55%" stop-color="#194B67" />
+              <stop offset="100%" stop-color="#0D2C3F" />
+            </linearGradient>
+            <linearGradient id="fCrest" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#1A3346" />
+              <stop offset="100%" stop-color="#08121B" />
+            </linearGradient>
+          </defs>
+
+          <!-- GENVIA Floating 3D Crest -->
+          <g>
+            <polygon points="320,10 434,46 320,82 206,46" fill="url(#fCrest)" stroke="#6AA9CC" stroke-width="1.4" />
+            <polyline points="208,46 320,11 432,46" fill="none" stroke="#B6DBEE" stroke-width="0.9" opacity="0.7" />
+            <polygon points="206,46 320,82 320,94 206,58" fill="#0A1924" stroke="#224358" stroke-width="1" />
+            <polygon points="434,46 320,82 320,94 434,58" fill="#061018" stroke="#183244" stroke-width="1" />
+            <text x="320" y="45" text-anchor="middle" fill="#FFFFFF" font-family="Barlow Semi Condensed, sans-serif" font-weight="700" font-size="18" letter-spacing="3.2">GENVIA</text>
+            <text x="320" y="61" text-anchor="middle" fill="#8EC2DF" font-family="JetBrains Mono, monospace" font-size="8.5" letter-spacing="1.6">PARENT AI COMPANY</text>
+          </g>
+
+          <!-- Governance Conduit Genvia -> Gyra Core -->
+          <line x1="320" y1="94" x2="320" y2="124" stroke="#5B9EC2" stroke-width="1.6" stroke-dasharray="3 3" />
+          <circle cx="320" cy="95" r="3.2" fill="#FFFFFF">
+            <animate attributeName="cy" values="94;124" dur="1.4s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0;1;1;0" dur="1.4s" repeatCount="indefinite" />
+          </circle>
+
+          <!-- GYRA INTELLIGENCE CORE 3D Silicon Wafer -->
+          <g>
+            <polygon points="320,106 544,176 320,246 96,176" fill="url(#fWaferTop)" stroke="#8EC2DF" stroke-width="1.7" />
+            <polyline points="98,176 320,107 542,176" fill="none" stroke="#D5EEFC" stroke-width="1.1" opacity="0.85" />
+            <polygon points="96,176 320,246 320,266 96,196" fill="#133A50" stroke="#377598" stroke-width="1" />
+            <polygon points="544,176 320,246 320,266 544,196" fill="#0B2332" stroke="#224C66" stroke-width="1" />
+
+            <!-- Recessed 3 Stage Dies inside the 3D Wafer -->
+            <polygon id="fdie-0" points="244,142 300,160 244,178 188,160" fill="#061623" stroke="#78B0CE" stroke-width="1.2" />
+            <text x="244" y="163" text-anchor="middle" fill="#FFFFFF" font-family="JetBrains Mono, monospace" font-size="8.5" font-weight="600">01 UNDERSTAND</text>
+
+            <polygon id="fdie-1" points="320,166 378,184 320,202 262,184" fill="#061623" stroke="#78B0CE" stroke-width="1.2" />
+            <text x="320" y="187" text-anchor="middle" fill="#FFFFFF" font-family="JetBrains Mono, monospace" font-size="8.5" font-weight="600">02 ORCHESTRATE</text>
+
+            <polygon id="fdie-2" points="396,190 452,208 396,226 340,208" fill="#061623" stroke="#78B0CE" stroke-width="1.2" />
+            <text x="396" y="211" text-anchor="middle" fill="#FFFFFF" font-family="JetBrains Mono, monospace" font-size="8.5" font-weight="600">03 EXECUTE</text>
+
+            <!-- Internal optical trace across 3 wafer dies -->
+            <path d="M 244 160 L 320 184 L 396 208" fill="none" stroke="#9CC4DC" stroke-width="1.8" stroke-dasharray="8 8">
+              <animate attributeName="stroke-dashoffset" values="32;0" dur="1s" repeatCount="indefinite" />
+            </path>
+
+            <!-- Clean wafer label -->
+            <text x="424" y="158" text-anchor="middle" fill="#D5EEFC" font-family="Barlow Semi Condensed, sans-serif" font-weight="700" font-size="13" letter-spacing="2">GYRA CORE</text>
+            <text x="424" y="170" text-anchor="middle" fill="#8EC2DF" font-family="JetBrains Mono, monospace" font-size="8" letter-spacing="1.2">3D SILICON ENGINE</text>
+
+            <!-- 4 Illuminated Optical Bus Output Pins along the front edges of the 3D Wafer -->
+            <circle cx="204" cy="222" r="4" fill="#9CC4DC" />
+            <circle cx="282" cy="246" r="4" fill="#9CC4DC" />
+            <circle cx="358" cy="246" r="4" fill="#9CC4DC" />
+            <circle cx="436" cy="222" r="4" fill="#9CC4DC" />
+          </g>
+        </svg>
+
+        <!-- 60fps Synaptic Canvas (Floating Circular Product Orbs + 12 Floating Sub-Engine Orbs + Braided Bezier Axons) -->
+        <canvas id="fusionCanvas" data-testid="fusion-canvas" aria-label="Gyra Fusion 3D Core and Floating Orb Synaptic Constellation"></canvas>
+
+        <!-- Floating Live Result Card (top-right, clear of center wafer) -->
+        <div class="result-card" id="resultCard" aria-live="polite">
+          <div class="rc-head font-mono">
+            <span><span class="rc-dot"></span><span id="rcBadge">LIVE RESULT</span></span>
+            <span id="rcEndpoint">POST /api/chat</span>
+          </div>
+          <div class="rc-title font-display" id="rcTitle">Gyra Chat</div>
+          <div class="rc-prompt" id="rcPrompt"></div>
+          <div class="rc-output font-mono" id="rcOutput"></div>
+        </div>
+
+        <!-- Hover Tooltip for Any Floating Orb -->
+        <div class="orb-tip" id="orbTip">
+          <div class="ot-k font-mono" id="otK"></div>
+          <div class="ot-t font-display" id="otT"></div>
+          <div class="ot-d" id="otD"></div>
+        </div>
+      </div>
+
+      <!-- Bottom Live Execution Console -->
+      <div class="console-bar">
+        <div class="console-selector">
+          <div class="cs-label font-mono">DISPATCH REQUEST FROM CORE → ORB</div>
+          <div class="cs-btns" id="csBtns" role="group" aria-label="Select Gyra Product"></div>
+        </div>
+        <div class="console-stream" id="consoleStream"></div>
+      </div>
+    </section>
+  </div>
+
+  <script src="./story-data.js"></script>
+  <script>
+    (function () {
+      const story = window.GYRA_STORY;
+      const shell = document.getElementById("fusionShell");
+      const stageWrap = document.getElementById("stageWrap");
+      const canvas = document.getElementById("fusionCanvas");
+      const ctx = canvas.getContext("2d");
+      const fusionStatus = document.getElementById("fusionStatus");
+      const csBtns = document.getElementById("csBtns");
+      const consoleStream = document.getElementById("consoleStream");
+
+      const resultCard = document.getElementById("resultCard");
+      const rcBadge = document.getElementById("rcBadge");
+      const rcEndpoint = document.getElementById("rcEndpoint");
+      const rcTitle = document.getElementById("rcTitle");
+      const rcPrompt = document.getElementById("rcPrompt");
+      const rcOutput = document.getElementById("rcOutput");
+
+      const orbTip = document.getElementById("orbTip");
+      const otK = document.getElementById("otK");
+      const otT = document.getElementById("otT");
+      const otD = document.getElementById("otD");
+
+      const btnTour = document.getElementById("btnTour");
+      const btnFault = document.getElementById("btnFault");
+      const btnReset = document.getElementById("btnReset");
+
+      let W = 1280, H = 620, t = 0;
+      let nodes = [];
+      let edges = [];
+      let impulses = [];
+      let ripples = [];
+      let hoveredNode = null;
+      let selectedId = null;
+      let selectedLeaf = null;
+      let execState = "idle"; // idle | running | done | failed
+      let faultMode = false;
+      let timers = [];
+      let tourTimer = null;
+
+      // Build bottom console selector buttons
+      story.products.forEach((p) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "cs-btn font-mono";
+        b.dataset.id = p.id;
+        b.innerHTML = `<span>${p.code} ${p.name}</span><span class="pip"></span>`;
+        b.addEventListener("click", () => {
+          stopTour();
+          fireBranch(p.id, null);
+        });
+        csBtns.appendChild(b);
+      });
+
+      function buildConstellation() {
+        nodes = [];
+        edges = [];
+        const compact = W < 820;
+        const cx = W * 0.5;
+
+        // Calculate exact pixel coordinates of the 4 optical bus pins on the 3D SVG Wafer overlay!
+        const waferW = Math.min(640, W * 0.94);
+        const waferScale = waferW / 640;
+        const waferLeft = cx - waferW * 0.5;
+        const waferTop = compact ? 44 : 10;
+
+        const pinCoords = [
+          { x: waferLeft + 204 * waferScale, y: waferTop + 222 * waferScale },
+          { x: waferLeft + 282 * waferScale, y: waferTop + 246 * waferScale },
+          { x: waferLeft + 358 * waferScale, y: waferTop + 246 * waferScale },
+          { x: waferLeft + 436 * waferScale, y: waferTop + 222 * waferScale }
+        ];
+
+        const prodSpan = compact ? W * 0.80 : Math.min(W * 0.82, 1080);
+        const startX = cx - prodSpan * 0.5;
+        const stepX = prodSpan / 3;
+        const prodYBase = compact ? 356 : 362;
+
+        story.products.forEach((p, i) => {
+          const pinNode = { id: `pin-${p.id}`, x: pinCoords[i].x, y: pinCoords[i].y, r: 4, tier: 0, branch: p.id, hidden: true };
+          const px = startX + i * stepX;
+          const py = prodYBase + ((i === 1 || i === 2) ? 20 : 0);
+
+          const prodNode = {
+            id: p.id,
+            label: p.name.toUpperCase(),
+            sub: p.category.toUpperCase(),
+            tier: 1,
+            tierName: `PRODUCT ${p.code} · ${p.endpoint}`,
+            desc: p.scenarioTitle,
+            icon: p.id,
+            x: px,
+            y: py,
+            r: compact ? 22 : 28,
+            branch: p.id,
+            product: p
+          };
+          nodes.push(prodNode);
+          edges.push({ from: pinNode, to: prodNode, branch: p.id, kind: "wafer-product" });
+
+          // 3 Floating Circular Sub-Engine Orbs per product (12 visible sub-engine orbs!)
+          if (!compact) {
+            const leaves = p.subEngines.slice(0, 3);
+            const leafSpread = Math.min(82, stepX * 0.27);
+            leaves.forEach((se, li) => {
+              const ln = {
+                id: `${p.id}-leaf-${li}`,
+                label: se.name,
+                tier: 2,
+                tierName: `${p.name.toUpperCase()} SUB-ENGINE`,
+                desc: se.role,
+                icon: "leaf",
+                x: px + (li - 1) * leafSpread,
+                y: py + 106 + (li === 1 ? 18 : 0),
+                r: 12,
+                branch: p.id,
+                leafName: se.name,
+                product: p
+              };
+              nodes.push(ln);
+              edges.push({ from: prodNode, to: ln, branch: p.id, kind: "product-leaf" });
+            });
+          }
+        });
+      }
+
+      function drawOrbGlyph(n, col) {
+        ctx.save();
+        ctx.translate(n.x, n.y);
+        ctx.strokeStyle = col;
+        ctx.fillStyle = col;
+        ctx.lineWidth = 1.6;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        const s = n.tier === 1 ? 1.0 : 0.75;
+
+        if (n.icon === "chat") {
+          ctx.beginPath();
+          ctx.moveTo(-8 * s, -5.5 * s); ctx.lineTo(8 * s, -5.5 * s); ctx.lineTo(8 * s, 4.5 * s);
+          ctx.lineTo(1 * s, 4.5 * s); ctx.lineTo(-4 * s, 8.5 * s); ctx.lineTo(-4 * s, 4.5 * s);
+          ctx.lineTo(-8 * s, 4.5 * s); ctx.closePath(); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(-4.5 * s, -1.5 * s); ctx.lineTo(4.5 * s, -1.5 * s);
+          ctx.moveTo(-4.5 * s, 1.5 * s); ctx.lineTo(2 * s, 1.5 * s); ctx.stroke();
+        } else if (n.icon === "image") {
+          ctx.strokeRect(-8 * s, -6.5 * s, 16 * s, 13 * s);
+          ctx.beginPath();
+          ctx.moveTo(-8 * s, 4 * s); ctx.lineTo(-2 * s, -1 * s); ctx.lineTo(2.5 * s, 2.5 * s);
+          ctx.lineTo(5.5 * s, 0); ctx.lineTo(8 * s, 3 * s); ctx.stroke();
+          ctx.beginPath(); ctx.arc(-3.5 * s, -3 * s, 1.5 * s, 0, Math.PI * 2); ctx.fill();
+        } else if (n.icon === "video") {
+          ctx.strokeRect(-8.5 * s, -6 * s, 17 * s, 12 * s);
+          ctx.beginPath(); ctx.moveTo(-2 * s, -3 * s); ctx.lineTo(4 * s, 0); ctx.lineTo(-2 * s, 3 * s); ctx.closePath(); ctx.fill();
+        } else if (n.icon === "api") {
+          ctx.beginPath();
+          ctx.moveTo(-4.5 * s, -5 * s); ctx.lineTo(-9 * s, 0); ctx.lineTo(-4.5 * s, 5 * s);
+          ctx.moveTo(4.5 * s, -5 * s); ctx.lineTo(9 * s, 0); ctx.lineTo(4.5 * s, 5 * s);
+          ctx.moveTo(1.8 * s, -6 * s); ctx.lineTo(-1.8 * s, 6 * s); ctx.stroke();
+        } else {
+          ctx.beginPath();
+          ctx.moveTo(0, -3.6 * s); ctx.lineTo(3.6 * s, 0); ctx.lineTo(0, 3.6 * s); ctx.lineTo(-3.6 * s, 0); ctx.closePath(); ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      function curvePt(e, p) {
+        const { from, to } = e;
+        const midY = from.y + (to.y - from.y) * 0.56;
+        const m = 1 - p;
+        return {
+          x: m * m * m * from.x + 3 * m * m * p * from.x + 3 * m * p * p * to.x + p * p * p * to.x,
+          y: m * m * m * from.y + 3 * m * m * p * midY + 3 * m * p * p * midY + p * p * p * to.y
+        };
+      }
+
+      function drawAxon(e, mode) {
+        const { from, to } = e;
+        const midY = from.y + (to.y - from.y) * 0.56;
+        const path = () => {
+          ctx.beginPath();
+          ctx.moveTo(from.x, from.y);
+          ctx.bezierCurveTo(from.x, midY, to.x, midY, to.x, to.y);
+        };
+
+        ctx.save();
+        if (mode === "active" || mode === "done" || mode === "failed") {
+          const aura = mode === "failed" ? "rgba(248,113,113,0.24)" : (mode === "done" ? "rgba(52,211,153,0.24)" : "rgba(91,158,194,0.28)");
+          const core = mode === "failed" ? "#F87171" : (mode === "done" ? "#34D399" : "#6FB6DB");
+          const inner = mode === "failed" ? "#FECACA" : (mode === "done" ? "#A7F3D0" : "#D1ECFA");
+          path(); ctx.strokeStyle = aura; ctx.lineWidth = 8; ctx.stroke();
+          path(); ctx.strokeStyle = core; ctx.lineWidth = 2.1; ctx.stroke();
+          path(); ctx.strokeStyle = inner; ctx.lineWidth = 0.9; ctx.setLineDash([7, 9]); ctx.lineDashOffset = -t * 46; ctx.stroke();
+        } else {
+          path();
+          ctx.strokeStyle = mode === "dim" ? "#152837" : "#274E68";
+          ctx.lineWidth = mode === "hover" ? 1.8 : 1.15;
+          ctx.globalAlpha = mode === "dim" ? 0.16 : (mode === "hover" ? 0.78 : 0.45);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      function spawnImpulse(edge, speed, bright, color) {
+        impulses.push({ edge, p: 0, speed, bright, color });
+      }
+
+      function setWaferDies(step, status) {
+        [0, 1, 2].forEach((i) => {
+          const el = document.getElementById("fdie-" + i);
+          if (step === -1) {
+            el.setAttribute("fill", "#061623");
+            el.setAttribute("stroke", "#78B0CE");
+          } else if (status === "failed" && i === 1) {
+            el.setAttribute("fill", "#341016");
+            el.setAttribute("stroke", "#F87171");
+          } else if (status === "done" || i < step) {
+            el.setAttribute("fill", "#0B3329");
+            el.setAttribute("stroke", "#34D399");
+          } else if (i === step) {
+            el.setAttribute("fill", "#1F5B7C");
+            el.setAttribute("stroke", "#FFFFFF");
+          } else {
+            el.setAttribute("fill", "#061623");
+            el.setAttribute("stroke", "#477894");
+          }
+        });
+      }
+
+      function renderConsole(product, step, status) {
+        if (!product) {
+          consoleStream.innerHTML = story.stages.map((st) => `
+            <div class="stage-log">
+              <div class="sl-top font-mono"><span>${st.code} · ${st.name}</span><span>READY</span></div>
+              <div class="sl-head">${st.tagline}</div>
+              <div class="sl-desc">${st.desc}</div>
+            </div>
+          `).join("");
+          return;
+        }
+        consoleStream.innerHTML = product.stageNarratives.map((sn, idx) => {
+          let cls = "stage-log";
+          let tag = "QUEUED";
+          if (status === "failed" && idx === 1) {
+            cls += " failed"; tag = "INTERCEPTED";
+          } else if (status === "failed" && idx > 1) {
+            tag = "HALTED";
+          } else if (status === "done" || idx < step) {
+            cls += " done"; tag = "VERIFIED";
+          } else if (idx === step) {
+            cls += " active"; tag = "ACTIVE";
+          }
+          const head = (status === "failed" && idx === 1) ? product.failNarrative.headline : sn.headline;
+          const desc = (status === "failed" && idx === 1) ? product.failNarrative.detail : sn.detail;
+          return `
+            <div class="${cls}">
+              <div class="sl-top font-mono"><span>${sn.stage}</span><span>${tag}</span></div>
+              <div class="sl-head">${head}</div>
+              <div class="sl-desc">${desc}</div>
+            </div>
+          `;
+        }).join("");
+      }
+
+      function syncSelectorBtns() {
+        document.querySelectorAll(".cs-btn").forEach((btn) => {
+          const isSel = btn.dataset.id === selectedId;
+          btn.classList.toggle("active", isSel && execState === "running");
+          btn.classList.toggle("done", isSel && execState === "done");
+          btn.classList.toggle("failed", isSel && execState === "failed");
+        });
+      }
+
+      function clearTimers() {
+        timers.forEach(clearTimeout);
+        timers = [];
+      }
+
+      function stopTour() {
+        if (tourTimer) {
+          clearInterval(tourTimer);
+          tourTimer = null;
+          btnTour.textContent = "Auto-Fusion Tour";
+        }
+      }
+
+      function fireBranch(id, leafName) {
+        clearTimers();
+        const product = story.products.find((p) => p.id === id);
+        if (!product) return;
+
+        selectedId = id;
+        selectedLeaf = leafName || null;
+        execState = "running";
+        shell.dataset.state = `running-${id}`;
+        syncSelectorBtns();
+
+        fusionStatus.className = "hud-badge font-mono";
+        fusionStatus.textContent = `3D CORE → ${product.name.toUpperCase()} · 01 UNDERSTAND`;
+        setWaferDies(0, "running");
+        renderConsole(product, 0, "running");
+
+        resultCard.className = "result-card visible";
+        rcBadge.textContent = "ROUTING VIA CORE";
+        rcEndpoint.textContent = product.endpoint;
+        rcTitle.textContent = leafName ? `${product.name} · ${leafName}` : product.name;
+        rcPrompt.textContent = product.inputPrompt;
+        rcOutput.textContent = `> Executing 01 Understand inside 3D silicon wafer...`;
+
+        // Stage 02: Orchestrate (or Fault Guard)
+        timers.push(setTimeout(() => {
+          if (faultMode) {
+            execState = "failed";
+            shell.dataset.state = `failed-${id}`;
+            syncSelectorBtns();
+            setWaferDies(1, "failed");
+            renderConsole(product, 1, "failed");
+            fusionStatus.className = "hud-badge err font-mono";
+            fusionStatus.textContent = `FAULT GUARD · ${product.name.toUpperCase()} SAFE RECOVERY`;
+
+            resultCard.className = "result-card visible err";
+            rcBadge.textContent = "FAULT GUARD";
+            rcOutput.textContent = `${product.failNarrative.headline} — ${product.failNarrative.detail}`;
+
+            edges.forEach((e) => {
+              if (e.kind === "wafer-product" && e.branch === id) spawnImpulse(e, 0.032, true, "#F87171");
+            });
+            return;
+          }
+
+          setWaferDies(1, "running");
+          renderConsole(product, 1, "running");
+          fusionStatus.textContent = `3D CORE → ${product.name.toUpperCase()} · 02 ORCHESTRATE`;
+          rcOutput.textContent = `> ${product.stageNarratives[1].headline}`;
+        }, 520));
+
+        if (faultMode) return;
+
+        // Stage 03: Execute -> Erupt photons out of 3D Wafer Bus Pins into Floating Circular Product Orb!
+        timers.push(setTimeout(() => {
+          setWaferDies(2, "running");
+          renderConsole(product, 2, "running");
+          fusionStatus.textContent = `3D CORE → ${product.name.toUpperCase()} · 03 EXECUTE`;
+          rcOutput.textContent = `> ${product.stageNarratives[2].headline}`;
+
+          edges.forEach((e) => {
+            if (e.kind === "wafer-product" && e.branch === id) {
+              spawnImpulse(e, 0.03, true, "#FFFFFF");
+              timers.push(setTimeout(() => spawnImpulse(e, 0.028, true, "#8EC2DF"), 180));
+            }
+          });
+        }, 1060));
+
+        // Stage 04: Verified -> Ripple Product Orb & Cascade into 3 Sub-Engine Floating Orbs
+        timers.push(setTimeout(() => {
+          execState = "done";
+          shell.dataset.state = `done-${id}`;
+          syncSelectorBtns();
+          setWaferDies(3, "done");
+          renderConsole(product, 3, "done");
+          fusionStatus.className = "hud-badge ok font-mono";
+          fusionStatus.textContent = `VERIFIED · ${product.name.toUpperCase()} (${product.endpoint})`;
+
+          resultCard.className = "result-card visible ok";
+          rcBadge.textContent = "VERIFIED OUTPUT";
+          rcOutput.textContent = product.outputPreview;
+
+          const pNode = nodes.find((n) => n.id === id);
+          if (pNode) ripples.push({ x: pNode.x, y: pNode.y, r: pNode.r, maxR: pNode.r + 54, alpha: 0.9, color: "#34D399" });
+          edges.forEach((e) => {
+            if (e.kind === "product-leaf" && e.branch === id) spawnImpulse(e, 0.032, true, "#34D399");
+          });
+        }, 1680));
+      }
+
+      function resetIdle() {
+        clearTimers();
+        stopTour();
+        selectedId = null;
+        selectedLeaf = null;
+        execState = "idle";
+        shell.dataset.state = "idle";
+        syncSelectorBtns();
+        setWaferDies(-1, "idle");
+        renderConsole(null, -1, "idle");
+        resultCard.className = "result-card";
+        fusionStatus.className = "hud-badge font-mono";
+        fusionStatus.textContent = "STANDBY · CLICK ANY FLOATING ORB OR SELECT BELOW";
+      }
+
+      function resize() {
+        const rect = stageWrap.getBoundingClientRect();
+        W = Math.max(320, rect.width);
+        H = Math.max(460, rect.height);
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = Math.round(W * dpr);
+        canvas.height = Math.round(H * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        buildConstellation();
+      }
+
+      function tick() {
+        t += 0.016;
+        ctx.clearRect(0, 0, W, H);
+
+        // Subtle curved perspective horizon rings beneath the 3D wafer
+        ctx.save();
+        ctx.strokeStyle = "#183042";
+        [210, 340, 480].forEach((rx, idx) => {
+          ctx.beginPath();
+          ctx.ellipse(W * 0.5, 395, rx, rx * 0.24, 0, 0, Math.PI * 2);
+          ctx.globalAlpha = 0.22 - idx * 0.04;
+          ctx.setLineDash(idx === 1 ? [3, 9] : []);
+          ctx.stroke();
+        });
+        ctx.restore();
+
+        // Ambient neural traffic
+        if (Math.random() < 0.085 && edges.length) {
+          const pool = selectedId ? edges.filter((e) => e.branch === selectedId) : edges;
+          const pick = pool[Math.floor(Math.random() * pool.length)];
+          if (pick) {
+            const col = execState === "done" && pick.branch === selectedId ? "#34D399" : (execState === "failed" ? "#F87171" : "#5B9EC2");
+            spawnImpulse(pick, 0.01 + Math.random() * 0.009, false, col);
+          }
+        }
+
+        // Draw braided synaptic Bezier axons from 3D Wafer Bus Pins -> Floating Orbs
+        for (const e of edges) {
+          let mode = "idle";
+          if (selectedId) {
+            if (e.branch !== selectedId) mode = "dim";
+            else mode = execState === "done" ? "done" : (execState === "failed" ? "failed" : "active");
+          } else if (hoveredNode && hoveredNode.branch === e.branch) {
+            mode = "hover";
+          }
+          drawAxon(e, mode);
+        }
+
+        // Traveling photon comets
+        for (let i = impulses.length - 1; i >= 0; i--) {
+          const imp = impulses[i];
+          imp.p += imp.speed;
+          if (imp.p >= 1) {
+            if (imp.bright) {
+              ripples.push({ x: imp.edge.to.x, y: imp.edge.to.y, r: imp.edge.to.r, maxR: imp.edge.to.r + 28, alpha: 0.72, color: imp.color });
+            }
+            impulses.splice(i, 1);
+            continue;
+          }
+          const trail = imp.bright ? 11 : 5;
+          for (let s = 0; s < trail; s++) {
+            const pp = Math.max(0, imp.p - s * 0.016);
+            const pt = curvePt(imp.edge, pp);
+            const f = 1 - s / trail;
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, f * (imp.bright ? 4.0 : 2.1), 0, Math.PI * 2);
+            ctx.fillStyle = (s === 0 && imp.bright) ? "#FFFFFF" : imp.color;
+            ctx.globalAlpha = f * (imp.bright ? 0.95 : 0.6);
+            ctx.fill();
+          }
+          ctx.globalAlpha = 1;
+        }
+
+        // Concentric harmonic ripples
+        for (let i = ripples.length - 1; i >= 0; i--) {
+          const rp = ripples[i];
+          rp.r += 1.3;
+          rp.alpha -= 0.022;
+          if (rp.alpha <= 0 || rp.r > rp.maxR) { ripples.splice(i, 1); continue; }
+          ctx.beginPath();
+          ctx.arc(rp.x, rp.y, rp.r, 0, Math.PI * 2);
+          ctx.strokeStyle = rp.color;
+          ctx.globalAlpha = rp.alpha;
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
+
+        // Draw Floating Multi-Ring Circular Product & Sub-Engine Orbs (ZERO rectangular cards!)
+        for (const n of nodes) {
+          const isFocus = !selectedId || n.branch === selectedId;
+          const isSel = selectedId && n.branch === selectedId;
+          const isHover = hoveredNode === n;
+          const isSelLeaf = selectedLeaf && n.leafName === selectedLeaf;
+          const r = n.r + (isHover ? 3.5 : 0);
+
+          let stroke = "#3D7392";
+          let fillEnd = "#040B12";
+          if (isSel) {
+            if (execState === "done") { stroke = "#34D399"; fillEnd = "#06211D"; }
+            else if (execState === "failed") { stroke = "#F87171"; fillEnd = "#230C10"; }
+            else { stroke = "#9CC4DC"; fillEnd = "#0B2639"; }
+          }
+          if (isHover || isSelLeaf) stroke = "#FFFFFF";
+
+          ctx.save();
+          ctx.globalAlpha = isFocus ? 1 : 0.42;
+
+          // Subtle radial aura
+          if (isSel || isHover) {
+            const g = ctx.createRadialGradient(n.x, n.y, r * 0.3, n.x, n.y, r * 2.25);
+            g.addColorStop(0, execState === "done" && isSel ? "rgba(52,211,153,0.26)" : execState === "failed" && isSel ? "rgba(248,113,113,0.26)" : "rgba(91,158,194,0.28)");
+            g.addColorStop(1, "rgba(0,0,0,0)");
+            ctx.beginPath();
+            ctx.arc(n.x, n.y, r * 2.25, 0, Math.PI * 2);
+            ctx.fillStyle = g;
+            ctx.fill();
+          }
+
+          // Outer precision orbital ring + rotating telemetry arc on active/hovered orbs
+          if (n.tier === 1 || isHover || isSelLeaf) {
+            ctx.beginPath();
+            ctx.arc(n.x, n.y, r + 6.5, 0, Math.PI * 2);
+            ctx.strokeStyle = stroke;
+            ctx.globalAlpha = isFocus ? 0.34 : 0.1;
+            ctx.lineWidth = 0.9;
+            ctx.stroke();
+
+            if (isSel || isHover) {
+              ctx.save();
+              ctx.translate(n.x, n.y);
+              ctx.rotate(-t * 0.95);
+              ctx.beginPath();
+              ctx.arc(0, 0, r + 6.5, 0, Math.PI * 1.1);
+              ctx.strokeStyle = stroke;
+              ctx.lineWidth = 1.6;
+              ctx.setLineDash([4, 5]);
+              ctx.globalAlpha = 0.92;
+              ctx.stroke();
+              ctx.restore();
+            }
+          }
+
+          // Machined circular orb disc
+          ctx.globalAlpha = isFocus ? 1 : 0.44;
+          const dg = ctx.createRadialGradient(n.x - r * 0.25, n.y - r * 0.25, r * 0.1, n.x, n.y, r);
+          dg.addColorStop(0, isSel ? "#174662" : "#0F2435");
+          dg.addColorStop(1, fillEnd);
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+          ctx.fillStyle = dg;
+          ctx.fill();
+          ctx.lineWidth = (isSel || isHover) ? 2.1 : 1.3;
+          ctx.strokeStyle = stroke;
+          ctx.stroke();
+
+          // Vector icon inside orb
+          drawOrbGlyph(n, (isSel || isHover) ? "#FFFFFF" : "#A7CDE2");
+
+          // Crisp labels outside orb
+          ctx.textAlign = "center";
+          if (n.tier === 1) {
+            ctx.fillStyle = "#FFFFFF";
+            ctx.font = "700 15px 'Barlow Semi Condensed', sans-serif";
+            ctx.fillText(n.label, n.x, n.y - r - 14);
+            ctx.fillStyle = isSel ? (execState === "done" ? "#6EE7B7" : "#9CC4DC") : "#7C97AC";
+            ctx.font = "500 9px 'JetBrains Mono', monospace";
+            ctx.fillText(n.sub, n.x, n.y + r + 19);
+          } else {
+            ctx.fillStyle = isSelLeaf ? "#FFFFFF" : (isSel ? "#DCECF7" : "#97AEBF");
+            ctx.font = isSelLeaf ? "600 10px 'JetBrains Mono', monospace" : "500 9.5px 'JetBrains Mono', monospace";
+            ctx.fillText(n.label, n.x, n.y + r + 16);
+          }
+          ctx.restore();
+        }
+
+        requestAnimationFrame(tick);
+      }
+
+      canvas.addEventListener("mousemove", (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+        hoveredNode = nodes.find((n) => Math.hypot(n.x - mx, n.y - my) <= n.r + 12) || null;
+        canvas.style.cursor = hoveredNode ? "pointer" : "crosshair";
+
+        if (hoveredNode) {
+          otK.textContent = hoveredNode.tierName;
+          otT.textContent = hoveredNode.label;
+          otD.textContent = hoveredNode.desc;
+          orbTip.style.left = Math.min(W - 260, Math.max(16, hoveredNode.x + hoveredNode.r + 16)) + "px";
+          orbTip.style.top = Math.min(H - 96, Math.max(60, hoveredNode.y - 24)) + "px";
+          orbTip.classList.add("visible");
+        } else {
+          orbTip.classList.remove("visible");
+        }
+      });
+
+      canvas.addEventListener("mouseleave", () => {
+        hoveredNode = null;
+        orbTip.classList.remove("visible");
+      });
+
+      canvas.addEventListener("click", (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+        const hit = nodes.find((n) => Math.hypot(n.x - mx, n.y - my) <= n.r + 14);
+        if (hit && hit.branch) {
+          stopTour();
+          fireBranch(hit.branch, hit.leafName || null);
+        }
+      });
+
+      btnTour.addEventListener("click", () => {
+        if (tourTimer) { stopTour(); return; }
+        let idx = 0;
+        btnTour.textContent = "Stop Tour";
+        fireBranch(story.products[0].id, null);
+        tourTimer = setInterval(() => {
+          idx = (idx + 1) % story.products.length;
+          fireBranch(story.products[idx].id, null);
+        }, 3300);
+      });
+
+      btnFault.addEventListener("click", () => {
+        faultMode = !faultMode;
+        btnFault.classList.toggle("active", faultMode);
+        btnFault.setAttribute("aria-pressed", String(faultMode));
+        btnFault.textContent = faultMode ? "Fault Guard: Armed" : "Fault Guard: Off";
+        if (selectedId) fireBranch(selectedId, selectedLeaf);
+      });
+
+      btnReset.addEventListener("click", resetIdle);
+
+      resize();
+      window.addEventListener("resize", resize);
+      renderConsole(null, -1, "idle");
+      requestAnimationFrame(tick);
+    })();
+  </script>
+</body>
+</html>

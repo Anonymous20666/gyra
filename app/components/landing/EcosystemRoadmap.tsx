@@ -38,17 +38,18 @@ export function EcosystemRoadmap({
       {/* Ecosystem & Honest Roadmap Matrix (E2B Border-Collapsed Tile Grid) */}
       <section
         id="ecosystem"
-        className="gyra-band-defer border-b border-[#1F1F1F] bg-black py-24 lg:py-32"
+        className="gyra-band-defer border-b border-[#DCE4EC] bg-[#F6F8FA] py-24 transition-colors duration-200 lg:py-32 dark:border-[#1F1F1F] dark:bg-black"
       >
         <div className="mx-auto max-w-[1380px] px-5 sm:px-8">
           <div className="mx-auto max-w-3xl text-center">
             <p className="font-mono-tech text-[12px] tracking-[0.14em] text-[#8A8A8A] uppercase">
               [ Expanding Ecosystem ]
             </p>
-            <h2 className="font-display mt-4 text-[clamp(2.5rem,4.6vw,4.2rem)] font-bold leading-[0.95] tracking-[-0.02em] text-white uppercase [text-wrap:balance]">
-              Built to grow into a complete AI suite.
+            <h2 className="font-display mt-4 text-[clamp(2.5rem,4.6vw,4.2rem)] leading-[0.95] tracking-[-0.02em] uppercase [text-wrap:balance]">
+              <span className="font-light text-[#4A5C6E] dark:text-white/75">Built to grow into a</span>{" "}
+              <span className="font-bold text-[#0B1218] dark:text-white">complete AI suite.</span>
             </h2>
-            <p className="mx-auto mt-5 max-w-[54ch] text-[15px] leading-[1.65] text-[#9A9A9A]">
+            <p className="mx-auto mt-5 max-w-[54ch] text-[15px] leading-[1.65] text-[#4A5B6B] dark:text-[#9A9A9A]">
               Start with Gyra Chat, Image, and Video — then expand into file-grounded Projects,
               Forge coding sandboxes, Journal, Telegram, and developer APIs.
             </p>
@@ -59,7 +60,7 @@ export function EcosystemRoadmap({
             <p className="font-mono-tech mb-4 text-center text-[11px] tracking-[0.14em] text-[#737373] uppercase">
               [ Shipped & Preview Workspaces ]
             </p>
-            <div className="grid grid-cols-1 border-l border-t border-[#1F1F1F] md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 border-l border-t border-[#D4DFE9] dark:border-[#1F1F1F] md:grid-cols-2 lg:grid-cols-3">
               {ECOSYSTEM_ITEMS.map((item) => {
                 const isExternal = Boolean(item.external);
                 return (
@@ -68,7 +69,7 @@ export function EcosystemRoadmap({
                     href={resolveGyraRoute(item.route, routeBase)}
                     target={isExternal ? "_blank" : undefined}
                     rel={isExternal ? "noreferrer" : undefined}
-                    className="group relative flex flex-col justify-between border-b border-r border-[#1F1F1F] bg-black p-7 transition-colors duration-150 hover:bg-[#080808] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[#5B9EC2]"
+                    className="group relative flex flex-col justify-between border-b border-r border-[#D4DFE9] bg-white p-7 transition-colors duration-150 hover:bg-[#F1F6FA] dark:border-[#1F1F1F] dark:bg-black dark:hover:bg-[#080808] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[#5B9EC2]"
                   >
                     <div>
                       <div className="flex items-center justify-between gap-2 font-mono-tech text-[10px] tracking-[0.1em] uppercase">
@@ -85,13 +86,13 @@ export function EcosystemRoadmap({
                       </div>
 
                       <div className="mt-5 flex items-center justify-between gap-2">
-                        <h3 className="font-display text-[22px] font-bold tracking-[-0.01em] text-white uppercase transition-colors group-hover:text-[#5B9EC2]">
+                        <h3 className="font-display text-[22px] font-bold tracking-[-0.01em] text-[#0B1218] uppercase transition-colors group-hover:text-[#1B587A] dark:text-white dark:group-hover:text-[#5B9EC2]">
                           {item.name}
                         </h3>
                         <ArrowUpRight className="h-4 w-4 shrink-0 text-[#666666] transition-transform duration-150 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[#5B9EC2]" />
                       </div>
 
-                      <p className="mt-2.5 text-[14px] leading-[1.6] text-[#8E8E8E]">
+                      <p className="mt-2.5 text-[14px] leading-[1.6] text-[#4A5B6B] dark:text-[#8E8E8E]">
                         {item.description}
                       </p>
                     </div>
@@ -107,23 +108,23 @@ export function EcosystemRoadmap({
               <span className="text-[#737373]">[ In Development · Roadmap ]</span>
               <a
                 href={resolveGyraRoute("/changelog", routeBase)}
-                className="inline-flex items-center gap-1 text-white underline decoration-[#303030] underline-offset-4 hover:text-[#5B9EC2] hover:decoration-[#5B9EC2]"
+                className="inline-flex items-center gap-1 text-[#0B1218] underline decoration-[#C5D3DF] underline-offset-4 hover:text-[#1B587A] hover:decoration-[#1B587A] dark:text-white dark:decoration-[#303030] dark:hover:text-[#5B9EC2] dark:hover:decoration-[#5B9EC2]"
               >
                 Shipped releases in Changelog
                 <ArrowUpRight className="h-3.5 w-3.5" />
               </a>
             </div>
-            <div className="grid grid-cols-1 border-l border-t border-[#1F1F1F] sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 border-l border-t border-[#D4DFE9] dark:border-[#1F1F1F] sm:grid-cols-2 lg:grid-cols-4">
               {ROADMAP_ITEMS.map((item) => (
                 <div
                   key={item.id}
-                  className="border-b border-r border-[#1F1F1F] bg-[#040404] p-5"
+                  className="border-b border-r border-[#D4DFE9] bg-white p-5 dark:border-[#1F1F1F] dark:bg-[#040404]"
                 >
                   <p className="font-mono-tech text-[10px] tracking-[0.12em] text-[#5B9EC2] uppercase">
                     {item.scope}
                   </p>
-                  <h3 className="mt-2 text-[15px] font-semibold text-white">{item.name}</h3>
-                  <p className="mt-1.5 text-[13px] leading-[1.55] text-[#808080]">
+                  <h3 className="mt-2 text-[15px] font-semibold text-[#0B1218] dark:text-white">{item.name}</h3>
+                  <p className="mt-1.5 text-[13px] leading-[1.55] text-[#4E6070] dark:text-[#808080]">
                     {item.description}
                   </p>
                 </div>
@@ -134,7 +135,7 @@ export function EcosystemRoadmap({
       </section>
 
       {/* Iconic E2B-Style Dithered Pre-Footer CTA Stage */}
-      <section className="relative overflow-hidden border-b border-[#1F1F1F] bg-black py-24 lg:py-32">
+      <section className="relative overflow-hidden border-b border-[#DCE4EC] bg-white py-24 transition-colors duration-200 lg:py-32 dark:border-[#1F1F1F] dark:bg-black">
         <div
           aria-hidden="true"
           className="gyra-dither-backdrop pointer-events-none absolute inset-0 opacity-60"
@@ -144,19 +145,19 @@ export function EcosystemRoadmap({
           className="pointer-events-none absolute inset-0"
           style={{
             background:
-              "radial-gradient(circle at 50% 50%, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.72) 50%, rgba(0,0,0,0.25) 100%)",
+              "var(--gl-cta-glow)",
           }}
         />
 
         <div className="relative mx-auto flex max-w-[920px] flex-col items-center px-5 text-center sm:px-8">
-          <p className="font-mono-tech border border-[#242424] bg-black px-3.5 py-1.5 text-[11px] tracking-[0.14em] text-[#CCCCCC] uppercase">
+          <p className="font-mono-tech border border-[#D4DFE9] bg-[#F6F8FA] px-3.5 py-1.5 text-[11px] tracking-[0.14em] text-[#354656] uppercase dark:border-[#242424] dark:bg-black dark:text-[#CCCCCC]">
             Genvia AI Company · Unified Platform
           </p>
 
-          <h2 className="font-display mt-6 text-[clamp(2.75rem,5.4vw,4.75rem)] font-bold leading-[0.94] tracking-[-0.02em] text-white uppercase">
-            One intelligence
+          <h2 className="font-display mt-6 text-[clamp(2.75rem,5.4vw,4.75rem)] leading-[0.94] tracking-[-0.02em] uppercase">
+            <span className="font-light text-[#4A5C6E] dark:text-white/75">One intelligence.</span>
             <br />
-            <span className="text-[#5B9EC2]">every medium</span>
+            <span className="font-bold text-[#1B587A] dark:text-[#78B0CE]">Every medium.</span>
           </h2>
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
@@ -168,7 +169,7 @@ export function EcosystemRoadmap({
             </a>
             <a
               href={resolveGyraRoute("/docs", routeBase)}
-              className="font-mono-tech inline-flex min-h-[46px] shrink-0 items-center justify-center border border-[#3A3A3A] bg-black px-7 text-[13px] font-medium tracking-[0.1em] text-white uppercase transition-colors hover:border-white"
+              className="font-mono-tech inline-flex min-h-[46px] shrink-0 items-center justify-center border border-[#C6D3DF] bg-white px-7 text-[13px] font-medium tracking-[0.1em] text-[#0B1218] uppercase transition-colors hover:border-[#1B587A] dark:border-[#3A3A3A] dark:bg-black dark:text-white dark:hover:border-white"
             >
               Read Documentation
             </a>
@@ -177,7 +178,7 @@ export function EcosystemRoadmap({
           <button
             type="button"
             onClick={handleCopyEndpoint}
-            className="font-mono-tech mt-6 inline-flex items-center gap-2 text-[12px] text-[#808080] transition-colors hover:text-white"
+            className="font-mono-tech mt-6 inline-flex items-center gap-2 text-[12px] text-[#56687A] transition-colors hover:text-[#0B1218] dark:text-[#808080] dark:hover:text-white"
           >
             <span>POST https://gyra.ng/api/v1/chat</span>
             {copiedEndpoint ? (
@@ -197,7 +198,7 @@ export function EcosystemRoadmap({
 
 export function LandingFooter({ routeBase = "" }: { routeBase?: string }) {
   return (
-      <footer className="bg-black py-16">
+      <footer className="bg-[#F6F8FA] py-16 transition-colors duration-200 dark:bg-black">
         <div className="mx-auto max-w-[1380px] px-5 sm:px-8">
           <div className="grid grid-cols-2 gap-10 md:grid-cols-6">
             <div className="col-span-2">
@@ -206,11 +207,11 @@ export function LandingFooter({ routeBase = "" }: { routeBase?: string }) {
                 className="inline-flex items-center gap-2.5"
               >
                 <GyraLogoMark size={40} />
-                <span className="font-display text-[21px] font-bold tracking-[0.07em] text-white uppercase">
+                <span className="font-display text-[21px] font-bold tracking-[0.07em] text-[#0B1218] uppercase dark:text-white">
                   Gyra
                 </span>
               </a>
-              <p className="mt-4 max-w-[28ch] text-[13px] leading-[1.6] text-[#808080]">
+              <p className="mt-4 max-w-[28ch] text-[13px] leading-[1.6] text-[#4E6070] dark:text-[#808080]">
                 {GYRA_COMPANY.tagline} Built by {GYRA_COMPANY.parentCompany}.
               </p>
               <a
@@ -225,29 +226,29 @@ export function LandingFooter({ routeBase = "" }: { routeBase?: string }) {
               <h3 className="font-mono-tech text-[11px] tracking-[0.12em] text-[#666666] uppercase">
                 Products
               </h3>
-              <ul className="mt-4 space-y-2.5 text-[13px] text-[#A3A3A3]">
+              <ul className="mt-4 space-y-2.5 text-[13px] text-[#475868] dark:text-[#A3A3A3]">
                 <li>
-                  <a href={resolveGyraRoute("/dashboard", routeBase)} className="hover:text-white">
+                  <a href={resolveGyraRoute("/dashboard", routeBase)} className="hover:text-[#0B1218] dark:hover:text-white">
                     Gyra Chat
                   </a>
                 </li>
                 <li>
-                  <a href="#image" className="hover:text-white">
+                  <a href="#image" className="hover:text-[#0B1218] dark:hover:text-white">
                     Gyra Image
                   </a>
                 </li>
                 <li>
-                  <a href={resolveGyraRoute("/studio", routeBase)} className="hover:text-white">
+                  <a href={resolveGyraRoute("/studio", routeBase)} className="hover:text-[#0B1218] dark:hover:text-white">
                     Gyra Video Studio
                   </a>
                 </li>
                 <li>
-                  <a href={resolveGyraRoute("/projects", routeBase)} className="hover:text-white">
+                  <a href={resolveGyraRoute("/projects", routeBase)} className="hover:text-[#0B1218] dark:hover:text-white">
                     Projects
                   </a>
                 </li>
                 <li>
-                  <a href={resolveGyraRoute("/products", routeBase)} className="hover:text-white">
+                  <a href={resolveGyraRoute("/products", routeBase)} className="hover:text-[#0B1218] dark:hover:text-white">
                     All Products
                   </a>
                 </li>
@@ -258,29 +259,29 @@ export function LandingFooter({ routeBase = "" }: { routeBase?: string }) {
               <h3 className="font-mono-tech text-[11px] tracking-[0.12em] text-[#666666] uppercase">
                 Developers
               </h3>
-              <ul className="mt-4 space-y-2.5 text-[13px] text-[#A3A3A3]">
+              <ul className="mt-4 space-y-2.5 text-[13px] text-[#475868] dark:text-[#A3A3A3]">
                 <li>
-                  <a href={resolveGyraRoute("/api", routeBase)} className="hover:text-white">
+                  <a href={resolveGyraRoute("/api", routeBase)} className="hover:text-[#0B1218] dark:hover:text-white">
                     API Overview
                   </a>
                 </li>
                 <li>
-                  <a href={resolveGyraRoute("/docs", routeBase)} className="hover:text-white">
+                  <a href={resolveGyraRoute("/docs", routeBase)} className="hover:text-[#0B1218] dark:hover:text-white">
                     Documentation
                   </a>
                 </li>
                 <li>
-                  <a href={resolveGyraRoute("/playground", routeBase)} className="hover:text-white">
+                  <a href={resolveGyraRoute("/playground", routeBase)} className="hover:text-[#0B1218] dark:hover:text-white">
                     Playground
                   </a>
                 </li>
                 <li>
-                  <a href={resolveGyraRoute("/console", routeBase)} className="hover:text-white">
+                  <a href={resolveGyraRoute("/console", routeBase)} className="hover:text-[#0B1218] dark:hover:text-white">
                     Console
                   </a>
                 </li>
                 <li>
-                  <a href={resolveGyraRoute("/api-keys", routeBase)} className="hover:text-white">
+                  <a href={resolveGyraRoute("/api-keys", routeBase)} className="hover:text-[#0B1218] dark:hover:text-white">
                     API Keys
                   </a>
                 </li>
@@ -291,29 +292,29 @@ export function LandingFooter({ routeBase = "" }: { routeBase?: string }) {
               <h3 className="font-mono-tech text-[11px] tracking-[0.12em] text-[#666666] uppercase">
                 Company
               </h3>
-              <ul className="mt-4 space-y-2.5 text-[13px] text-[#A3A3A3]">
+              <ul className="mt-4 space-y-2.5 text-[13px] text-[#475868] dark:text-[#A3A3A3]">
                 <li>
-                  <a href={resolveGyraRoute("/about", routeBase)} className="hover:text-white">
+                  <a href={resolveGyraRoute("/about", routeBase)} className="hover:text-[#0B1218] dark:hover:text-white">
                     About
                   </a>
                 </li>
                 <li>
-                  <a href={resolveGyraRoute("/changelog", routeBase)} className="hover:text-white">
+                  <a href={resolveGyraRoute("/changelog", routeBase)} className="hover:text-[#0B1218] dark:hover:text-white">
                     Changelog
                   </a>
                 </li>
                 <li>
-                  <a href={resolveGyraRoute("/contact", routeBase)} className="hover:text-white">
+                  <a href={resolveGyraRoute("/contact", routeBase)} className="hover:text-[#0B1218] dark:hover:text-white">
                     Contact
                   </a>
                 </li>
                 <li>
-                  <a href={resolveGyraRoute("/privacy", routeBase)} className="hover:text-white">
+                  <a href={resolveGyraRoute("/privacy", routeBase)} className="hover:text-[#0B1218] dark:hover:text-white">
                     Privacy
                   </a>
                 </li>
                 <li>
-                  <a href={resolveGyraRoute("/terms", routeBase)} className="hover:text-white">
+                  <a href={resolveGyraRoute("/terms", routeBase)} className="hover:text-[#0B1218] dark:hover:text-white">
                     Terms
                   </a>
                 </li>
@@ -324,14 +325,14 @@ export function LandingFooter({ routeBase = "" }: { routeBase?: string }) {
               <h3 className="font-mono-tech text-[11px] tracking-[0.12em] text-[#666666] uppercase">
                 Channels
               </h3>
-              <ul className="mt-4 space-y-2.5 text-[13px] text-[#A3A3A3]">
+              <ul className="mt-4 space-y-2.5 text-[13px] text-[#475868] dark:text-[#A3A3A3]">
                 {GYRA_COMPANY.socials.map((social) => (
                   <li key={social.id}>
                     <a
                       href={social.href}
                       target="_blank"
                       rel="noreferrer"
-                      className="hover:text-white"
+                      className="hover:text-[#0B1218] dark:hover:text-white"
                     >
                       {social.label}
                     </a>
@@ -341,16 +342,16 @@ export function LandingFooter({ routeBase = "" }: { routeBase?: string }) {
             </div>
           </div>
 
-          <div className="mt-14 flex flex-col items-start justify-between gap-4 border-t border-[#1F1F1F] pt-6 sm:flex-row sm:items-center">
+          <div className="mt-14 flex flex-col items-start justify-between gap-4 border-t border-[#DCE4EC] pt-6 dark:border-[#1F1F1F] sm:flex-row sm:items-center">
             <p className="font-mono-tech text-[11px] text-[#666666]">
               © {GYRA_COMPANY.foundedYear} {GYRA_COMPANY.brand} · {GYRA_COMPANY.parentCompany}. All
               rights reserved.
             </p>
             <div className="font-mono-tech flex items-center gap-6 text-[11px] text-[#808080] uppercase">
-              <a href={resolveGyraRoute("/upgrade", routeBase)} className="hover:text-white">
+              <a href={resolveGyraRoute("/upgrade", routeBase)} className="hover:text-[#0B1218] dark:hover:text-white">
                 SuperGyra Plans
               </a>
-              <a href={resolveGyraRoute("/status", routeBase)} className="hover:text-white">
+              <a href={resolveGyraRoute("/status", routeBase)} className="hover:text-[#0B1218] dark:hover:text-white">
                 System Status
               </a>
             </div>

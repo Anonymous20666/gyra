@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, Film, ImageIcon, Pause, Play, Volume2, VolumeX } from "lucide-react";
 import { formatStudioTimecode } from "../../lib/carouselPhysics";
+import { SmartImage, useSmartPreload } from "./SmartMedia";
 import {
   VIDEO_TEMPLATES,
   resolveGyraRoute,
@@ -23,6 +24,8 @@ export function VideoShowcase({ routeBase = "" }: VideoShowcaseProps) {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(5.0);
   const [isInView, setIsInView] = useState(false);
+  const [isBuffering, setIsBuffering] = useState(false);
+  useSmartPreload(VIDEO_TEMPLATES.map((t) => t.posterSrc));
 
   const sectionRef = useRef<HTMLElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -93,27 +96,28 @@ export function VideoShowcase({ routeBase = "" }: VideoShowcaseProps) {
     <section
       ref={sectionRef}
       id="video"
-      className="gyra-band-defer border-b border-[#1F1F1F] bg-black py-24 lg:py-32"
+      className="gyra-band-defer border-b border-[#DCE4EC] bg-white py-24 transition-colors duration-200 lg:py-32 dark:border-[#1F1F1F] dark:bg-black"
     >
       <div className="mx-auto max-w-[1380px] px-5 sm:px-8">
         {/* Header Row */}
         <div className="grid grid-cols-1 items-end gap-6 lg:grid-cols-12">
           <div className="lg:col-span-7">
-            <p className="font-mono-tech text-[12px] tracking-[0.14em] text-[#5B9EC2] uppercase">
-              03 · Gyra Video
+            <p className="font-mono-tech text-[12px] tracking-[0.14em] text-[#164E6D] uppercase dark:text-[#78B0CE]">
+              [ 03 · Gyra Video ]
             </p>
-            <h2 className="font-display mt-3.5 text-[clamp(2.35rem,4.2vw,3.75rem)] font-bold leading-[0.98] tracking-[-0.02em] text-white uppercase [text-wrap:balance]">
-              Direct cinematic motion from text or reference frames.
+            <h2 className="font-display mt-3.5 text-[clamp(2.35rem,4.2vw,3.75rem)] leading-[0.96] tracking-[-0.02em] uppercase [text-wrap:balance]">
+              <span className="font-light text-[#4A5C6E] dark:text-white/75">Direct cinematic motion</span>{" "}
+              <span className="font-bold text-[#0B1218] dark:text-white">from text or reference frames.</span>
             </h2>
           </div>
           <div className="lg:col-span-5 lg:pl-6">
-            <p className="text-[15px] leading-[1.65] text-[#9A9A9A]">
+            <p className="text-[15px] leading-[1.65] text-[#4A5B6B] dark:text-[#9A9A9A]">
               Direct 720p, 24 fps clips from text prompts or attached still frames. Scrub
               real-time frames, morph between 16:9 and 9:16, and queue renders in Studio.
             </p>
             <a
               href={resolveGyraRoute("/studio", routeBase)}
-              className="font-mono-tech mt-4 inline-flex items-center gap-1.5 text-[12px] tracking-[0.1em] text-white uppercase underline decoration-[#5B9EC2] underline-offset-4 transition-colors hover:text-[#5B9EC2]"
+              className="font-mono-tech mt-4 inline-flex items-center gap-1.5 text-[12px] tracking-[0.1em] text-[#0B1218] uppercase underline decoration-[#1B587A] underline-offset-4 transition-colors hover:text-[#1B587A] dark:text-white dark:decoration-[#5B9EC2] dark:hover:text-[#5B9EC2]"
             >
               Open Gyra Studio
               <ArrowUpRight className="h-3.5 w-3.5" />
@@ -122,9 +126,9 @@ export function VideoShowcase({ routeBase = "" }: VideoShowcaseProps) {
         </div>
 
         {/* Pitch-Black Cinema Deck */}
-        <div className="mt-12 border border-[#1F1F1F] bg-black">
+        <div className="mt-12 border border-[#D4DFE9] bg-white shadow-[0_22px_60px_-34px_rgba(11,18,24,0.18)] dark:border-[#1F1F1F] dark:bg-black dark:shadow-none">
           {/* Control Strip */}
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#1F1F1F] bg-[#050505] px-4 py-3 sm:px-5">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#DCE4EC] bg-[#F7FAFC] px-4 py-3 sm:px-5 dark:border-[#1F1F1F] dark:bg-[#050505]">
             <div className="flex flex-wrap items-center gap-3">
               <div
                 role="tablist"
@@ -139,7 +143,7 @@ export function VideoShowcase({ routeBase = "" }: VideoShowcaseProps) {
                   className={`font-mono-tech inline-flex min-h-[34px] items-center gap-1.5 px-3 text-[11px] tracking-[0.06em] uppercase transition-colors cursor-pointer ${
                     inputMode === "text-to-video"
                       ? "bg-[#1F5B7C] font-medium text-white"
-                      : "bg-black text-[#8A8A8A] hover:text-white"
+                      : "bg-white text-[#526475] hover:text-[#0B1218] dark:bg-black dark:text-[#8A8A8A] dark:hover:text-white"
                   }`}
                 >
                   <Film className="h-3.5 w-3.5" />
@@ -153,7 +157,7 @@ export function VideoShowcase({ routeBase = "" }: VideoShowcaseProps) {
                   className={`font-mono-tech inline-flex min-h-[34px] items-center gap-1.5 border-l border-[#242424] px-3 text-[11px] tracking-[0.06em] uppercase transition-colors cursor-pointer ${
                     inputMode === "image-to-video"
                       ? "bg-[#1F5B7C] font-medium text-white"
-                      : "bg-black text-[#8A8A8A] hover:text-white"
+                      : "bg-white text-[#526475] hover:text-[#0B1218] dark:bg-black dark:text-[#8A8A8A] dark:hover:text-white"
                   }`}
                 >
                   <ImageIcon className="h-3.5 w-3.5" />
@@ -173,7 +177,7 @@ export function VideoShowcase({ routeBase = "" }: VideoShowcaseProps) {
                     } ${
                       aspect === ratio
                         ? "bg-white font-medium text-black"
-                        : "bg-black text-[#8A8A8A] hover:text-white"
+                        : "bg-white text-[#526475] hover:text-[#0B1218] dark:bg-black dark:text-[#8A8A8A] dark:hover:text-white"
                     }`}
                   >
                     {ratio}
@@ -190,7 +194,7 @@ export function VideoShowcase({ routeBase = "" }: VideoShowcaseProps) {
                 type="button"
                 onClick={() => setIsPlaying((playing) => !playing)}
                 aria-label={isPlaying ? "Pause video showcase" : "Play video showcase"}
-                className="font-mono-tech inline-flex min-h-[34px] items-center gap-1.5 border border-[#262626] bg-black px-3 text-[11px] tracking-[0.06em] text-[#D4D4D4] uppercase hover:border-white hover:text-white cursor-pointer"
+                className="font-mono-tech inline-flex min-h-[34px] items-center gap-1.5 border border-[#D4DFE9] bg-white px-3 text-[11px] tracking-[0.06em] text-[#1D2B38] dark:border-[#262626] dark:bg-black dark:text-[#D4D4D4] uppercase hover:border-white hover:text-white cursor-pointer"
               >
                 {isPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
                 {isPlaying ? "Pause" : "Play"}
@@ -199,7 +203,7 @@ export function VideoShowcase({ routeBase = "" }: VideoShowcaseProps) {
                 type="button"
                 onClick={() => setIsMuted((muted) => !muted)}
                 aria-label={isMuted ? "Unmute video showcase" : "Mute video showcase"}
-                className="inline-flex h-[34px] w-[34px] items-center justify-center border border-[#262626] bg-black text-[#D4D4D4] hover:border-white hover:text-white cursor-pointer"
+                className="inline-flex h-[34px] w-[34px] items-center justify-center border border-[#D4DFE9] bg-white text-[#1D2B38] hover:border-[#0B1218] hover:text-[#0B1218] dark:border-[#262626] dark:bg-black dark:text-[#D4D4D4] dark:hover:border-white dark:hover:text-white cursor-pointer"
               >
                 {isMuted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
               </button>
@@ -207,7 +211,7 @@ export function VideoShowcase({ routeBase = "" }: VideoShowcaseProps) {
           </div>
 
           {/* Monitor + Director Rail */}
-          <div className="grid grid-cols-1 divide-y divide-[#1F1F1F] lg:grid-cols-12 lg:divide-x lg:divide-y-0">
+          <div className="grid grid-cols-1 divide-y divide-[#DCE4EC] lg:grid-cols-12 lg:divide-x lg:divide-y-0 dark:divide-[#1F1F1F]">
             {/* Cinema Stage + Interactive Frame Scrubber */}
             <div className="flex flex-col justify-between bg-[#030303] p-5 sm:p-7 lg:col-span-8">
               <div className="flex flex-1 items-center justify-center">
@@ -225,7 +229,9 @@ export function VideoShowcase({ routeBase = "" }: VideoShowcaseProps) {
                     poster={preset.posterSrc}
                     width={1280}
                     height={720}
-                    preload="none"
+                    preload="metadata"
+                    onLoadStart={() => setIsBuffering(true)}
+                    onCanPlay={() => setIsBuffering(false)}
                     loop
                     muted={isMuted}
                     playsInline
@@ -245,6 +251,12 @@ export function VideoShowcase({ routeBase = "" }: VideoShowcaseProps) {
                     }}
                     className="h-full w-full object-cover gyra-video-fade"
                   />
+                  {isBuffering && (
+                    <div
+                      aria-hidden="true"
+                      className="gyra-smart-shimmer pointer-events-none absolute inset-0 z-10 opacity-45"
+                    />
+                  )}
                   <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
 
                   {/* Crisp Cinema Viewfinder Corner Reticles */}
@@ -296,33 +308,23 @@ export function VideoShowcase({ routeBase = "" }: VideoShowcaseProps) {
             </div>
 
             {/* Director Rail */}
-            <div className="flex flex-col justify-between bg-black p-5 sm:p-6 lg:col-span-4">
+            <div className="flex flex-col justify-between bg-white p-5 sm:p-6 lg:col-span-4 dark:bg-black">
               <div>
                 {inputMode === "image-to-video" && (
-                  <div className="mb-5 border border-[#1E3346] bg-[#040A10] p-3">
+                  <div className="mb-5 border border-[#DCE5EE] bg-[#F7FAFC] p-3 dark:border-[#1E3346] dark:bg-[#040A10]">
                     <div className="flex items-center justify-between font-mono-tech text-[10px] uppercase">
-                      <span className="text-[#78B0CE]">Attached Reference Frame</span>
-                      <span className="text-[#34D399]">Locked · F001</span>
+                      <span className="text-[#164E6D] dark:text-[#78B0CE]">Attached Reference Frame</span>
+                      <span className="text-[#4A9A80]">Locked · F001</span>
                     </div>
                     <div className="mt-2.5 aspect-[16/9] overflow-hidden border border-[#24384A]">
-                      <picture className="block h-full w-full">
-                        {preset.referenceStillSrc.endsWith("video-ref-lagos.jpg") && (
-                          <source
-                            srcSet={preset.referenceStillSrc.replace(/\.jpg$/i, ".webp")}
-                            type="image/webp"
-                          />
-                        )}
-                        <img
-                          src={preset.referenceStillSrc}
-                          alt={`Reference frame for ${preset.label}`}
-                          width={1376}
-                          height={768}
-                          loading="lazy"
-                          decoding="async"
-                          referrerPolicy="no-referrer"
-                          className="h-full w-full object-cover"
-                        />
-                      </picture>
+                      <SmartImage
+                        src={preset.referenceStillSrc}
+                        alt={`Reference frame for ${preset.label}`}
+                        width={1376}
+                        height={768}
+                        wrapperClassName="h-full w-full"
+                        className="h-full w-full object-cover"
+                      />
                     </div>
                   </div>
                 )}
@@ -330,12 +332,12 @@ export function VideoShowcase({ routeBase = "" }: VideoShowcaseProps) {
                 <p className="font-mono-tech text-[10px] tracking-[0.12em] text-[#737373] uppercase">
                   Motion Prompt
                 </p>
-                <p className="mt-2 text-[14px] leading-[1.6] text-white">{preset.prompt}</p>
+                <p className="mt-2 text-[13.5px] leading-[1.6] text-[#1D2B38] dark:text-white">{preset.prompt}</p>
 
                 <p className="font-mono-tech mt-6 text-[10px] tracking-[0.12em] text-[#737373] uppercase">
                   Studio Presets
                 </p>
-                <div className="mt-2.5 divide-y divide-[#1A1A1A] border border-[#1F1F1F]">
+                <div className="mt-2.5 max-h-[380px] overflow-y-auto divide-y divide-[#E4EBF2] border border-[#DCE4EC] dark:divide-[#1A1A1A] dark:border-[#1F1F1F]">
                   {VIDEO_TEMPLATES.map((item) => {
                     const active = item.id === preset.id;
                     return (
@@ -346,14 +348,14 @@ export function VideoShowcase({ routeBase = "" }: VideoShowcaseProps) {
                         aria-pressed={active}
                         className={`flex w-full items-center justify-between px-3.5 py-3 text-left transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[#5B9EC2] ${
                           active
-                            ? "bg-[#0C2131] text-white"
-                            : "bg-black text-[#8A8A8A] hover:bg-[#080808] hover:text-white"
+                            ? "bg-[#E9F3FA] text-[#0B1218] dark:bg-[#0C2131] dark:text-white"
+                            : "bg-white text-[#4A5C6E] hover:bg-[#F7FAFC] hover:text-[#0B1218] dark:bg-black dark:text-[#8A8A8A] dark:hover:bg-[#080808] dark:hover:text-white"
                         }`}
                       >
                         <span className="text-[13px] font-medium">{item.label}</span>
                         <span
                           className={`font-mono-tech text-[10px] uppercase ${
-                            active ? "text-[#78B0CE]" : "text-[#666666]"
+                            active ? "text-[#164E6D] dark:text-[#78B0CE]" : "text-[#6E8091] dark:text-[#666666]"
                           }`}
                         >
                           {item.category}
@@ -364,10 +366,10 @@ export function VideoShowcase({ routeBase = "" }: VideoShowcaseProps) {
                 </div>
               </div>
 
-              <div className="mt-6 border-t border-[#1A1A1A] pt-5">
+              <div className="mt-6 border-t border-[#E4EBF2] pt-5 dark:border-[#1A1A1A]">
                 <div className="flex items-center justify-between font-mono-tech text-[11px]">
                   <span className="text-[#737373] uppercase">Queue Cost</span>
-                  <span className="text-white">$2.00 / render · SuperGyra</span>
+                  <span className="text-[#0B1218] dark:text-white">$2.00 / render · SuperGyra</span>
                 </div>
                 <a
                   href={resolveGyraRoute("/studio", routeBase)}

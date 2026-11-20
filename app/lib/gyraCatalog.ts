@@ -49,7 +49,7 @@ export const GYRA_COMPANY = {
   socials: [
     { id: "x", label: "X", href: "https://x.com/GyraAi" },
     { id: "telegram-news", label: "Telegram News", href: "https://t.me/GenviaNews" },
-    { id: "telegram-bot", label: "Telegram Bot", href: "https://t.me/Gyra_AiBot" },
+    { id: "telegram-bot", label: "Telegram Bot", href: "https://t.me/GyraAi" },
     { id: "youtube", label: "YouTube", href: "https://youtube.com/@Gyra_Ai" },
     { id: "tiktok", label: "TikTok", href: "https://tiktok.com/@gyraai" },
   ],
@@ -153,9 +153,9 @@ export const ECOSYSTEM_ITEMS: readonly EcosystemItem[] = [
     availability: "available",
     description:
       "Real-time streaming access to Gyra directly inside Telegram with multi-agent assistance on mobile.",
-    route: "https://t.me/Gyra_AiBot",
+    route: "https://t.me/GyraAi",
     external: true,
-    meta: "@Gyra_AiBot · Live SSE",
+    meta: "@GyraAi · Live SSE",
   },
   {
     id: "api-ai",

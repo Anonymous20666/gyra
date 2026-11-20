@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, ChevronLeft, ChevronRight, Maximize2, MoveHorizontal } from "lucide-react";
 import { ImageLightboxModal } from "./ImageLightboxModal";
+import { useSmartPreload } from "./SmartMedia";
 import {
   getNearestIndex,
   getWrappedDelta,
@@ -249,6 +250,12 @@ export function ImageShowcase({ routeBase = "" }: ImageShowcaseProps) {
 
   const activeIdx = getNearestIndex(renderOffset, itemCount);
   const selectedSpecimen = IMAGE_PRESETS[activeIdx] ?? IMAGE_PRESETS[0];
+  useSmartPreload([
+    IMAGE_PRESETS[(activeIdx + 1) % itemCount]?.imageSrc ?? "",
+    IMAGE_PRESETS[(activeIdx - 1 + itemCount) % itemCount]?.imageSrc ?? "",
+    IMAGE_EDIT_SHOWCASE.beforeSrc,
+    IMAGE_EDIT_SHOWCASE.afterSrc,
+  ]);
 
   const updateSplitFromClientX = (clientX: number) => {
     const stage = splitStageRef.current;
@@ -260,26 +267,27 @@ export function ImageShowcase({ routeBase = "" }: ImageShowcaseProps) {
   };
 
   return (
-    <section id="image" className="gyra-band-defer border-b border-[#1F1F1F] bg-black py-24 lg:py-32">
+    <section id="image" className="gyra-band-defer border-b border-[#DCE4EC] bg-[#F6F8FA] py-24 transition-colors duration-200 lg:py-32 dark:border-[#1F1F1F] dark:bg-black">
       <div className="mx-auto max-w-[1380px] px-5 sm:px-8">
         {/* Header Row */}
         <div className="grid grid-cols-1 items-end gap-6 lg:grid-cols-12">
           <div className="lg:col-span-7">
-            <p className="font-mono-tech text-[12px] tracking-[0.14em] text-[#5B9EC2] uppercase">
-              02 · Gyra Image
+            <p className="font-mono-tech text-[12px] tracking-[0.14em] text-[#164E6D] uppercase dark:text-[#78B0CE]">
+              [ 02 · Gyra Image ]
             </p>
-            <h2 className="font-display mt-3.5 text-[clamp(2.35rem,4.2vw,3.75rem)] font-bold leading-[0.98] tracking-[-0.02em] text-white uppercase [text-wrap:balance]">
-              Visual synthesis and surgical image-to-image editing.
+            <h2 className="font-display mt-3.5 text-[clamp(2.35rem,4.2vw,3.75rem)] leading-[0.96] tracking-[-0.02em] uppercase [text-wrap:balance]">
+              <span className="font-light text-[#4A5C6E] dark:text-white/75">Visual synthesis and</span>{" "}
+              <span className="font-bold text-[#0B1218] dark:text-white">surgical image-to-image editing.</span>
             </h2>
           </div>
           <div className="lg:col-span-5 lg:pl-6">
-            <p className="text-[15px] leading-[1.65] text-[#9A9A9A]">
+            <p className="text-[15px] leading-[1.65] text-[#4A5B6B] dark:text-[#9A9A9A]">
               Swipe or flick the momentum gallery to inspect studio-grade Flux renders, or switch
               to Pro Ultra for pixel-registered geometry-locked lighting edits.
             </p>
             <a
               href={resolveGyraRoute("/dashboard", routeBase)}
-              className="font-mono-tech mt-4 inline-flex items-center gap-1.5 text-[12px] tracking-[0.1em] text-white uppercase underline decoration-[#5B9EC2] underline-offset-4 transition-colors hover:text-[#5B9EC2]"
+              className="font-mono-tech mt-4 inline-flex items-center gap-1.5 text-[12px] tracking-[0.1em] text-[#0B1218] uppercase underline decoration-[#1B587A] underline-offset-4 transition-colors hover:text-[#1B587A] dark:text-white dark:decoration-[#5B9EC2] dark:hover:text-[#5B9EC2]"
             >
               Create with Gyra Image
               <ArrowUpRight className="h-3.5 w-3.5" />
@@ -288,9 +296,9 @@ export function ImageShowcase({ routeBase = "" }: ImageShowcaseProps) {
         </div>
 
         {/* Pitch-Black Optical Darkroom */}
-        <div className="mt-12 border border-[#1F1F1F] bg-black">
+        <div className="mt-12 border border-[#D4DFE9] bg-white shadow-[0_22px_60px_-34px_rgba(11,18,24,0.18)] dark:border-[#1F1F1F] dark:bg-black dark:shadow-none">
           {/* Mode Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#1F1F1F] bg-[#050505] px-4 py-3 sm:px-5">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#DCE4EC] bg-[#F7FAFC] px-4 py-3 sm:px-5 dark:border-[#1F1F1F] dark:bg-[#050505]">
             <div role="tablist" aria-label="Gyra Image modes" className="flex flex-wrap gap-1.5">
               <button
                 id="gyra-image-tab-generate"
@@ -302,7 +310,7 @@ export function ImageShowcase({ routeBase = "" }: ImageShowcaseProps) {
                 className={`font-mono-tech min-h-[34px] border px-3.5 text-[11px] tracking-[0.08em] uppercase transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#5B9EC2] ${
                   mode === "generate"
                     ? "border-[#5B9EC2] bg-[#1F5B7C] font-medium text-white"
-                    : "border-[#242424] bg-black text-[#8A8A8A] hover:border-[#444] hover:text-white"
+                    : "border-[#D4DFE9] bg-white text-[#4A5C6E] hover:border-[#1B587A] hover:text-[#0B1218] dark:border-[#242424] dark:bg-black dark:text-[#8A8A8A] dark:hover:border-[#444] dark:hover:text-white"
                 }`}
               >
                 Text-to-Image · Flux Deck
@@ -317,7 +325,7 @@ export function ImageShowcase({ routeBase = "" }: ImageShowcaseProps) {
                 className={`font-mono-tech min-h-[34px] border px-3.5 text-[11px] tracking-[0.08em] uppercase transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#5B9EC2] ${
                   mode === "edit"
                     ? "border-[#5B9EC2] bg-[#1F5B7C] font-medium text-white"
-                    : "border-[#242424] bg-black text-[#8A8A8A] hover:border-[#444] hover:text-white"
+                    : "border-[#D4DFE9] bg-white text-[#4A5C6E] hover:border-[#1B587A] hover:text-[#0B1218] dark:border-[#242424] dark:bg-black dark:text-[#8A8A8A] dark:hover:border-[#444] dark:hover:text-white"
                 }`}
               >
                 Image-to-Image · Pro Ultra
@@ -492,20 +500,20 @@ export function ImageShowcase({ routeBase = "" }: ImageShowcaseProps) {
               </div>
 
               {/* Right 4 cols: Specimen Inspector & Quick Filmstrip Selector */}
-              <div className="flex flex-col justify-between bg-black p-5 sm:p-6 lg:col-span-4">
+              <div className="flex flex-col justify-between bg-white p-5 sm:p-6 lg:col-span-4 dark:bg-black">
                 <div>
                   <p className="font-mono-tech text-[10px] tracking-[0.12em] text-[#5B9EC2] uppercase">
                     Active Specimen · {selectedSpecimen.category}
                   </p>
-                  <h3 className="font-display mt-1.5 text-[26px] font-bold leading-tight text-white uppercase">
+                  <h3 className="font-display mt-1.5 text-[26px] font-bold leading-tight text-[#0B1218] uppercase dark:text-white">
                     {selectedSpecimen.title}
                   </h3>
 
-                  <div className="mt-4 border border-[#1B2A38] bg-[#04090F] p-3.5">
+                  <div className="mt-4 border border-[#DCE5EE] bg-[#F7FAFC] p-3.5 dark:border-[#1B2A38] dark:bg-[#04090F]">
                     <p className="font-mono-tech text-[10px] tracking-[0.1em] text-[#6E8599] uppercase">
                       Generation Prompt
                     </p>
-                    <p className="mt-1.5 text-[13px] leading-[1.6] text-[#D8E5F0]">
+                    <p className="mt-1.5 text-[13px] leading-[1.6] text-[#354656] dark:text-[#D8E5F0]">
                       {selectedSpecimen.prompt}
                     </p>
                   </div>
@@ -550,14 +558,14 @@ export function ImageShowcase({ routeBase = "" }: ImageShowcaseProps) {
                     </div>
                   </div>
 
-                  <dl className="mt-5 divide-y divide-[#1A1A1A] border-y border-[#1A1A1A] text-[12.5px]">
+                  <dl className="mt-5 divide-y divide-[#E4EBF2] border-y border-[#E4EBF2] text-[12.5px] dark:divide-[#1A1A1A] dark:border-[#1A1A1A]">
                     <div className="flex items-center justify-between py-2.5">
                       <dt className="text-[#808080]">Engine</dt>
-                      <dd className="font-mono-tech text-white">{selectedSpecimen.modelLabel}</dd>
+                      <dd className="font-mono-tech text-[#0B1218] dark:text-white">{selectedSpecimen.modelLabel}</dd>
                     </div>
                     <div className="flex items-center justify-between py-2.5">
                       <dt className="text-[#808080]">Resolution</dt>
-                      <dd className="font-mono-tech text-[#D4D4D4]">{selectedSpecimen.resolution}</dd>
+                      <dd className="font-mono-tech text-[#3D4F60] dark:text-[#D4D4D4]">{selectedSpecimen.resolution}</dd>
                     </div>
                   </dl>
                 </div>
@@ -714,7 +722,7 @@ export function ImageShowcase({ routeBase = "" }: ImageShowcaseProps) {
               </div>
 
               {/* Right 4 cols: Edit Specification Ledger */}
-              <div className="flex flex-col justify-between bg-black p-5 sm:p-6 lg:col-span-4">
+              <div className="flex flex-col justify-between bg-white p-5 sm:p-6 lg:col-span-4 dark:bg-black">
                 <div>
                   <p className="font-mono-tech text-[10px] tracking-[0.12em] text-[#5B9EC2] uppercase">
                     Edit Instruction

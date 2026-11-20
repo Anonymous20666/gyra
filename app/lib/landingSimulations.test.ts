@@ -52,12 +52,16 @@ test("agent pipeline timing and stepping logic are deterministic", () => {
 test("all showcase media references point to local optimized assets", () => {
   assert.ok(IMAGE_EDIT_SHOWCASE.beforeSrc.startsWith("/showcase/"));
   assert.ok(IMAGE_EDIT_SHOWCASE.afterSrc.startsWith("/showcase/"));
+  assert.ok(IMAGE_PRESETS.length >= 12);
+  assert.ok(VIDEO_TEMPLATES.length >= 7);
+  assert.equal(VIDEO_TEMPLATES[0].id, "headset-reveal");
+  assert.ok(VIDEO_TEMPLATES.some((t) => t.id === "editorial-muse"));
   for (const preset of IMAGE_PRESETS) {
     assert.ok(preset.imageSrc.startsWith("/showcase/"));
   }
   for (const tpl of VIDEO_TEMPLATES) {
     assert.ok(tpl.videoSrc.endsWith(".mp4"));
-    assert.ok(tpl.posterSrc.endsWith(".jpg"));
+    assert.ok(tpl.posterSrc.endsWith(".jpg") || tpl.posterSrc.endsWith(".webp"));
   }
 });
 
@@ -81,5 +85,5 @@ test("resolveGyraRoute handles relative, hash, and external URLs safely", () => 
   assert.equal(resolveGyraRoute("/dashboard", "https://gyra.ng"), "https://gyra.ng/dashboard");
   assert.equal(resolveGyraRoute("/dashboard", ""), "/dashboard");
   assert.equal(resolveGyraRoute("#chat", "https://gyra.ng"), "#chat");
-  assert.equal(resolveGyraRoute("https://t.me/Gyra_AiBot", "https://gyra.ng"), "https://t.me/Gyra_AiBot");
+  assert.equal(resolveGyraRoute("https://t.me/GyraAi", "https://gyra.ng"), "https://t.me/GyraAi");
 });

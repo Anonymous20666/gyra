@@ -1,0 +1,1885 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Adv 05 · Living Synaptic Neural Flow & Wired SaaS Result Console · Gyra</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #000000;
+      --surface: #04080D;
+      --surface-2: #070E16;
+      --surface-3: #0A1520;
+      --border: #152433;
+      --border-soft: #101C28;
+      --border-active: #2E6485;
+      --steel: #1F5B7C;
+      --steel-hover: #296E93;
+      --steel-bright: #5B9EC2;
+      --steel-ice: #9CC4DC;
+      --text: #F5F5F5;
+      --muted: #8698A8;
+      --muted-2: #5D7183;
+      --ok: #34D399;
+      --err: #F87171;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: "DM Sans", system-ui, sans-serif;
+      min-height: 100%;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+    .font-display { font-family: "Barlow Semi Condensed", sans-serif; letter-spacing: -0.02em; }
+    .font-mono { font-family: "JetBrains Mono", monospace; font-variant-numeric: tabular-nums; }
+
+    .page {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 20px 24px 44px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    /* Clean SaaS Header */
+    .topbar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 16px;
+      padding-bottom: 16px;
+      margin-bottom: 14px;
+      border-bottom: 1px solid #121D28;
+    }
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--steel-bright);
+      margin-bottom: 5px;
+    }
+    .kicker-dot {
+      width: 6px; height: 6px; border-radius: 999px;
+      background: var(--steel-ice);
+    }
+    .topbar h1 {
+      font-size: clamp(24px, 2.5vw, 34px);
+      line-height: 1.02;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #FFFFFF;
+    }
+    .topbar h1 span { color: var(--steel-bright); }
+    .topbar p {
+      font-size: 13.5px;
+      color: var(--muted);
+      margin-top: 5px;
+      max-width: 680px;
+      line-height: 1.45;
+    }
+
+    .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .btn {
+      background: #060C13;
+      color: #CFE0EC;
+      border: 1px solid var(--border);
+      padding: 8px 14px;
+      font-size: 10.5px;
+      letter-spacing: 0.11em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 240ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .btn:hover { border-color: var(--steel-bright); background: #0A1825; color: #FFFFFF; }
+    .btn.primary { background: var(--steel); border-color: var(--steel-ice); color: #FFFFFF; }
+    .btn.primary:hover { background: var(--steel-hover); }
+    .btn.danger { border-color: rgba(248, 113, 113, 0.4); color: #FCA5A5; }
+    .btn.danger.active { background: #2D1115; border-color: var(--err); color: #FFFFFF; }
+
+    /* =====================================================================
+       1. UNOBSTRUCTED FULL-WIDTH NEURAL CANOPY STAGE (ZERO OVERLAYS ON TREE!)
+       ===================================================================== */
+    .canopy-frame {
+      position: relative;
+      border: 1px solid var(--border);
+      border-bottom: none;
+      background: #000000;
+      height: 590px;
+      overflow: hidden;
+    }
+    #canopyCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: default;
+    }
+
+    /* Ultra-minimal hover pill (only appears on hover, never permanently covers tree) */
+    .orb-tip {
+      position: absolute;
+      z-index: 6;
+      pointer-events: none;
+      background: #040910;
+      border: 1px solid var(--border-active);
+      padding: 8px 12px;
+      max-width: 245px;
+      opacity: 0;
+      transform: translateY(5px);
+      transition: opacity 220ms ease, transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .orb-tip.visible { opacity: 1; transform: translateY(0); }
+    .orb-tip .ot-k { font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--steel-bright); }
+    .orb-tip .ot-t { font-size: 14px; font-weight: 700; text-transform: uppercase; color: #FFFFFF; margin-top: 2px; }
+    .orb-tip .ot-d { font-size: 11.5px; color: #A9BDCD; margin-top: 3px; line-height: 1.4; }
+
+    /* =====================================================================
+       2. DEDICATED WIRED SAAS EXECUTION & RESULT BOX (SEATED CLEANLY BELOW!)
+       ===================================================================== */
+    .wired-console {
+      position: relative;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      overflow: hidden;
+      transition: border-color 420ms ease;
+    }
+    .wired-console.state-running { border-color: #2B5E7D; }
+    .wired-console.state-done { border-color: rgba(52, 211, 153, 0.45); }
+    .wired-console.state-failed { border-color: rgba(248, 113, 113, 0.5); }
+
+    /* Illuminated Top Intake Line where the downward generator wires physically land */
+    .intake-rail {
+      position: relative;
+      height: 2px;
+      background: #101E2B;
+      overflow: hidden;
+    }
+    .intake-sweep {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent 0%, #5B9EC2 35%, #9CC4DC 50%, #5B9EC2 65%, transparent 100%);
+      transform: translateX(-100%);
+      opacity: 0;
+    }
+    .wired-console.port-hit .intake-sweep {
+      animation: portSweep 1.15s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    .wired-console.state-done .intake-sweep {
+      background: linear-gradient(90deg, transparent 0%, #34D399 40%, #A7F3D0 50%, #34D399 60%, transparent 100%);
+    }
+    .wired-console.state-failed .intake-sweep {
+      background: linear-gradient(90deg, transparent 0%, #F87171 40%, #FECACA 50%, #F87171 60%, transparent 100%);
+    }
+    @keyframes portSweep {
+      0% { transform: translateX(-100%); opacity: 0.9; }
+      50% { opacity: 1; }
+      100% { transform: translateX(100%); opacity: 0; }
+    }
+
+    /* Top Control & Status Bar inside the Wired Box */
+    .console-top {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      padding: 13px 20px;
+      background: #03060B;
+      border-bottom: 1px solid #12202D;
+    }
+    .status-cluster {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 11px;
+      border: 1px solid #1A2F42;
+      background: #060D15;
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--steel-ice);
+      transition: all 320ms ease;
+    }
+    .status-pill .pulse-dot {
+      width: 7px; height: 7px; border-radius: 999px;
+      background: var(--steel-bright);
+      transition: background 300ms ease, box-shadow 300ms ease;
+    }
+    .wired-console.state-running .status-pill {
+      border-color: var(--steel-bright);
+      color: #FFFFFF;
+    }
+    .wired-console.state-running .status-pill .pulse-dot {
+      background: #9CC4DC;
+      box-shadow: 0 0 10px #5B9EC2;
+      animation: softBreath 1.6s ease-in-out infinite;
+    }
+    .wired-console.state-done .status-pill {
+      border-color: rgba(52, 211, 153, 0.5);
+      background: #041614;
+      color: #A7F3D0;
+    }
+    .wired-console.state-done .status-pill .pulse-dot {
+      background: var(--ok);
+      box-shadow: 0 0 8px rgba(52, 211, 153, 0.6);
+    }
+    .wired-console.state-failed .status-pill {
+      border-color: rgba(248, 113, 113, 0.55);
+      background: #1C0A0D;
+      color: #FECACA;
+    }
+    .wired-console.state-failed .status-pill .pulse-dot {
+      background: var(--err);
+    }
+    @keyframes softBreath {
+      0%, 100% { transform: scale(1); opacity: 0.7; }
+      50% { transform: scale(1.25); opacity: 1; }
+    }
+
+    .intake-label {
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .intake-label strong { color: #E2EEF7; font-weight: 500; }
+
+    /* Product Switcher Segmented Control inside the Wired Box */
+    .product-switcher {
+      display: flex;
+      gap: 4px;
+      background: #050B11;
+      border: 1px solid #162636;
+      padding: 4px;
+      flex-wrap: wrap;
+    }
+    .prod-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: #93A8B9;
+      padding: 7px 12px;
+      font-size: 10.5px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      transition: all 240ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .prod-btn .p-dot {
+      width: 5px; height: 5px; border-radius: 999px;
+      background: #284C63;
+      transition: background 240ms ease;
+    }
+    .prod-btn:hover { color: #FFFFFF; background: #091724; }
+    .prod-btn.active { background: #0D273B; border-color: var(--steel-bright); color: #FFFFFF; }
+    .prod-btn.active .p-dot { background: var(--steel-ice); }
+    .prod-btn.done { border-color: rgba(52, 211, 153, 0.45); color: #FFFFFF; background: #061A17; }
+    .prod-btn.done .p-dot { background: var(--ok); }
+    .prod-btn.failed { border-color: rgba(248, 113, 113, 0.5); color: #FECACA; background: #1E0B0E; }
+    .prod-btn.failed .p-dot { background: var(--err); }
+
+    /* Main 2-Column SaaS Execution & Result Grid */
+    .console-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.15fr);
+      min-height: 292px;
+    }
+
+    /* Left Pane: Live Execution Log & Smooth Stage Progression */
+    .trace-pane {
+      padding: 20px 22px;
+      border-right: 1px solid #12202D;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 14px;
+    }
+    .prompt-strip {
+      border-left: 2px solid var(--steel-bright);
+      background: #060D15;
+      padding: 10px 13px;
+    }
+    .prompt-strip .ps-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 9.5px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--steel-bright);
+      margin-bottom: 4px;
+    }
+    .prompt-strip .ps-text {
+      font-size: 12.5px;
+      color: #E6F0F8;
+      line-height: 1.48;
+    }
+
+    .stage-rows {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .stage-row {
+      display: grid;
+      grid-template-columns: 18px 1fr auto;
+      gap: 11px;
+      align-items: start;
+      padding: 9px 12px;
+      border: 1px solid #101D29;
+      background: #050A10;
+      opacity: 0.52;
+      transform: translateY(0);
+      transition: opacity 420ms cubic-bezier(0.22, 1, 0.36, 1),
+                  border-color 420ms ease,
+                  background 420ms ease;
+    }
+    .stage-row.active {
+      opacity: 1;
+      border-color: var(--steel-bright);
+      background: #081A28;
+    }
+    .stage-row.done {
+      opacity: 1;
+      border-color: rgba(52, 211, 153, 0.38);
+      background: #041311;
+    }
+    .stage-row.failed {
+      opacity: 1;
+      border-color: rgba(248, 113, 113, 0.55);
+      background: #1A0A0D;
+    }
+
+    .sr-icon {
+      width: 16px; height: 16px;
+      margin-top: 2px;
+      border-radius: 999px;
+      border: 1.5px solid #2A4C63;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      color: transparent;
+      transition: all 340ms ease;
+    }
+    .stage-row.active .sr-icon {
+      border-color: var(--steel-ice);
+      border-top-color: transparent;
+      animation: smoothSpin 1.1s linear infinite;
+    }
+    .stage-row.done .sr-icon {
+      border-color: var(--ok);
+      background: rgba(52, 211, 153, 0.16);
+      color: var(--ok);
+      animation: none;
+    }
+    .stage-row.failed .sr-icon {
+      border-color: var(--err);
+      background: rgba(248, 113, 113, 0.16);
+      color: var(--err);
+      animation: none;
+    }
+    @keyframes smoothSpin {
+      to { transform: rotate(360deg); }
+    }
+
+    .sr-title {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #FFFFFF;
+      line-height: 1.3;
+    }
+    .sr-desc {
+      font-size: 11px;
+      color: #8CA1B3;
+      margin-top: 2px;
+      line-height: 1.4;
+    }
+    .sr-state {
+      font-size: 9.5px;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+      color: var(--muted-2);
+      padding-top: 2px;
+      white-space: nowrap;
+    }
+    .stage-row.active .sr-state { color: var(--steel-ice); }
+    .stage-row.done .sr-state { color: var(--ok); }
+    .stage-row.failed .sr-state { color: var(--err); }
+
+    /* Right Pane: Tailored SaaS Result Showcase */
+    .result-pane {
+      padding: 20px 22px;
+      background: #020509;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 14px;
+      position: relative;
+    }
+    .rp-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .rp-kicker {
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--steel-bright);
+    }
+    .rp-badge {
+      font-size: 9.5px;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+      padding: 3px 9px;
+      border: 1px solid #1C3447;
+      color: var(--steel-ice);
+      background: #061019;
+    }
+    .rp-badge.ok { border-color: rgba(52, 211, 153, 0.45); color: #A7F3D0; background: #041714; }
+    .rp-badge.err { border-color: rgba(248, 113, 113, 0.55); color: #FECACA; background: #1D0B0E; }
+
+    /* Animated Result Viewport */
+    .result-viewport {
+      flex: 1;
+      border: 1px solid #132230;
+      background: #04090F;
+      padding: 15px 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      transition: opacity 420ms cubic-bezier(0.22, 1, 0.36, 1), transform 420ms cubic-bezier(0.22, 1, 0.36, 1), border-color 420ms ease;
+    }
+    .result-viewport.entering {
+      animation: resultReveal 520ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes resultReveal {
+      0% { opacity: 0.25; transform: translateY(8px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Idle / Processing Smooth Shimmer State */
+    .shimmer-block {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .shimmer-line {
+      height: 10px;
+      background: linear-gradient(90deg, #0A1622 0%, #15344A 50%, #0A1622 100%);
+      background-size: 200% 100%;
+      animation: lazyShimmer 2.4s ease-in-out infinite;
+    }
+    @keyframes lazyShimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* Tailored Artifact 1: Chat TypeScript Code Preview */
+    .code-artifact {
+      font-size: 11px;
+      line-height: 1.62;
+      color: #D4E4F0;
+      overflow-x: auto;
+    }
+    .code-artifact .c-kw { color: #78B0CE; }
+    .code-artifact .c-fn { color: #A7F3D0; }
+    .code-artifact .c-str { color: #CBDCE8; }
+    .code-artifact .c-cm { color: #5D7588; }
+
+    /* Tailored Artifact 2: Image Dusk Relight Visual Frame */
+    .image-artifact {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      align-items: stretch;
+    }
+    .frame-card {
+      border: 1px solid #193044;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 126px;
+      position: relative;
+      overflow: hidden;
+    }
+    .frame-day {
+      background: linear-gradient(155deg, #162430 0%, #0A1219 65%, #05090D 100%);
+    }
+    .frame-dusk {
+      background: radial-gradient(circle at 72% 62%, rgba(217, 152, 82, 0.28) 0%, rgba(31, 91, 124, 0.34) 48%, #040B14 100%);
+      border-color: rgba(52, 211, 153, 0.45);
+    }
+    .frame-label {
+      font-size: 9px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #9CC4DC;
+      z-index: 2;
+    }
+    .frame-dusk .frame-label { color: #A7F3D0; }
+    .frame-caption {
+      font-size: 10.5px;
+      color: #DCE9F3;
+      z-index: 2;
+    }
+
+    /* Tailored Artifact 3: Video 720p Motion Timeline */
+    .video-artifact {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .video-frames {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+    .v-thumb {
+      height: 62px;
+      border: 1px solid #1C364B;
+      background: linear-gradient(160deg, #0D2537 0%, #050D15 65%, #02060A 100%);
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      font-size: 9px;
+      color: #8DB6CE;
+    }
+    .v-thumb.active-frame { border-color: var(--ok); color: #A7F3D0; }
+    .scrub-track {
+      position: relative;
+      height: 5px;
+      background: #0D1C29;
+      overflow: hidden;
+    }
+    .scrub-fill {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 100%;
+      background: linear-gradient(90deg, #1F5B7C 0%, #5B9EC2 65%, #34D399 100%);
+      animation: scrubGlide 3.8s ease-in-out infinite;
+    }
+    @keyframes scrubGlide {
+      0% { width: 14%; }
+      85% { width: 100%; }
+      100% { width: 100%; }
+    }
+
+    /* Sub-Engine Footer Chips inside Result Pane */
+    .engine-footer {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .eng-pill {
+      border: 1px solid #152635;
+      background: #050B11;
+      padding: 4px 9px;
+      font-size: 10px;
+      color: #9BB0C2;
+      transition: all 240ms ease;
+    }
+    .eng-pill.active {
+      border-color: var(--steel-ice);
+      background: #0C2538;
+      color: #FFFFFF;
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 960px) {
+      .console-grid { grid-template-columns: 1fr; }
+      .trace-pane { border-right: none; border-bottom: 1px solid #12202D; }
+    }
+    @media (max-width: 720px) {
+      .page { padding: 14px 12px 32px; }
+      .canopy-frame { height: 470px; }
+      .console-top { padding: 12px 14px; }
+      .trace-pane, .result-pane { padding: 15px 14px; }
+      .image-artifact { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="topbar">
+      <div>
+        <div class="kicker font-mono"><span class="kicker-dot"></span>GENVIA · GYRA UNIFIED INTELLIGENCE ARCHITECTURE</div>
+        <h1 class="font-display">Adv 05 · Living Synaptic Flow <span>→ Wired Result Engine</span></h1>
+        <p>Unobstructed 21-orb floating neural canopy with calm, continuous fluid routing — every generator orb wires cleanly downward into the dedicated execution &amp; result studio below.</p>
+      </div>
+      <div class="controls">
+        <button class="btn primary font-mono" id="btnTour" type="button">Auto-Flow Tour</button>
+        <button class="btn danger font-mono" id="btnFault" type="button" aria-pressed="false">Fault Guard: Off</button>
+        <button class="btn font-mono" id="btnReset" type="button">Calm Idle</button>
+      </div>
+    </header>
+
+    <!-- 1. 100% UNOBSTRUCTED FLOATING-ORB NEURAL TREE + DOWNWARD GENERATOR TETHER WIRES -->
+    <section class="canopy-frame" id="canopyFrame" data-state="idle">
+      <canvas id="canopyCanvas" data-testid="synaptic-canvas" aria-label="Gyra Floating-Orb Neural Flow wired down to Execution Engine"></canvas>
+
+      <div class="orb-tip" id="orbTip" role="status" aria-live="polite">
+        <div class="ot-k font-mono" id="otK"></div>
+        <div class="ot-t font-display" id="otT"></div>
+        <div class="ot-d" id="otD"></div>
+      </div>
+    </section>
+
+    <!-- 2. DEDICATED SAAS LIVE EXECUTION & RESULT BOX (PHYSICALLY WIRED TO THE GENERATOR ORBS ABOVE) -->
+    <section class="wired-console" id="wiredConsole" aria-label="Gyra Live Execution Log and Result Studio">
+      <div class="intake-rail"><div class="intake-sweep"></div></div>
+
+      <div class="console-top">
+        <div class="status-cluster">
+          <div class="status-pill font-mono" id="statusPill">
+            <span class="pulse-dot"></span>
+            <span id="statusText">IDLE · STANDBY</span>
+          </div>
+          <div class="intake-label font-mono" id="intakeLabel">
+            Click any floating orb above — or choose a product to watch the soft continuous flow land here.
+          </div>
+        </div>
+
+        <div class="product-switcher" id="productSwitcher" role="tablist" aria-label="Dispatch Gyra Product Flow"></div>
+      </div>
+
+      <div class="console-grid">
+        <!-- Left: Live Execution Trace & Status Indicators -->
+        <div class="trace-pane">
+          <div class="prompt-strip">
+            <div class="ps-meta font-mono">
+              <span id="promptMetaLeft">ARCHITECTURE INPUT</span>
+              <span id="promptMetaRight">GENVIA → GYRA CORE</span>
+            </div>
+            <div class="ps-text" id="promptText">
+              Select Gyra Chat, Gyra Image, Gyra Video, or Gyra API to trace a real request smoothly from Genvia → Gyra Core → 3 Execution Stages → Generator Orbs → Wired Result Output.
+            </div>
+          </div>
+
+          <div class="stage-rows" id="stageRows"></div>
+        </div>
+
+        <!-- Right: Tailored SaaS Result Showcase -->
+        <div class="result-pane">
+          <div class="rp-head">
+            <div class="rp-kicker font-mono" id="rpKicker">OUTPUT ARTIFACT STUDIO</div>
+            <div class="rp-badge font-mono" id="rpBadge">AWAITING SIGNAL</div>
+          </div>
+
+          <div class="result-viewport" id="resultViewport"></div>
+
+          <div class="engine-footer" id="engineFooter"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="./story-data.js"></script>
+  <script>
+    (function () {
+      const story = window.GYRA_STORY;
+      const canopyFrame = document.getElementById("canopyFrame");
+      const canvas = document.getElementById("canopyCanvas");
+      const ctx = canvas.getContext("2d");
+
+      const orbTip = document.getElementById("orbTip");
+      const otK = document.getElementById("otK");
+      const otT = document.getElementById("otT");
+      const otD = document.getElementById("otD");
+
+      const wiredConsole = document.getElementById("wiredConsole");
+      const statusText = document.getElementById("statusText");
+      const intakeLabel = document.getElementById("intakeLabel");
+      const productSwitcher = document.getElementById("productSwitcher");
+
+      const promptMetaLeft = document.getElementById("promptMetaLeft");
+      const promptMetaRight = document.getElementById("promptMetaRight");
+      const promptText = document.getElementById("promptText");
+      const stageRows = document.getElementById("stageRows");
+
+      const rpKicker = document.getElementById("rpKicker");
+      const rpBadge = document.getElementById("rpBadge");
+      const resultViewport = document.getElementById("resultViewport");
+      const engineFooter = document.getElementById("engineFooter");
+
+      const btnTour = document.getElementById("btnTour");
+      const btnFault = document.getElementById("btnFault");
+      const btnReset = document.getElementById("btnReset");
+
+      let W = 1360, H = 590, dpr = 1;
+      let bgCanvas = document.createElement("canvas");
+      let bgCtx = bgCanvas.getContext("2d");
+      let t = 0;
+      let lastTime = performance.now();
+      let pointer = { nx: 0, ny: 0 };
+      let parallax = { x: 0, y: 0 };
+
+      let nodes = [];
+      let edges = [];
+      let portAnchors = []; // Bottom optical intake ports landing directly on the SaaS Execution Box!
+      let stars = [];
+      let ribbons = []; // Continuous physics-driven smooth fluid waves!
+      let ambientMotes = [];
+      let ripples = [];
+
+      // Smooth visual state
+      let hoveredNode = null;
+      let selectedBranch = null;
+      let selectedLeaf = null;
+      let faultMode = false;
+      let tourTimer = null;
+
+      // Continuous Phase Machine (driven by ACTUAL ribbon arrival — ZERO jerky skipping!)
+      // phases: idle | trunk | understand | orchestrate | execute | product | generator | wiring | done | failed
+      let flow = {
+        phase: "idle",
+        branchId: null,
+        leafName: null,
+        runId: 0,
+        stageProgress: [0, 0, 0],
+        portGlow: 0
+      };
+
+      // Build clean product switcher tabs inside the bottom Wired Box
+      story.products.forEach((p) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.role = "tab";
+        b.className = "prod-btn font-mono";
+        b.dataset.id = p.id;
+        b.innerHTML = `<span class="p-dot"></span><span>${p.code} ${p.name.replace("Gyra ", "")}</span>`;
+        b.addEventListener("click", () => {
+          stopTour();
+          startSmoothFlow(p.id, null);
+        });
+        productSwitcher.appendChild(b);
+      });
+
+      function seedStars() {
+        stars = Array.from({ length: 64 }, (_, i) => ({
+          rx: ((i * 83) % 997) / 997,
+          ry: ((i * 197) % 991) / 991,
+          r: 0.55 + ((i * 31) % 9) * 0.1,
+          phase: i * 0.85,
+          depth: 0.3 + ((i * 19) % 10) * 0.06
+        }));
+      }
+
+      function buildGraph() {
+        nodes = [];
+        edges = [];
+        portAnchors = [];
+        const compact = W < 780;
+        const cx = W * 0.5;
+
+        // Tier 0: GENVIA Parent
+        const nGenvia = {
+          id: "genvia",
+          label: "GENVIA",
+          sub: "PARENT AI COMPANY",
+          tier: 0,
+          tierName: "GOVERNANCE · PARENT AI COMPANY",
+          desc: story.parent.note,
+          icon: "crest",
+          x: cx,
+          y: compact ? 48 : 54,
+          r: compact ? 16 : 20,
+          branch: null,
+          glow: 0,
+          energy: 0
+        };
+
+        // Tier 1: GYRA CORE
+        const nCore = {
+          id: "core",
+          label: "GYRA CORE",
+          sub: "UNIFIED INTELLIGENCE ENGINE",
+          tier: 1,
+          tierName: "PLATFORM CORE · UNIFIED ROUTER",
+          desc: "One engineered intelligence core orchestrating Web, Android, Telegram (@Gyra_AiBot), and REST API v1.",
+          icon: "core",
+          x: cx,
+          y: compact ? 132 : 146,
+          r: compact ? 24 : 31,
+          branch: null,
+          glow: 0,
+          energy: 0
+        };
+
+        nodes.push(nGenvia, nCore);
+        edges.push({ from: nGenvia, to: nCore, branch: null, kind: "trunk" });
+
+        // Tier 2: 01 Understand -> 02 Orchestrate -> 03 Execute
+        const stageSpread = compact ? Math.min(116, W * 0.31) : Math.min(255, W * 0.21);
+        const stageIcons = ["understand", "orchestrate", "execute"];
+        const stageNodes = story.stages.map((st, idx) => {
+          const sn = {
+            id: "stage-" + st.id,
+            stageIdx: idx,
+            label: st.name.toUpperCase(),
+            shortCode: st.code,
+            tier: 2,
+            tierName: `STAGE ${st.code} · ${st.name.toUpperCase()}`,
+            desc: st.desc,
+            icon: stageIcons[idx],
+            x: cx + (idx - 1) * stageSpread,
+            y: compact ? 236 : 268,
+            r: compact ? 17 : 21,
+            branch: null,
+            glow: 0,
+            energy: 0
+          };
+          nodes.push(sn);
+          edges.push({ from: nCore, to: sn, branch: null, kind: "core-stage", stageIdx: idx });
+          return sn;
+        });
+
+        edges.push({ from: stageNodes[0], to: stageNodes[1], branch: null, kind: "stage-chain", stageIdx: 1 });
+        edges.push({ from: stageNodes[1], to: stageNodes[2], branch: null, kind: "stage-chain", stageIdx: 2 });
+
+        // Bottom Intake Port centered at the top edge of the Wired SaaS Box!
+        const mainPortX = cx;
+        const mainPortY = H - 2;
+
+        // Tier 3: 4 Product Orbs + Tier 4: 12 Sub-Engine Generator Orbs wired DOWN to the SaaS Box!
+        const prodSpan = compact ? W * 0.78 : Math.min(W * 0.78, 1080);
+        const startX = cx - prodSpan * 0.5;
+        const stepX = prodSpan / 3;
+
+        story.products.forEach((p, bi) => {
+          const px = startX + bi * stepX;
+          const py = (compact ? 356 : 386) + ((bi === 1 || bi === 2) ? (compact ? 10 : 12) : 0);
+
+          const pn = {
+            id: p.id,
+            label: p.name.toUpperCase(),
+            sub: p.category.toUpperCase(),
+            tier: 3,
+            tierName: `PRODUCT ${p.code} · ${p.endpoint}`,
+            desc: p.scenarioTitle,
+            icon: p.id,
+            x: px,
+            y: py,
+            r: compact ? 19 : 25,
+            branch: p.id,
+            product: p,
+            glow: 0,
+            energy: 0
+          };
+          nodes.push(pn);
+
+          // Soft fan from all 3 stages -> Product Orb
+          stageNodes.forEach((sn, sIdx) => {
+            edges.push({ from: sn, to: pn, branch: p.id, kind: "stage-product", stageIdx: sIdx });
+          });
+
+          // Converging intake port anchor along the bottom rail of the canvas (feeding right into the Wired Box!)
+          const portSpread = compact ? W * 0.42 : Math.min(W * 0.46, 560);
+          const portX = mainPortX + ((bi - 1.5) / 1.5) * (portSpread * 0.5);
+          const portNode = {
+            id: `port-${p.id}`,
+            x: portX,
+            y: mainPortY,
+            r: 4,
+            tier: 5,
+            branch: p.id,
+            isPort: true
+          };
+          portAnchors.push(portNode);
+
+          if (!compact) {
+            // Tier 4: 3 Floating Circular Sub-Engine Generator Orbs per Product
+            const leaves = p.subEngines.slice(0, 3);
+            const leafSpread = Math.min(78, stepX * 0.27);
+            leaves.forEach((se, li) => {
+              const lx = px + (li - 1) * leafSpread;
+              const ly = py + 94 + (li === 1 ? 14 : 0);
+              const ln = {
+                id: `${p.id}-leaf-${li}`,
+                label: se.name,
+                tier: 4,
+                tierName: `${p.name.toUpperCase()} GENERATOR`,
+                desc: se.role,
+                icon: "leaf",
+                x: lx,
+                y: ly,
+                r: 11,
+                branch: p.id,
+                leafName: se.name,
+                product: p,
+                glow: 0,
+                energy: 0
+              };
+              nodes.push(ln);
+              edges.push({ from: pn, to: ln, branch: p.id, kind: "product-leaf" });
+              // DOWNWARD TETHER WIRE: Every Generator Orb ties cleanly down into the SaaS Box intake port!
+              edges.push({ from: ln, to: portNode, branch: p.id, kind: "generator-port" });
+            });
+          } else {
+            // Compact mobile: product orbs tie cleanly down to the box intake ports
+            edges.push({ from: pn, to: portNode, branch: p.id, kind: "generator-port" });
+          }
+        });
+      }
+
+      // Smooth cubic ease-in-out for lazy, fluid SaaS motion (never jerky!)
+      function easeInOutCubic(x) {
+        return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+      }
+
+      function curvePoint(e, u) {
+        const { from, to } = e;
+        if (e.kind === "stage-chain") {
+          const mx = (from.x + to.x) * 0.5;
+          const my = from.y - 22;
+          const m = 1 - u;
+          return {
+            x: m * m * from.x + 2 * m * u * mx + u * u * to.x,
+            y: m * m * from.y + 2 * m * u * my + u * u * to.y
+          };
+        }
+        if (e.kind === "generator-port") {
+          // Graceful S-curve gathering downward into the Execution Box's top port
+          const cp1y = from.y + (to.y - from.y) * 0.58;
+          const cp2y = from.y + (to.y - from.y) * 0.42;
+          const m = 1 - u;
+          return {
+            x: m * m * m * from.x + 3 * m * m * u * from.x + 3 * m * u * u * to.x + u * u * u * to.x,
+            y: m * m * m * from.y + 3 * m * m * u * cp1y + 3 * m * u * u * cp2y + u * u * u * to.y
+          };
+        }
+        const midY = from.y + (to.y - from.y) * 0.52;
+        const m = 1 - u;
+        return {
+          x: m * m * m * from.x + 3 * m * m * u * from.x + 3 * m * u * u * to.x + u * u * u * to.x,
+          y: m * m * m * from.y + 3 * m * m * u * midY + 3 * m * u * u * midY + u * u * u * to.y
+        };
+      }
+
+      function traceEdgePath(e) {
+        const { from, to } = e;
+        ctx.beginPath();
+        ctx.moveTo(from.x, from.y);
+        if (e.kind === "stage-chain") {
+          ctx.quadraticCurveTo((from.x + to.x) * 0.5, from.y - 22, to.x, to.y);
+        } else if (e.kind === "generator-port") {
+          const cp1y = from.y + (to.y - from.y) * 0.58;
+          const cp2y = from.y + (to.y - from.y) * 0.42;
+          ctx.bezierCurveTo(from.x, cp1y, to.x, cp2y, to.x, to.y);
+        } else {
+          const midY = from.y + (to.y - from.y) * 0.52;
+          ctx.bezierCurveTo(from.x, midY, to.x, midY, to.x, to.y);
+        }
+      }
+
+      // Draw a silky, continuous luminous ribbon segment along an edge [uStart .. uEnd]
+      function drawFluidRibbon(edge, uStart, uEnd, color, headColor, width) {
+        const steps = 22;
+        const pts = [];
+        for (let i = 0; i <= steps; i++) {
+          const u = uStart + (uEnd - uStart) * (i / steps);
+          if (u >= 0 && u <= 1) pts.push(curvePoint(edge, u));
+        }
+        if (pts.length < 2) return;
+
+        const p0 = pts[0];
+        const p1 = pts[pts.length - 1];
+        const grad = ctx.createLinearGradient(p0.x, p0.y, p1.x, p1.y);
+        grad.addColorStop(0, "rgba(0,0,0,0)");
+        grad.addColorStop(0.65, color);
+        grad.addColorStop(1, headColor);
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(p0.x, p0.y);
+        for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = width;
+        ctx.lineCap = "round";
+        ctx.stroke();
+
+        // Soft glowing photon droplet at head
+        ctx.beginPath();
+        ctx.arc(p1.x, p1.y, width * 1.15, 0, Math.PI * 2);
+        ctx.fillStyle = headColor;
+        ctx.globalAlpha = 0.92;
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function drawOrbIcon(n, col, scale) {
+        ctx.save();
+        ctx.translate(n.x, n.y);
+        ctx.strokeStyle = col;
+        ctx.fillStyle = col;
+        ctx.lineWidth = 1.45;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        const s = scale;
+
+        if (n.icon === "crest") {
+          ctx.beginPath();
+          ctx.moveTo(0, -7.5 * s); ctx.lineTo(7.5 * s, 0); ctx.lineTo(0, 7.5 * s); ctx.lineTo(-7.5 * s, 0);
+          ctx.closePath(); ctx.stroke();
+          ctx.beginPath(); ctx.arc(0, 0, 2 * s, 0, Math.PI * 2); ctx.fill();
+        } else if (n.icon === "core") {
+          ctx.beginPath();
+          for (let i = 0; i < 6; i++) {
+            const a = (Math.PI / 3) * i - Math.PI / 6;
+            const px = Math.cos(a) * 10.5 * s;
+            const py = Math.sin(a) * 10.5 * s;
+            if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+          }
+          ctx.closePath(); ctx.stroke();
+          ctx.beginPath(); ctx.arc(0, 0, 3.8 * s, 0, Math.PI * 2); ctx.stroke();
+          for (let i = 0; i < 6; i++) {
+            const a = (Math.PI / 3) * i - Math.PI / 6;
+            ctx.beginPath();
+            ctx.moveTo(Math.cos(a) * 10.5 * s, Math.sin(a) * 10.5 * s);
+            ctx.lineTo(Math.cos(a) * 14 * s, Math.sin(a) * 14 * s);
+            ctx.stroke();
+          }
+        } else if (n.icon === "understand") {
+          ctx.beginPath(); ctx.arc(0, 0, 5.2 * s, 0, Math.PI * 2); ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(-8.5 * s, 0); ctx.lineTo(-6 * s, 0); ctx.moveTo(6 * s, 0); ctx.lineTo(8.5 * s, 0);
+          ctx.moveTo(0, -8.5 * s); ctx.lineTo(0, -6 * s); ctx.moveTo(0, 6 * s); ctx.lineTo(0, 8.5 * s);
+          ctx.stroke();
+        } else if (n.icon === "orchestrate") {
+          const pts = [[0, -6 * s], [-6 * s, 5 * s], [6 * s, 5 * s]];
+          ctx.beginPath();
+          ctx.moveTo(pts[0][0], pts[0][1]); ctx.lineTo(pts[1][0], pts[1][1]); ctx.lineTo(pts[2][0], pts[2][1]);
+          ctx.closePath(); ctx.stroke();
+          pts.forEach(([x, y]) => { ctx.beginPath(); ctx.arc(x, y, 1.9 * s, 0, Math.PI * 2); ctx.fill(); });
+        } else if (n.icon === "execute") {
+          ctx.beginPath();
+          ctx.moveTo(1.5 * s, -8 * s); ctx.lineTo(-5 * s, 1 * s); ctx.lineTo(0.5 * s, 1 * s);
+          ctx.lineTo(-1.5 * s, 8 * s); ctx.lineTo(5 * s, -1 * s); ctx.lineTo(-0.5 * s, -1 * s);
+          ctx.closePath(); ctx.stroke();
+        } else if (n.icon === "chat") {
+          ctx.beginPath();
+          ctx.moveTo(-7.5 * s, -5 * s); ctx.lineTo(7.5 * s, -5 * s); ctx.lineTo(7.5 * s, 4.2 * s);
+          ctx.lineTo(1 * s, 4.2 * s); ctx.lineTo(-3.8 * s, 8 * s); ctx.lineTo(-3.8 * s, 4.2 * s);
+          ctx.lineTo(-7.5 * s, 4.2 * s); ctx.closePath(); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(-4 * s, -1.2 * s); ctx.lineTo(4 * s, -1.2 * s);
+          ctx.moveTo(-4 * s, 1.4 * s); ctx.lineTo(2 * s, 1.4 * s); ctx.stroke();
+        } else if (n.icon === "image") {
+          ctx.strokeRect(-7.5 * s, -6 * s, 15 * s, 12 * s);
+          ctx.beginPath();
+          ctx.moveTo(-7.5 * s, 3.6 * s); ctx.lineTo(-2 * s, -1 * s); ctx.lineTo(2.4 * s, 2.2 * s);
+          ctx.lineTo(5 * s, 0); ctx.lineTo(7.5 * s, 2.8 * s); ctx.stroke();
+          ctx.beginPath(); ctx.arc(-3.2 * s, -2.8 * s, 1.4 * s, 0, Math.PI * 2); ctx.fill();
+        } else if (n.icon === "video") {
+          ctx.strokeRect(-8 * s, -5.6 * s, 16 * s, 11.2 * s);
+          ctx.beginPath(); ctx.moveTo(-2 * s, -2.8 * s); ctx.lineTo(3.8 * s, 0); ctx.lineTo(-2 * s, 2.8 * s);
+          ctx.closePath(); ctx.fill();
+        } else if (n.icon === "api") {
+          ctx.beginPath();
+          ctx.moveTo(-4.2 * s, -4.8 * s); ctx.lineTo(-8.5 * s, 0); ctx.lineTo(-4.2 * s, 4.8 * s);
+          ctx.moveTo(4.2 * s, -4.8 * s); ctx.lineTo(8.5 * s, 0); ctx.lineTo(4.2 * s, 4.8 * s);
+          ctx.moveTo(1.6 * s, -5.6 * s); ctx.lineTo(-1.6 * s, 5.6 * s); ctx.stroke();
+        } else {
+          ctx.beginPath();
+          ctx.moveTo(0, -3.2 * s); ctx.lineTo(3.2 * s, 0); ctx.lineTo(0, 3.2 * s); ctx.lineTo(-3.2 * s, 0);
+          ctx.closePath(); ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      // =========================================================================
+      // TAILORED SAAS RESULT RENDERER (Rich, Authentic Visual Output per Product!)
+      // =========================================================================
+      function renderTailoredResult(product, state) {
+        resultViewport.classList.remove("entering");
+        void resultViewport.offsetWidth;
+
+        if (!product) {
+          rpKicker.textContent = "OUTPUT ARTIFACT STUDIO";
+          rpBadge.className = "rp-badge font-mono";
+          rpBadge.textContent = "AWAITING SIGNAL";
+          resultViewport.innerHTML = `
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div class="font-mono" style="font-size:11px;color:#8EC2DF;">WIRE FEED READY · 12 GENERATOR CHANNELS CONNECTED</div>
+              <p style="font-size:12.5px;color:#8EA2B4;line-height:1.55;">
+                Every floating generator orb above ties directly into this studio. Click any product orb—or choose a product tab on the top-right—to watch a soft continuous signal cascade into a verified artifact.
+              </p>
+            </div>
+          `;
+          engineFooter.innerHTML = story.platform.surfaces.map((s) => `<span class="eng-pill font-mono">${s}</span>`).join("");
+          return;
+        }
+
+        engineFooter.innerHTML = product.subEngines.map((se) => {
+          const isHl = selectedLeaf && se.name === selectedLeaf;
+          return `<span class="eng-pill font-mono${isHl ? " active" : ""}">${se.name}</span>`;
+        }).join("");
+
+        if (state === "running") {
+          rpKicker.textContent = `STREAMING FROM ${product.name.toUpperCase()} GENERATORS`;
+          rpBadge.className = "rp-badge font-mono";
+          rpBadge.textContent = "SYNTHESIZING";
+          resultViewport.innerHTML = `
+            <div class="shimmer-block">
+              <div class="font-mono" style="font-size:10.5px;color:#9CC4DC;">Receiving fluid signal from Gyra Intelligence Core → ${product.name}...</div>
+              <div class="shimmer-line" style="width:92%;"></div>
+              <div class="shimmer-line" style="width:78%;"></div>
+              <div class="shimmer-line" style="width:64%;"></div>
+            </div>
+          `;
+          return;
+        }
+
+        resultViewport.classList.add("entering");
+
+        if (state === "failed") {
+          rpKicker.textContent = `FAULT GUARD · ${product.endpoint}`;
+          rpBadge.className = "rp-badge err font-mono";
+          rpBadge.textContent = "INTERCEPTED SAFELY";
+          resultViewport.innerHTML = `
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div class="font-display" style="font-size:18px;font-weight:700;text-transform:uppercase;color:#FECACA;">${product.failNarrative.headline}</div>
+              <p style="font-size:12px;color:#D6B4B8;line-height:1.5;">${product.failNarrative.detail}</p>
+              <div class="font-mono" style="font-size:10.5px;color:#FCA5A5;border-top:1px solid #2D1418;padding-top:8px;">
+                &gt; Zero corrupted output written · User context &amp; credits preserved for clean retry.
+              </div>
+            </div>
+          `;
+          return;
+        }
+
+        // VERIFIED TAILORED SAAS RESULT PER PRODUCT!
+        rpKicker.textContent = product.outputLabel.toUpperCase();
+        rpBadge.className = "rp-badge ok font-mono";
+        rpBadge.textContent = "VERIFIED · DELIVERED";
+
+        if (product.id === "chat") {
+          resultViewport.innerHTML = `
+            <pre class="code-artifact font-mono"><span class="c-cm">// Verified by SuperGyra 2.0 + Sentinel Security QA</span>
+<span class="c-kw">export async function</span> <span class="c-fn">POST</span>(req: Request) {
+  <span class="c-kw">const</span> valid = <span class="c-fn">timingSafeEqual</span>(sigBuf, expectedBuf);
+  <span class="c-kw">if</span> (!valid || Math.abs(now - ts) &gt; 300_000) <span class="c-kw">return</span> Response.json({ error: <span class="c-str">"Replay guard"</span> }, { status: 401 });
+  <span class="c-kw">return</span> Response.json({ ok: <span class="c-kw">true</span>, rateLimit: <span class="c-str">"60/min"</span> }, { status: 200 });
+}</pre>
+          `;
+        } else if (product.id === "image") {
+          resultViewport.innerHTML = `
+            <div class="image-artifact">
+              <div class="frame-card frame-day">
+                <span class="frame-label font-mono">SOURCE FRAME · LOCKED</span>
+                <div class="frame-caption font-mono">Original geometry &amp; camera angle preserved</div>
+              </div>
+              <div class="frame-card frame-dusk">
+                <span class="frame-label font-mono">PRO ULTRA I2I · 1440×1080</span>
+                <div class="frame-caption font-mono">Blue-Hour Dusk + 2700K Tungsten Desk Relight</div>
+              </div>
+            </div>
+          `;
+        } else if (product.id === "video") {
+          resultViewport.innerHTML = `
+            <div class="video-artifact">
+              <div class="video-frames font-mono">
+                <div class="v-thumb active-frame"><span>F·001</span><span>ANCHOR</span></div>
+                <div class="v-thumb"><span>F·040</span><span>DOLLY</span></div>
+                <div class="v-thumb"><span>F·080</span><span>GLIDE</span></div>
+                <div class="v-thumb active-frame"><span>F·121</span><span>5.0s</span></div>
+              </div>
+              <div class="scrub-track"><div class="scrub-fill"></div></div>
+              <div class="font-mono" style="display:flex;justify-content:space-between;font-size:10px;color:#A7F3D0;">
+                <span>LTX-VIDEO 13B · 720P · 24 FPS · 16:9</span>
+                <span>SAVED TO STUDIO HISTORY</span>
+              </div>
+            </div>
+          `;
+        } else {
+          resultViewport.innerHTML = `
+            <pre class="code-artifact font-mono">{
+  <span class="c-str">"object"</span>: <span class="c-fn">"chat.completion"</span>,
+  <span class="c-str">"model"</span>: <span class="c-fn">"gyra-super2.0"</span>,
+  <span class="c-str">"status"</span>: <span class="c-kw">200</span>,
+  <span class="c-str">"scope"</span>: <span class="c-str">"chat:write · media:read"</span>,
+  <span class="c-str">"finish_reason"</span>: <span class="c-fn">"stop"</span>
+}</pre>
+          `;
+        }
+      }
+
+      function renderStageRows(product, activeStageIdx, state) {
+        if (!product) {
+          stageRows.innerHTML = story.stages.map((st) => `
+            <div class="stage-row">
+              <div class="sr-icon font-mono"></div>
+              <div>
+                <div class="sr-title">${st.code} · ${st.name} — ${st.tagline}</div>
+                <div class="sr-desc">${st.desc}</div>
+              </div>
+              <div class="sr-state font-mono">STANDBY</div>
+            </div>
+          `).join("");
+          return;
+        }
+
+        stageRows.innerHTML = product.stageNarratives.map((sn, idx) => {
+          let cls = "stage-row";
+          let badge = "WAITING";
+          let iconChar = "";
+          if (state === "failed" && idx === 1) {
+            cls += " failed"; badge = "GUARDED"; iconChar = "!";
+          } else if (state === "failed" && idx > 1) {
+            badge = "HALTED";
+          } else if (state === "done" || idx < activeStageIdx) {
+            cls += " done"; badge = "VERIFIED"; iconChar = "✓";
+          } else if (idx === activeStageIdx) {
+            cls += " active"; badge = "FLOWING"; iconChar = "";
+          }
+          const title = (state === "failed" && idx === 1) ? product.failNarrative.headline : sn.headline;
+          const desc = (state === "failed" && idx === 1) ? product.failNarrative.detail : sn.detail;
+          return `
+            <div class="${cls}">
+              <div class="sr-icon font-mono">${iconChar}</div>
+              <div>
+                <div class="sr-title">${title}</div>
+                <div class="sr-desc">${desc}</div>
+              </div>
+              <div class="sr-state font-mono">${badge}</div>
+            </div>
+          `;
+        }).join("");
+      }
+
+      function syncSwitcher(state) {
+        document.querySelectorAll(".prod-btn").forEach((btn) => {
+          const isSel = btn.dataset.id === selectedBranch;
+          btn.classList.toggle("active", isSel && state === "running");
+          btn.classList.toggle("done", isSel && state === "done");
+          btn.classList.toggle("failed", isSel && state === "failed");
+        });
+      }
+
+      // Inspect non-product architectural nodes cleanly inside the bottom box (zero overlays!)
+      function inspectCoreLayer(node) {
+        ripples.push({ x: node.x, y: node.y, r: node.r, maxR: node.r + 48, alpha: 0.72, color: "#9CC4DC" });
+        promptMetaLeft.textContent = node.tierName;
+        promptMetaRight.textContent = "ARCHITECTURE INSPECTION";
+        promptText.textContent = node.desc;
+        intakeLabel.innerHTML = `Inspecting <strong>${node.label}</strong> — click any Product or Generator orb to run a live fluid flow.`;
+      }
+
+      // =========================================================================
+      // CONTINUOUS PHYSICS-DRIVEN "LAZY SAAS" FLOW SEQUENCER (ZERO SKIPPING!)
+      // Each phase launches ONLY when the actual luminous ribbon physically arrives!
+      // =========================================================================
+      function launchRibbon(edge, durationSec, color, headColor, onArrive) {
+        ribbons.push({
+          edge,
+          elapsed: 0,
+          duration: durationSec,
+          color,
+          headColor,
+          runId: flow.runId,
+          onArrive,
+          arrived: false
+        });
+      }
+
+      function startSmoothFlow(branchId, leafName) {
+        const product = story.products.find((p) => p.id === branchId);
+        if (!product) return;
+
+        flow.runId += 1;
+        const myRun = flow.runId;
+        selectedBranch = branchId;
+        selectedLeaf = leafName || null;
+        flow.branchId = branchId;
+        flow.leafName = selectedLeaf;
+        flow.phase = "trunk";
+        flow.stageProgress = [0, 0, 0];
+        ribbons = [];
+
+        canopyFrame.dataset.state = `running-${branchId}`;
+        wiredConsole.className = "wired-console state-running";
+        statusText.textContent = `FLOWING · ${product.name.toUpperCase()}`;
+        intakeLabel.innerHTML = `Signal departing <strong>GENVIA</strong> → entering <strong>GYRA CORE</strong>`;
+        promptMetaLeft.textContent = `${product.code} · ${product.category.toUpperCase()}`;
+        promptMetaRight.textContent = product.endpoint;
+        promptText.textContent = product.inputPrompt;
+
+        syncSwitcher("running");
+        renderStageRows(product, 0, "running");
+        renderTailoredResult(product, "running");
+
+        // STEP 1: Silky ribbon glides from GENVIA -> GYRA CORE (~0.72s)
+        const trunkEdge = edges.find((e) => e.kind === "trunk");
+        launchRibbon(trunkEdge, 0.72, "#5B9EC2", "#FFFFFF", () => {
+          if (flow.runId !== myRun) return;
+          const coreNode = nodes.find((n) => n.id === "core");
+          ripples.push({ x: coreNode.x, y: coreNode.y, r: coreNode.r, maxR: coreNode.r + 44, alpha: 0.65, color: "#9CC4DC" });
+
+          // STEP 2: GYRA CORE -> 01 UNDERSTAND (~0.78s)
+          flow.phase = "understand";
+          intakeLabel.innerHTML = `<strong>01 Understand</strong> parsing intent &amp; context for <strong>${product.name}</strong>`;
+          const e0 = edges.find((e) => e.kind === "core-stage" && e.stageIdx === 0);
+          launchRibbon(e0, 0.78, "#5B9EC2", "#CBE6F5", () => {
+            if (flow.runId !== myRun) return;
+            const st0 = nodes.find((n) => n.id === "stage-understand");
+            ripples.push({ x: st0.x, y: st0.y, r: st0.r, maxR: st0.r + 30, alpha: 0.6, color: "#9CC4DC" });
+
+            // STEP 3: 01 UNDERSTAND -> 02 ORCHESTRATE (~0.82s)
+            flow.phase = "orchestrate";
+            renderStageRows(product, 1, "running");
+            intakeLabel.innerHTML = `<strong>02 Orchestrate</strong> selecting engines &amp; guardrails for <strong>${product.name}</strong>`;
+            const chain01 = edges.find((e) => e.kind === "stage-chain" && e.stageIdx === 1);
+            const core1 = edges.find((e) => e.kind === "core-stage" && e.stageIdx === 1);
+            if (core1) launchRibbon(core1, 0.82, "#3E7B9E", "#9CC4DC", null);
+            launchRibbon(chain01, 0.82, faultMode ? "#F87171" : "#5B9EC2", faultMode ? "#FECACA" : "#FFFFFF", () => {
+              if (flow.runId !== myRun) return;
+              const st1 = nodes.find((n) => n.id === "stage-orchestrate");
+
+              if (faultMode) {
+                flow.phase = "failed";
+                canopyFrame.dataset.state = `failed-${branchId}`;
+                wiredConsole.className = "wired-console state-failed port-hit";
+                statusText.textContent = "FAULT GUARD · INTERCEPTED";
+                intakeLabel.innerHTML = `<strong>Fault Guard</strong> cleanly halted <strong>${product.name}</strong> at Orchestrate.`;
+                ripples.push({ x: st1.x, y: st1.y, r: st1.r, maxR: st1.r + 48, alpha: 0.82, color: "#F87171" });
+                syncSwitcher("failed");
+                renderStageRows(product, 1, "failed");
+                renderTailoredResult(product, "failed");
+                return;
+              }
+
+              ripples.push({ x: st1.x, y: st1.y, r: st1.r, maxR: st1.r + 30, alpha: 0.6, color: "#9CC4DC" });
+
+              // STEP 4: 02 ORCHESTRATE -> 03 EXECUTE (~0.82s)
+              flow.phase = "execute";
+              renderStageRows(product, 2, "running");
+              intakeLabel.innerHTML = `<strong>03 Execute</strong> dispatching live stream to <strong>${product.name}</strong>`;
+              const chain12 = edges.find((e) => e.kind === "stage-chain" && e.stageIdx === 2);
+              const core2 = edges.find((e) => e.kind === "core-stage" && e.stageIdx === 2);
+              if (core2) launchRibbon(core2, 0.82, "#3E7B9E", "#9CC4DC", null);
+              launchRibbon(chain12, 0.82, "#5B9EC2", "#FFFFFF", () => {
+                if (flow.runId !== myRun) return;
+                const st2 = nodes.find((n) => n.id === "stage-execute");
+                ripples.push({ x: st2.x, y: st2.y, r: st2.r, maxR: st2.r + 30, alpha: 0.6, color: "#9CC4DC" });
+
+                // STEP 5: Stages -> Chosen Product Orb (~0.88s)
+                flow.phase = "product";
+                const spEdges = edges.filter((e) => e.kind === "stage-product" && e.branch === branchId);
+                spEdges.forEach((ed, idx) => {
+                  launchRibbon(ed, 0.88 + idx * 0.08, "#5B9EC2", "#DFF2FC", idx === 0 ? () => {
+                    if (flow.runId !== myRun) return;
+                    const pNode = nodes.find((n) => n.id === branchId);
+                    ripples.push({ x: pNode.x, y: pNode.y, r: pNode.r, maxR: pNode.r + 48, alpha: 0.78, color: "#9CC4DC" });
+
+                    // STEP 6: Product Orb -> 3 Sub-Engine Generator Orbs (~0.72s)
+                    flow.phase = "generator";
+                    intakeLabel.innerHTML = `<strong>${product.name}</strong> firing 3 generator engines → feeding wire port below`;
+                    const leafEdges = edges.filter((e) => e.kind === "product-leaf" && e.branch === branchId);
+                    const portEdges = edges.filter((e) => e.kind === "generator-port" && e.branch === branchId);
+
+                    if (leafEdges.length > 0) {
+                      leafEdges.forEach((le, li) => {
+                        launchRibbon(le, 0.72 + li * 0.07, "#5B9EC2", "#A7F3D0", li === 0 ? () => {
+                          if (flow.runId !== myRun) return;
+                          // STEP 7: Generator Orbs -> DOWNWARD CONVERGING WIRES INTO THE EXECUTION BOX (~0.76s)!
+                          flow.phase = "wiring";
+                          portEdges.forEach((pe, pi) => {
+                            launchRibbon(pe, 0.76 + pi * 0.06, "#34D399", "#D1FAE5", pi === 0 ? () => completeFlow(myRun, product) : null);
+                          });
+                        } : null);
+                      });
+                    } else {
+                      // Compact mobile path directly down to box port
+                      flow.phase = "wiring";
+                      portEdges.forEach((pe, pi) => {
+                        launchRibbon(pe, 0.78, "#34D399", "#D1FAE5", pi === 0 ? () => completeFlow(myRun, product) : null);
+                      });
+                    }
+                  } : null);
+                });
+              });
+            });
+          });
+        });
+      }
+
+      function completeFlow(runId, product) {
+        if (flow.runId !== runId) return;
+        flow.phase = "done";
+        flow.portGlow = 1;
+        canopyFrame.dataset.state = `done-${product.id}`;
+        wiredConsole.className = "wired-console state-done port-hit";
+        statusText.textContent = `VERIFIED · ${product.name.toUpperCase()}`;
+        intakeLabel.innerHTML = `Generators delivered verified artifact via <strong>${product.endpoint}</strong>`;
+        syncSwitcher("done");
+        renderStageRows(product, 3, "done");
+        renderTailoredResult(product, "done");
+
+        // Gentle emerald pulse at the landing port on top of the box
+        const port = portAnchors.find((p) => p.branch === product.id);
+        if (port) ripples.push({ x: port.x, y: port.y - 4, r: 5, maxR: 44, alpha: 0.85, color: "#34D399" });
+      }
+
+      function resetIdle() {
+        stopTour();
+        flow.runId += 1;
+        flow.phase = "idle";
+        flow.branchId = null;
+        flow.leafName = null;
+        flow.stageProgress = [0, 0, 0];
+        selectedBranch = null;
+        selectedLeaf = null;
+        ribbons = [];
+        canopyFrame.dataset.state = "idle";
+        wiredConsole.className = "wired-console";
+        statusText.textContent = "IDLE · STANDBY";
+        intakeLabel.innerHTML = "Click any floating orb above — or choose a product to watch the soft continuous flow land here.";
+        promptMetaLeft.textContent = "ARCHITECTURE INPUT";
+        promptMetaRight.textContent = "GENVIA → GYRA CORE";
+        promptText.textContent = "Select Gyra Chat, Gyra Image, Gyra Video, or Gyra API to trace a real request smoothly from Genvia → Gyra Core → 3 Execution Stages → Generator Orbs → Wired Result Output.";
+        syncSwitcher("idle");
+        renderStageRows(null, -1, "idle");
+        renderTailoredResult(null, "idle");
+      }
+
+      function stopTour() {
+        if (tourTimer) {
+          clearInterval(tourTimer);
+          tourTimer = null;
+          btnTour.textContent = "Auto-Flow Tour";
+        }
+      }
+
+      function renderBackdropCache() {
+        bgCanvas.width = Math.round(W * dpr);
+        bgCanvas.height = Math.round(H * dpr);
+        bgCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        bgCtx.clearRect(0, 0, W, H);
+
+        const cx = W * 0.5;
+        const cy = W < 780 ? 132 : 146;
+        const bgGrad = bgCtx.createRadialGradient(cx, cy, 8, cx, cy, Math.max(W, H) * 0.58);
+        bgGrad.addColorStop(0, "rgba(31, 91, 124, 0.22)");
+        bgGrad.addColorStop(0.45, "rgba(10, 29, 43, 0.11)");
+        bgGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+        bgCtx.fillStyle = bgGrad;
+        bgCtx.fillRect(0, 0, W, H);
+
+        bgCtx.save();
+        bgCtx.strokeStyle = "#162C3D";
+        [105, 205, 320, 445].forEach((rad, i) => {
+          bgCtx.beginPath();
+          bgCtx.arc(cx, cy, rad, 0, Math.PI * 2);
+          bgCtx.globalAlpha = 0.24 - i * 0.04;
+          bgCtx.lineWidth = 1;
+          bgCtx.setLineDash(i % 2 === 1 ? [2, 11] : []);
+          bgCtx.stroke();
+        });
+        bgCtx.setLineDash([]);
+        for (const s of stars) {
+          bgCtx.fillStyle = "#6CA8CA";
+          bgCtx.globalAlpha = 0.22;
+          bgCtx.beginPath();
+          bgCtx.arc(s.rx * W, s.ry * H, s.r, 0, Math.PI * 2);
+          bgCtx.fill();
+        }
+        bgCtx.restore();
+      }
+
+      function resize() {
+        const rect = canopyFrame.getBoundingClientRect();
+        W = Math.max(320, rect.width);
+        H = Math.max(440, rect.height);
+        dpr = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = Math.round(W * dpr);
+        canvas.height = Math.round(H * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        buildGraph();
+        renderBackdropCache();
+      }
+
+      function tick(now) {
+        const dt = Math.min(0.05, (now - lastTime) / 1000);
+        lastTime = now;
+        t += dt;
+
+        parallax.x += (pointer.nx - parallax.x) * 0.04;
+        parallax.y += (pointer.ny - parallax.y) * 0.04;
+        flow.portGlow = Math.max(0, flow.portGlow - dt * 0.45);
+
+        // Smooth stage ring progress interpolation (lazy SaaS sweep!)
+        const stageTargets = [0, 0, 0];
+        if (flow.phase === "understand") stageTargets[0] = 0.78;
+        else if (flow.phase === "orchestrate") { stageTargets[0] = 1; stageTargets[1] = 0.78; }
+        else if (flow.phase === "failed") { stageTargets[0] = 1; stageTargets[1] = 0.85; }
+        else if (flow.phase === "execute") { stageTargets[0] = 1; stageTargets[1] = 1; stageTargets[2] = 0.78; }
+        else if (["product", "generator", "wiring", "done"].includes(flow.phase)) {
+          stageTargets[0] = 1; stageTargets[1] = 1; stageTargets[2] = 1;
+        }
+        for (let i = 0; i < 3; i++) {
+          flow.stageProgress[i] += (stageTargets[i] - flow.stageProgress[i]) * Math.min(1, dt * 4.5);
+        }
+
+        ctx.clearRect(0, 0, W, H);
+
+        // 1. Blit pre-rendered calm radial nebula & polar lattice with subtle parallax (O(1) per frame!)
+        ctx.drawImage(bgCanvas, parallax.x * 10, parallax.y * 6, W, H);
+
+        // 2. Ultra-lazy ambient drifting liquid-light motes (calm, hypnotic SaaS idle motion)
+        if (ambientMotes.length < 5 && Math.random() < 0.025 && edges.length) {
+          const pool = selectedBranch
+            ? edges.filter((e) => e.branch === null || e.branch === selectedBranch)
+            : edges;
+          const pick = pool[Math.floor(Math.random() * pool.length)];
+          if (pick) {
+            ambientMotes.push({
+              edge: pick,
+              elapsed: 0,
+              duration: 2.6 + Math.random() * 1.6,
+              color: (flow.phase === "done" && pick.branch === selectedBranch) ? "#34D399" : "#5B9EC2"
+            });
+          }
+        }
+
+        // 3. Draw Base Synaptic & Downward Generator Tether Wires
+        for (const e of edges) {
+          const isPortWire = e.kind === "generator-port";
+          const onPath = !selectedBranch || e.branch === null || e.branch === selectedBranch;
+          const isSelectedPath = selectedBranch && onPath;
+          const isHover = hoveredNode && (e.from === hoveredNode || e.to === hoveredNode || (hoveredNode.branch && e.branch === hoveredNode.branch));
+
+          ctx.save();
+          traceEdgePath(e);
+
+          if (isSelectedPath && flow.phase === "done") {
+            ctx.strokeStyle = "rgba(52, 211, 153, 0.16)";
+            ctx.lineWidth = 6.5;
+            ctx.stroke();
+            traceEdgePath(e);
+            ctx.strokeStyle = "#34D399";
+            ctx.lineWidth = isPortWire ? 1.8 : 1.75;
+            ctx.globalAlpha = 0.85;
+            ctx.stroke();
+          } else if (isSelectedPath && flow.phase === "failed" && (e.kind === "trunk" || (e.stageIdx !== undefined && e.stageIdx <= 1))) {
+            ctx.strokeStyle = "#F87171";
+            ctx.lineWidth = 1.9;
+            ctx.globalAlpha = 0.82;
+            ctx.stroke();
+          } else if (isSelectedPath) {
+            ctx.strokeStyle = "rgba(91, 158, 194, 0.16)";
+            ctx.lineWidth = 6;
+            ctx.stroke();
+            traceEdgePath(e);
+            ctx.strokeStyle = "#5B9EC2";
+            ctx.lineWidth = 1.6;
+            ctx.globalAlpha = 0.72;
+            ctx.stroke();
+          } else {
+            ctx.strokeStyle = isHover ? "#4F8EB2" : (isPortWire ? "#22465E" : "#1F4259");
+            ctx.lineWidth = isHover ? 1.5 : (isPortWire ? 1.0 : 1.05);
+            ctx.globalAlpha = onPath ? (isHover ? 0.72 : (isPortWire ? 0.36 : 0.42)) : 0.17;
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+
+        // 4. Draw Lazy Ambient Liquid Motes
+        for (let i = ambientMotes.length - 1; i >= 0; i--) {
+          const m = ambientMotes[i];
+          m.elapsed += dt;
+          const raw = m.elapsed / m.duration;
+          if (raw >= 1) { ambientMotes.splice(i, 1); continue; }
+          const u = easeInOutCubic(raw);
+          drawFluidRibbon(m.edge, Math.max(0, u - 0.18), u, m.color, "#9CC4DC", 1.8);
+        }
+
+        // 5. Update & Draw Active Physics-Driven Fluid Ribbons (triggers next phase on exact arrival!)
+        for (let i = ribbons.length - 1; i >= 0; i--) {
+          const rb = ribbons[i];
+          rb.elapsed += dt;
+          const raw = rb.elapsed / rb.duration;
+          const head = easeInOutCubic(Math.min(1, raw));
+          const tail = easeInOutCubic(Math.max(0, raw - 0.38));
+
+          drawFluidRibbon(rb.edge, tail, head, rb.color, rb.headColor, 3.2);
+
+          if (raw >= 1 && !rb.arrived) {
+            rb.arrived = true;
+            if (typeof rb.onArrive === "function") rb.onArrive();
+          }
+          if (raw >= 1.38) {
+            ribbons.splice(i, 1);
+          }
+        }
+
+        // 6. Soft Velvet Ripples
+        for (let i = ripples.length - 1; i >= 0; i--) {
+          const rp = ripples[i];
+          rp.r += dt * 42;
+          rp.alpha -= dt * 0.72;
+          if (rp.alpha <= 0 || rp.r > rp.maxR) { ripples.splice(i, 1); continue; }
+          ctx.beginPath();
+          ctx.arc(rp.x, rp.y, rp.r, 0, Math.PI * 2);
+          ctx.strokeStyle = rp.color;
+          ctx.globalAlpha = rp.alpha;
+          ctx.lineWidth = 1.35;
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
+
+        // 7. Draw Illuminated Intake Port Sockets along the bottom edge (tying into the SaaS Box!)
+        for (const p of portAnchors) {
+          const isAct = selectedBranch === p.branch;
+          const isDone = isAct && flow.phase === "done";
+          const col = isDone ? "#34D399" : (isAct ? "#9CC4DC" : "#2D5A76");
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(p.x, p.y - 3, isAct ? 4.5 : 3.2, 0, Math.PI * 2);
+          ctx.fillStyle = isDone ? "#34D399" : (isAct ? "#5B9EC2" : "#0A1B29");
+          ctx.fill();
+          ctx.strokeStyle = col;
+          ctx.lineWidth = 1.4;
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        // 8. Draw All 21 Floating Machined Circular Orbs (Smoothly Lerped Glow — ZERO Rectangular Boxes!)
+        for (const n of nodes) {
+          const onPath = !selectedBranch || n.branch === null || n.branch === selectedBranch;
+          const isSelBranch = selectedBranch && n.branch === selectedBranch;
+          const isHover = hoveredNode === n;
+          const isSelLeaf = selectedLeaf && n.leafName === selectedLeaf;
+
+          const targetGlow = (isHover || isSelBranch || n.tier === 1) ? 1 : 0;
+          n.glow += (targetGlow - n.glow) * Math.min(1, dt * 5.5);
+
+          const r = n.r + (isHover ? 3 : 0);
+          let stroke = "#3A6E8C";
+          let fillEnd = "#040A11";
+
+          if (n.tier === 1) {
+            stroke = "#8EC2DF";
+            fillEnd = "#0A2133";
+          }
+          if (isSelBranch || (selectedBranch && n.tier <= 2)) {
+            if (flow.phase === "failed" && (n.id === "stage-orchestrate" || isSelBranch)) {
+              stroke = "#F87171"; fillEnd = "#220B0F";
+            } else if (flow.phase === "done") {
+              stroke = "#34D399"; fillEnd = n.tier === 1 ? "#0A2630" : "#051F1B";
+            } else {
+              stroke = "#9CC4DC"; fillEnd = "#0B2437";
+            }
+          }
+          if (isHover || isSelLeaf) stroke = "#FFFFFF";
+
+          ctx.save();
+          ctx.globalAlpha = onPath ? 1 : 0.42;
+
+          // Gentle breathing radial aura (lightweight layered discs — zero GC churn)
+          if (n.glow > 0.05) {
+            const breathe = Math.sin(t * 1.5 + n.x * 0.01) * 1.5;
+            const auraCol = (flow.phase === "done" && isSelBranch)
+              ? "rgba(52,211,153,0.12)"
+              : (flow.phase === "failed" && (n.id === "stage-orchestrate" || isSelBranch))
+              ? "rgba(248,113,113,0.14)"
+              : "rgba(91,158,194,0.13)";
+            ctx.globalAlpha = (onPath ? 1 : 0.35) * n.glow;
+            ctx.fillStyle = auraCol;
+            ctx.beginPath();
+            ctx.arc(n.x, n.y, r * 1.85 + breathe, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(n.x, n.y, r * 1.38 + breathe * 0.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = onPath ? 1 : 0.42;
+          }
+
+          // Concentric outer machined ring + lazy rotating telemetry arc
+          if (n.tier <= 3 || isHover || isSelLeaf) {
+            ctx.beginPath();
+            ctx.arc(n.x, n.y, r + 5.8, 0, Math.PI * 2);
+            ctx.strokeStyle = stroke;
+            ctx.globalAlpha = onPath ? 0.3 : 0.14;
+            ctx.lineWidth = 0.85;
+            ctx.stroke();
+
+            if (n.tier === 1 || isSelBranch || isHover) {
+              ctx.save();
+              ctx.translate(n.x, n.y);
+              ctx.rotate(t * (n.tier === 1 ? 0.32 : -0.48));
+              ctx.beginPath();
+              ctx.arc(0, 0, r + 5.8, 0, Math.PI * 1.05);
+              ctx.strokeStyle = stroke;
+              ctx.lineWidth = 1.45;
+              ctx.setLineDash([4, 6]);
+              ctx.globalAlpha = 0.85;
+              ctx.stroke();
+              ctx.restore();
+            }
+          }
+
+          // Smooth sweeping progress ring on Tier 2 Stage Orbs
+          if (n.tier === 2 && flow.stageProgress[n.stageIdx] > 0.02) {
+            ctx.beginPath();
+            ctx.arc(n.x, n.y, r + 2.8, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * flow.stageProgress[n.stageIdx]);
+            ctx.strokeStyle = (flow.phase === "failed" && n.stageIdx === 1) ? "#F87171" : (flow.stageProgress[n.stageIdx] > 0.94 ? "#34D399" : "#FFFFFF");
+            ctx.lineWidth = 2.0;
+            ctx.globalAlpha = 1;
+            ctx.stroke();
+          }
+
+          // Primary circular orb body (crisp machined disc + subtle inner highlight ring)
+          ctx.globalAlpha = onPath ? 1 : 0.44;
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+          ctx.fillStyle = n.tier === 1 ? "#0C273A" : (isSelBranch ? fillEnd : "#06111B");
+          ctx.fill();
+          ctx.lineWidth = (n.tier === 1 || isSelBranch || isHover) ? 1.85 : 1.2;
+          ctx.strokeStyle = stroke;
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, r - 2.2, -Math.PI * 0.85, -Math.PI * 0.15);
+          ctx.strokeStyle = "rgba(196, 230, 248, 0.22)";
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          // Vector icon inside circular orb
+          const iconScale = n.tier === 1 ? 1.06 : (n.tier === 3 ? 0.92 : (n.tier === 4 ? 0.68 : 0.82));
+          drawOrbIcon(n, (isHover || isSelBranch || n.tier === 1) ? "#FFFFFF" : "#A2C9DF", iconScale);
+
+          // Crisp typography positioned cleanly around each orb
+          ctx.textAlign = "center";
+          if (n.tier === 0) {
+            ctx.fillStyle = "#FFFFFF";
+            ctx.font = "700 12.5px 'Barlow Semi Condensed', sans-serif";
+            ctx.fillText(n.label, n.x, n.y - r - 11);
+            ctx.fillStyle = "#78B0CE";
+            ctx.font = "500 8.5px 'JetBrains Mono', monospace";
+            ctx.fillText(n.sub, n.x, n.y + r + 15);
+          } else if (n.tier === 1) {
+            ctx.fillStyle = "#FFFFFF";
+            ctx.font = "700 12.5px 'JetBrains Mono', monospace";
+            ctx.fillText(n.label, n.x, n.y + r + 18);
+            ctx.fillStyle = "#78B0CE";
+            ctx.font = "500 8.5px 'JetBrains Mono', monospace";
+            ctx.fillText(n.sub, n.x, n.y + r + 30);
+          } else if (n.tier === 2) {
+            ctx.fillStyle = "#FFFFFF";
+            ctx.font = "600 10px 'JetBrains Mono', monospace";
+            ctx.fillText(`${n.shortCode} · ${n.label}`, n.x, n.y - r - 11);
+          } else if (n.tier === 3) {
+            ctx.fillStyle = "#FFFFFF";
+            ctx.font = "700 14.5px 'Barlow Semi Condensed', sans-serif";
+            ctx.fillText(n.label, n.x, n.y - r - 12);
+            ctx.fillStyle = isSelBranch ? (flow.phase === "done" ? "#6EE7B7" : "#9CC4DC") : "#7C97AC";
+            ctx.font = "500 8.5px 'JetBrains Mono', monospace";
+            ctx.fillText(n.sub, n.x, n.y + r + 17);
+          } else {
+            ctx.fillStyle = isSelLeaf ? "#FFFFFF" : (isSelBranch ? "#E1EFF9" : "#95ACBE");
+            ctx.font = isSelLeaf ? "600 9.5px 'JetBrains Mono', monospace" : "500 9px 'JetBrains Mono', monospace";
+            ctx.fillText(n.label, n.x, n.y + r + 14);
+          }
+
+          ctx.restore();
+        }
+
+        requestAnimationFrame(tick);
+      }
+
+      // Hover + Smart Click on ANY orb
+      canvas.addEventListener("mousemove", (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+        pointer.nx = (mx / W - 0.5) * 2;
+        pointer.ny = (my / H - 0.5) * 2;
+
+        hoveredNode = nodes.find((n) => Math.hypot(n.x - mx, n.y - my) <= n.r + 12) || null;
+        canvas.style.cursor = hoveredNode ? "pointer" : "default";
+
+        if (hoveredNode) {
+          otK.textContent = hoveredNode.tierName;
+          otT.textContent = hoveredNode.label;
+          otD.textContent = hoveredNode.desc;
+          const tipX = Math.min(W - 260, Math.max(16, hoveredNode.x + hoveredNode.r + 16));
+          const tipY = Math.min(H - 94, Math.max(14, hoveredNode.y - 24));
+          orbTip.style.left = tipX + "px";
+          orbTip.style.top = tipY + "px";
+          orbTip.classList.add("visible");
+        } else {
+          orbTip.classList.remove("visible");
+        }
+      });
+
+      canvas.addEventListener("mouseleave", () => {
+        hoveredNode = null;
+        orbTip.classList.remove("visible");
+      });
+
+      canvas.addEventListener("click", (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+        const hit = nodes.find((n) => Math.hypot(n.x - mx, n.y - my) <= n.r + 14);
+        if (!hit) return;
+        stopTour();
+        if (hit.branch) {
+          startSmoothFlow(hit.branch, hit.leafName || null);
+        } else {
+          inspectCoreLayer(hit);
+        }
+      });
+
+      btnTour.addEventListener("click", () => {
+        if (tourTimer) { stopTour(); return; }
+        let idx = 0;
+        btnTour.textContent = "Stop Tour";
+        startSmoothFlow(story.products[0].id, null);
+        tourTimer = setInterval(() => {
+          idx = (idx + 1) % story.products.length;
+          startSmoothFlow(story.products[idx].id, null);
+        }, 6800);
+      });
+
+      btnFault.addEventListener("click", () => {
+        faultMode = !faultMode;
+        btnFault.classList.toggle("active", faultMode);
+        btnFault.setAttribute("aria-pressed", String(faultMode));
+        btnFault.textContent = faultMode ? "Fault Guard: Armed" : "Fault Guard: Off";
+        if (selectedBranch) startSmoothFlow(selectedBranch, selectedLeaf);
+      });
+
+      btnReset.addEventListener("click", resetIdle);
+
+      seedStars();
+      resize();
+      window.addEventListener("resize", resize);
+      renderStageRows(null, -1, "idle");
+      renderTailoredResult(null, "idle");
+      requestAnimationFrame(tick);
+    })();
+  </script>
+</body>
+</html>

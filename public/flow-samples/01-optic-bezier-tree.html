@@ -1,0 +1,876 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sample 01 — Optic Bézier Neural Tree · Gyra</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #000000;
+      --surface: #06090D;
+      --surface-2: #0A1118;
+      --border: #1C2630;
+      --border-soft: #141B22;
+      --steel: #1F5B7C;
+      --steel-bright: #5B9EC2;
+      --steel-ice: #8EC2DF;
+      --text: #F5F5F5;
+      --muted: #8B98A5;
+      --ok: #34D399;
+      --err: #F87171;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: "DM Sans", system-ui, sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    .font-display { font-family: "Barlow Semi Condensed", sans-serif; letter-spacing: -0.02em; }
+    .font-mono { font-family: "JetBrains Mono", monospace; font-variant-numeric: tabular-nums; }
+
+    .wrap {
+      max-width: 1420px;
+      margin: 0 auto;
+      padding: 28px 24px 56px;
+    }
+    .top-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border-soft);
+    }
+    .top-meta h1 {
+      font-size: 22px;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+    .top-meta p { color: var(--muted); font-size: 13px; margin-top: 2px; }
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .btn {
+      background: #080E14;
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 8px 14px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      cursor: pointer;
+      transition: border-color 180ms ease, background 180ms ease, color 180ms ease;
+    }
+    .btn:hover { border-color: var(--steel-bright); background: #0C1822; }
+    .btn.primary { background: var(--steel); border-color: var(--steel-bright); color: #fff; }
+    .btn.primary:hover { background: #296E93; }
+    .btn.danger { border-color: rgba(248,113,113,0.4); color: #FCA5A5; }
+    .btn.danger:hover { border-color: var(--err); background: rgba(248,113,113,0.1); }
+
+    /* Monumental Interactive Stage */
+    .stage {
+      position: relative;
+      border: 1px solid var(--border);
+      background:
+        radial-gradient(ellipse 75% 45% at 50% 18%, rgba(31, 91, 124, 0.16), transparent 72%),
+        linear-gradient(180deg, #04070B 0%, #000000 100%);
+      padding: 30px 28px 28px;
+      overflow: hidden;
+    }
+    .stage-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(to right, rgba(91,158,194,0.045) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(91,158,194,0.045) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+    }
+    .stage-inner { position: relative; z-index: 2; }
+
+    /* Level 1: GenVIA Parent */
+    .parent-tier {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 0;
+    }
+    .parent-crest {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 7px 18px;
+      border: 1px solid rgba(91,158,194,0.32);
+      background: rgba(6, 13, 20, 0.92);
+    }
+    .parent-crest .brand { font-size: 13px; letter-spacing: 0.24em; font-weight: 700; color: #FFFFFF; }
+    .parent-crest .sep { color: var(--steel-bright); opacity: 0.6; }
+    .parent-crest .role { font-size: 11px; letter-spacing: 0.14em; color: var(--muted); text-transform: uppercase; }
+
+    /* Optic Trunk SVG 1 */
+    .trunk-svg {
+      display: block;
+      width: 100%;
+      height: 54px;
+      overflow: visible;
+    }
+
+    /* Level 2 & 3: Gyra Platform + Wide Intelligence Core */
+    .platform-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 12px 20px;
+      border: 1px solid var(--border);
+      border-bottom: none;
+      background: rgba(8, 15, 22, 0.95);
+    }
+    .platform-id {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .gyra-mark {
+      width: 24px;
+      height: 24px;
+      object-fit: contain;
+    }
+    .platform-name { font-size: 15px; font-weight: 700; letter-spacing: 0.16em; }
+    .platform-sub { font-size: 11px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
+    .state-readout {
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 5px 12px;
+      border: 1px solid var(--border);
+      background: #03070B;
+      color: var(--steel-ice);
+    }
+    .state-readout.processing { border-color: var(--steel-bright); color: var(--steel-ice); background: rgba(31,91,124,0.22); }
+    .state-readout.completed { border-color: rgba(52,211,153,0.55); color: var(--ok); background: rgba(52,211,153,0.08); }
+    .state-readout.failed { border-color: rgba(248,113,113,0.55); color: var(--err); background: rgba(248,113,113,0.08); }
+
+    /* Wide Intelligence Core Chamber */
+    .core-chamber {
+      position: relative;
+      border: 1px solid rgba(91,158,194,0.42);
+      background: linear-gradient(180deg, #07121C 0%, #04090F 100%);
+      padding: 22px 26px 24px;
+      box-shadow: inset 0 1px 0 rgba(142,194,223,0.14);
+    }
+    .core-top {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+    .core-title {
+      font-size: 13px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--steel-ice);
+      font-weight: 600;
+    }
+    .core-status { font-size: 12px; color: var(--muted); }
+
+    /* 3 Stages with animated fiber connectors */
+    .stages-row {
+      display: grid;
+      grid-template-columns: 1fr 76px 1fr 76px 1fr;
+      align-items: center;
+      gap: 0;
+    }
+    .stage-node {
+      position: relative;
+      border: 1px solid var(--border);
+      background: #04080D;
+      padding: 16px 18px;
+      transition: border-color 260ms ease, background 260ms ease, transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .stage-node.active {
+      border-color: var(--steel-bright);
+      background: #091B29;
+      transform: translateY(-2px);
+    }
+    .stage-node.done {
+      border-color: rgba(52,211,153,0.55);
+      background: #061613;
+    }
+    .stage-node.failed {
+      border-color: rgba(248,113,113,0.65);
+      background: #1A0A0D;
+    }
+    .stage-kicker {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      color: var(--steel-bright);
+      margin-bottom: 6px;
+    }
+    .stage-node.done .stage-kicker { color: var(--ok); }
+    .stage-node.failed .stage-kicker { color: var(--err); }
+    .stage-name { font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+    .stage-desc { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.45; }
+
+    .stage-link {
+      width: 100%;
+      height: 36px;
+      display: block;
+    }
+
+    /* Fluid Optic Bézier Fan Canvas + SVG */
+    .canopy-wrap {
+      position: relative;
+      width: 100%;
+      height: 150px;
+    }
+    #canopySvg, #canopyCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    #canopyCanvas { pointer-events: none; }
+
+    /* 4 Wide Product Branches */
+    .branches-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .branch-card {
+      position: relative;
+      text-align: left;
+      border: 1px solid var(--border);
+      background: #05090E;
+      padding: 20px 20px 18px;
+      color: var(--text);
+      cursor: pointer;
+      transition: border-color 220ms ease, background 220ms ease, transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 176px;
+    }
+    .branch-card:hover {
+      border-color: var(--steel-bright);
+      background: #081520;
+      transform: translateY(-3px);
+    }
+    .branch-card.selected {
+      border-color: var(--steel-ice);
+      background: linear-gradient(180deg, #0B2030 0%, #050C14 100%);
+      box-shadow: inset 0 2px 0 var(--steel-bright);
+    }
+    .branch-card.completed {
+      border-color: rgba(52,211,153,0.65);
+      box-shadow: inset 0 2px 0 var(--ok);
+    }
+    .branch-card.failed {
+      border-color: rgba(248,113,113,0.65);
+      box-shadow: inset 0 2px 0 var(--err);
+    }
+    .branch-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--steel-bright);
+      margin-bottom: 10px;
+    }
+    .branch-title {
+      font-size: 26px;
+      font-weight: 700;
+      text-transform: uppercase;
+      line-height: 1.05;
+      margin-bottom: 8px;
+    }
+    .branch-summary { font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 14px; }
+    .branch-foot {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--steel-ice);
+    }
+
+    /* Expandable Sub-Engine Canopy + Live Execution Console */
+    .inspector {
+      margin-top: 20px;
+      border: 1px solid var(--border);
+      background: #04080D;
+      display: grid;
+      grid-template-columns: 1.35fr 1fr;
+      overflow: hidden;
+      transition: border-color 240ms ease;
+    }
+    .inspector.active { border-color: rgba(91,158,194,0.55); }
+    .inspector-left {
+      padding: 22px 24px;
+      border-right: 1px solid var(--border-soft);
+    }
+    .inspector-right {
+      padding: 22px 24px;
+      background: #020508;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .ins-label {
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--steel-bright);
+      margin-bottom: 12px;
+    }
+    .sub-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .sub-item {
+      border: 1px solid var(--border-soft);
+      background: #070E16;
+      padding: 12px 14px;
+      transition: border-color 220ms ease, background 220ms ease;
+    }
+    .sub-item.lit { border-color: rgba(91,158,194,0.5); background: #0A1A27; }
+    .sub-item strong { display: block; font-size: 13px; color: #fff; margin-bottom: 3px; }
+    .sub-item span { font-size: 12px; color: var(--muted); }
+    .console-lines {
+      font-size: 12px;
+      line-height: 1.75;
+      color: #C7D6E2;
+      min-height: 112px;
+    }
+    .console-line { opacity: 0; transform: translateY(4px); animation: lineIn 260ms ease forwards; }
+    .console-line.ok { color: var(--ok); }
+    .console-line.err { color: var(--err); }
+    .console-note {
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border-soft);
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    @keyframes lineIn { to { opacity: 1; transform: translateY(0); } }
+
+    /* Responsive Mobile Vertical Flow */
+    @media (max-width: 960px) {
+      .wrap { padding: 18px 14px 40px; }
+      .stage { padding: 18px 14px; }
+      .stages-row { grid-template-columns: 1fr; gap: 10px; }
+      .stage-link { display: none; }
+      .canopy-wrap { height: 74px; }
+      .branches-grid { grid-template-columns: 1fr; gap: 10px; }
+      .branch-card { min-height: auto; }
+      .inspector { grid-template-columns: 1fr; }
+      .inspector-left { border-right: none; border-bottom: 1px solid var(--border-soft); }
+      .sub-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top-meta">
+      <div>
+        <h1 class="font-display">Sample 01 · Optic Bézier Neural Tree</h1>
+        <p>Full-width 1400px canopy with fluid S-curve fiber-optic conduits, 60fps photon comets, and live stage propagation.</p>
+      </div>
+      <div class="controls">
+        <button class="btn primary font-mono" id="btnAuto">Auto-Cycle Flow</button>
+        <button class="btn danger font-mono" id="btnFail">Simulate Fault</button>
+        <button class="btn font-mono" id="btnReset">Reset Idle</button>
+      </div>
+    </div>
+
+    <section class="stage" aria-label="Gyra Optic Bezier Neural Tree">
+      <div class="stage-grid"></div>
+      <div class="stage-inner">
+        <!-- Level 1: GenVIA Parent -->
+        <div class="parent-tier">
+          <div class="parent-crest font-mono">
+            <span class="brand">GENVIA</span>
+            <span class="sep">/</span>
+            <span class="role">Parent AI Company</span>
+          </div>
+          <svg class="trunk-svg" viewBox="0 0 1200 54" preserveAspectRatio="none" aria-hidden="true">
+            <line x1="600" y1="0" x2="600" y2="54" stroke="#244256" stroke-width="1.5" stroke-dasharray="4 4" />
+            <circle cx="600" cy="27" r="3.5" fill="#5B9EC2">
+              <animate attributeName="cy" values="4;50" dur="2.1s" repeatCount="indefinite" />
+              <animate attributeName="opacity" values="0;1;1;0" dur="2.1s" repeatCount="indefinite" />
+            </circle>
+          </svg>
+        </div>
+
+        <!-- Level 2: Gyra Platform Header -->
+        <div class="platform-header">
+          <div class="platform-id">
+            <img src="/gyra-logo.png" alt="Gyra" class="gyra-mark" onerror="this.style.display='none'" />
+            <span class="platform-name font-display">GYRA</span>
+            <span class="platform-sub font-mono">AI Platform · Web · Android · Telegram · REST API</span>
+          </div>
+          <div class="state-readout font-mono" id="stateBadge">STATE: IDLE</div>
+        </div>
+
+        <!-- Level 3 & 4: Gyra Intelligence Core + Understand -> Orchestrate -> Execute -->
+        <div class="core-chamber">
+          <div class="core-top">
+            <div class="core-title font-mono">Gyra Intelligence Core · Execution Pipeline</div>
+            <div class="core-status font-mono" id="coreStatus">Standby · Ambient optical telemetry active — click any product branch below</div>
+          </div>
+
+          <div class="stages-row">
+            <div class="stage-node" id="st-understand">
+              <div class="stage-kicker font-mono"><span>STAGE 01</span><span id="st-badge-0">READY</span></div>
+              <div class="stage-name font-display">Understand</div>
+              <div class="stage-desc">Parse prompt intent, file attachments, vision input & auth scope.</div>
+            </div>
+
+            <svg class="stage-link" viewBox="0 0 76 36" aria-hidden="true">
+              <path d="M 0 18 C 24 18, 52 18, 76 18" stroke="#1E3546" stroke-width="2" fill="none" />
+              <path id="link-01" d="M 0 18 C 24 18, 52 18, 76 18" stroke="#5B9EC2" stroke-width="2.2" stroke-dasharray="18 58" fill="none">
+                <animate attributeName="stroke-dashoffset" values="76;0" dur="1.4s" repeatCount="indefinite" />
+              </path>
+            </svg>
+
+            <div class="stage-node" id="st-orchestrate">
+              <div class="stage-kicker font-mono"><span>STAGE 02</span><span id="st-badge-1">READY</span></div>
+              <div class="stage-name font-display">Orchestrate</div>
+              <div class="stage-desc">Select model tier, 6-agent routing, guardrails & async queues.</div>
+            </div>
+
+            <svg class="stage-link" viewBox="0 0 76 36" aria-hidden="true">
+              <path d="M 0 18 C 24 18, 52 18, 76 18" stroke="#1E3546" stroke-width="2" fill="none" />
+              <path id="link-12" d="M 0 18 C 24 18, 52 18, 76 18" stroke="#5B9EC2" stroke-width="2.2" stroke-dasharray="18 58" fill="none">
+                <animate attributeName="stroke-dashoffset" values="76;0" dur="1.4s" begin="0.35s" repeatCount="indefinite" />
+              </path>
+            </svg>
+
+            <div class="stage-node" id="st-execute">
+              <div class="stage-kicker font-mono"><span>STAGE 03</span><span id="st-badge-2">READY</span></div>
+              <div class="stage-name font-display">Execute</div>
+              <div class="stage-desc">Stream SSE tokens, render media frames & return verified payloads.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fluid Optic Bézier Canopy -->
+        <div class="canopy-wrap" id="canopyWrap">
+          <svg id="canopySvg" viewBox="0 0 1200 150" preserveAspectRatio="none" aria-hidden="true"></svg>
+          <canvas id="canopyCanvas"></canvas>
+        </div>
+
+        <!-- Level 5: 4 Product Branches -->
+        <div class="branches-grid" id="branchesGrid"></div>
+
+        <!-- Expandable Sub-Engine Inspector + Live Execution Console -->
+        <div class="inspector" id="inspector">
+          <div class="inspector-left">
+            <div class="ins-label font-mono" id="insTitle">Sub-Engines & Active Capabilities · Select a Branch</div>
+            <div class="sub-grid" id="subGrid"></div>
+          </div>
+          <div class="inspector-right">
+            <div>
+              <div class="ins-label font-mono">Execution Trace Console</div>
+              <div class="console-lines font-mono" id="consoleLines">
+                <div class="console-line" style="color:#8B98A5">&gt; Architecture idle. Click Gyra Chat, Image, Video, or API to launch a live signal wave across the optic canopy.</div>
+              </div>
+            </div>
+            <div class="console-note font-mono">
+              <span id="consoleEndpoint">ROUTE: STANDBY</span>
+              <span>Interactive Architecture Simulation</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="./shared.js"></script>
+  <script>
+    (function () {
+      const arch = window.GYRA_ARCH;
+      const branchesGrid = document.getElementById("branchesGrid");
+      const subGrid = document.getElementById("subGrid");
+      const insTitle = document.getElementById("insTitle");
+      const inspector = document.getElementById("inspector");
+      const consoleLines = document.getElementById("consoleLines");
+      const consoleEndpoint = document.getElementById("consoleEndpoint");
+      const stateBadge = document.getElementById("stateBadge");
+      const coreStatus = document.getElementById("coreStatus");
+      const canopySvg = document.getElementById("canopySvg");
+      const canopyCanvas = document.getElementById("canopyCanvas");
+      const ctx = canopyCanvas.getContext("2d");
+
+      const stageEls = [
+        document.getElementById("st-understand"),
+        document.getElementById("st-orchestrate"),
+        document.getElementById("st-execute")
+      ];
+      const stageBadges = [
+        document.getElementById("st-badge-0"),
+        document.getElementById("st-badge-1"),
+        document.getElementById("st-badge-2")
+      ];
+
+      let selectedId = null;
+      let runState = "idle"; // idle | processing | completed | failed
+      let timers = [];
+      let autoTimer = null;
+      let autoOn = false;
+
+      // Exact x targets (normalized 0..1) matching 4 equal columns
+      const targets = [0.125, 0.375, 0.625, 0.875];
+      const packets = [];
+
+      // Seed ambient optical photons on all 4 curves
+      for (let i = 0; i < 4; i++) {
+        for (let k = 0; k < 2; k++) {
+          packets.push({ branchIdx: i, t: (i * 0.23 + k * 0.5) % 1, speed: 0.0042 + Math.random() * 0.0014, boost: false });
+        }
+      }
+
+      function renderBranches() {
+        branchesGrid.innerHTML = "";
+        arch.branches.forEach((b, idx) => {
+          const btn = document.createElement("button");
+          btn.className = "branch-card";
+          btn.dataset.id = b.id;
+          btn.innerHTML = `
+            <div>
+              <div class="branch-top font-mono" style="gap:8px;">
+                <span>${b.code} · ${b.category}</span>
+              </div>
+              <div class="branch-title font-display">${b.name}</div>
+              <div class="branch-summary">${b.summary}</div>
+            </div>
+            <div class="branch-foot font-mono" style="gap:8px;">
+              <span style="font-size:10px;opacity:0.85;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${b.endpoint}</span>
+              <span class="action-hint" style="white-space:nowrap;flex-shrink:0;">Trace →</span>
+            </div>
+          `;
+          btn.addEventListener("click", () => {
+            stopAuto();
+            triggerBranch(b.id, false);
+          });
+          branchesGrid.appendChild(btn);
+        });
+      }
+
+      function cubicPoint(t, p0, p1, p2, p3) {
+        const mt = 1 - t;
+        const x = mt*mt*mt*p0.x + 3*mt*mt*t*p1.x + 3*mt*t*t*p2.x + t*t*t*p3.x;
+        const y = mt*mt*mt*p0.y + 3*mt*mt*t*p1.y + 3*mt*t*t*p2.y + t*t*t*p3.y;
+        return { x, y };
+      }
+
+      function drawSvgPaths() {
+        const activeIdx = arch.branches.findIndex(b => b.id === selectedId);
+        let html = `
+          <defs>
+            <linearGradient id="fiberIdle" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#356888" stop-opacity="0.7" />
+              <stop offset="100%" stop-color="#1A3040" stop-opacity="0.45" />
+            </linearGradient>
+            <linearGradient id="fiberActive" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#9CC4DC" stop-opacity="1" />
+              <stop offset="55%" stop-color="#5B9EC2" stop-opacity="0.95" />
+              <stop offset="100%" stop-color="#1F5B7C" stop-opacity="0.9" />
+            </linearGradient>
+            <linearGradient id="fiberDone" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#34D399" stop-opacity="0.95" />
+              <stop offset="100%" stop-color="#1F5B7C" stop-opacity="0.85" />
+            </linearGradient>
+            <linearGradient id="fiberErr" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#F87171" stop-opacity="0.95" />
+              <stop offset="100%" stop-color="#7F1D1D" stop-opacity="0.7" />
+            </linearGradient>
+          </defs>
+        `;
+        // Origin root hub glow
+        html += `<circle cx="600" cy="4" r="5" fill="#5B9EC2" />`;
+        targets.forEach((tx, idx) => {
+          const x2 = tx * 1200;
+          const d = `M 600 4 C 600 84, ${x2} 54, ${x2} 148`;
+          const isSel = idx === activeIdx;
+          const stroke = isSel
+            ? (runState === "completed" ? "url(#fiberDone)" : runState === "failed" ? "url(#fiberErr)" : "url(#fiberActive)")
+            : "url(#fiberIdle)";
+          const width = isSel ? 3.2 : 1.5;
+          const opacity = activeIdx === -1 ? 0.85 : (isSel ? 1 : 0.28);
+          html += `<path d="${d}" fill="none" stroke="${stroke}" stroke-width="${width}" stroke-opacity="${opacity}" />`;
+          // Subtle parallel harmonic fiber for desktop richness
+          const dSide = `M 600 4 C ${600 + (x2 - 600) * 0.25} 92, ${x2} 72, ${x2} 148`;
+          html += `<path d="${dSide}" fill="none" stroke="#5B9EC2" stroke-width="0.7" stroke-opacity="${isSel ? 0.45 : 0.14}" stroke-dasharray="3 6" />`;
+          html += `<circle cx="${x2}" cy="146" r="${isSel ? 4.5 : 3}" fill="${isSel ? (runState === 'completed' ? '#34D399' : runState === 'failed' ? '#F87171' : '#8EC2DF') : '#294B63'}" />`;
+        });
+        canopySvg.innerHTML = html;
+      }
+
+      function resizeCanvas() {
+        const rect = canopyCanvas.parentElement.getBoundingClientRect();
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        canopyCanvas.width = rect.width * dpr;
+        canopyCanvas.height = rect.height * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      function animateCanvas() {
+        const w = canopyCanvas.parentElement.clientWidth;
+        const h = canopyCanvas.parentElement.clientHeight;
+        ctx.clearRect(0, 0, w, h);
+        const activeIdx = arch.branches.findIndex(b => b.id === selectedId);
+
+        for (let i = packets.length - 1; i >= 0; i--) {
+          const p = packets[i];
+          p.t += p.speed;
+          if (p.t >= 1) {
+            if (p.boost) { packets.splice(i, 1); continue; }
+            p.t = 0;
+          }
+          const isSel = p.branchIdx === activeIdx;
+          if (activeIdx !== -1 && !isSel && !p.boost && Math.random() > 0.999) continue;
+
+          const x2 = targets[p.branchIdx] * w;
+          const p0 = { x: w * 0.5, y: 4 };
+          const p1 = { x: w * 0.5, y: h * 0.56 };
+          const p2 = { x: x2, y: h * 0.36 };
+          const p3 = { x: x2, y: h - 2 };
+
+          // Draw tapered light comet trail
+          const trailSteps = p.boost ? 14 : 8;
+          for (let s = 0; s < trailSteps; s++) {
+            const tt = Math.max(0, p.t - s * 0.012);
+            const pt = cubicPoint(tt, p0, p1, p2, p3);
+            const alpha = (1 - s / trailSteps) * (p.boost ? 0.95 : (activeIdx === -1 || isSel ? 0.65 : 0.16));
+            const r = (1 - s / trailSteps) * (p.boost ? 3.8 : 2.3);
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, Math.max(0.6, r), 0, Math.PI * 2);
+            if (p.boost && runState === "failed") {
+              ctx.fillStyle = `rgba(248, 113, 113, ${alpha})`;
+            } else if (p.boost && runState === "completed") {
+              ctx.fillStyle = `rgba(52, 211, 153, ${alpha})`;
+            } else {
+              ctx.fillStyle = `rgba(142, 194, 223, ${alpha})`;
+            }
+            ctx.fill();
+          }
+        }
+        requestAnimationFrame(animateCanvas);
+      }
+
+      function clearTimers() {
+        timers.forEach(t => clearTimeout(t));
+        timers = [];
+      }
+
+      function setBadge(state, text) {
+        stateBadge.className = "state-readout font-mono " + state;
+        stateBadge.textContent = "STATE: " + text;
+      }
+
+      function appendLog(text, cls = "") {
+        const div = document.createElement("div");
+        div.className = "console-line " + cls;
+        div.textContent = "> " + text;
+        consoleLines.appendChild(div);
+      }
+
+      function renderSubEngines(branch, litCount = 0) {
+        if (!branch) {
+          insTitle.textContent = "Sub-Engines & Active Capabilities · Select a Branch";
+          subGrid.innerHTML = arch.branches.map(b => `
+            <div class="sub-item">
+              <strong>${b.name}</strong>
+              <span>${b.subEngines.map(s => s.name).join(" · ")}</span>
+            </div>
+          `).join("");
+          return;
+        }
+        insTitle.textContent = `${branch.name} · Sub-Engines (${branch.category})`;
+        subGrid.innerHTML = branch.subEngines.map((s, idx) => `
+          <div class="sub-item ${idx < litCount ? "lit" : ""}">
+            <strong>${s.name}</strong>
+            <span>${s.role}</span>
+          </div>
+        `).join("");
+      }
+
+      function updateCards() {
+        document.querySelectorAll(".branch-card").forEach(card => {
+          const isSel = card.dataset.id === selectedId;
+          card.classList.toggle("selected", isSel);
+          card.classList.toggle("completed", isSel && runState === "completed");
+          card.classList.toggle("failed", isSel && runState === "failed");
+          const hint = card.querySelector(".action-hint");
+          if (isSel) {
+            hint.textContent = runState === "processing" ? "Streaming..." : runState === "completed" ? "Completed ✓" : runState === "failed" ? "Faulted !" : "Active";
+          } else {
+            hint.textContent = "Trace Flow →";
+          }
+        });
+      }
+
+      function spawnBurst(branchIdx, count = 4) {
+        for (let i = 0; i < count; i++) {
+          timers.push(setTimeout(() => {
+            packets.push({ branchIdx, t: 0, speed: 0.017 + i * 0.002, boost: true });
+          }, i * 110));
+        }
+      }
+
+      function triggerBranch(id, simulateFail = false) {
+        clearTimers();
+        const idx = arch.branches.findIndex(b => b.id === id);
+        if (idx === -1) return;
+        const branch = arch.branches[idx];
+        selectedId = id;
+        runState = "processing";
+        inspector.classList.add("active");
+        setBadge("processing", "PROCESSING");
+        coreStatus.textContent = `Routing live request → ${branch.name} (${branch.endpoint})`;
+        consoleEndpoint.textContent = `ROUTE: ${branch.endpoint}`;
+        consoleLines.innerHTML = "";
+
+        stageEls.forEach((el, i) => {
+          el.className = "stage-node";
+          stageBadges[i].textContent = "QUEUED";
+        });
+        renderSubEngines(branch, 1);
+        updateCards();
+        drawSvgPaths();
+
+        const trace = simulateFail ? branch.failTrace : branch.trace;
+
+        // Stage 01: Understand
+        stageEls[0].classList.add("active");
+        stageBadges[0].textContent = "ACTIVE";
+        appendLog(trace[0].log);
+
+        // Stage 02: Orchestrate
+        timers.push(setTimeout(() => {
+          stageEls[0].className = "stage-node done";
+          stageBadges[0].textContent = "DONE";
+          stageEls[1].classList.add("active");
+          stageBadges[1].textContent = "ACTIVE";
+          renderSubEngines(branch, 2);
+          appendLog(trace[1].log);
+          spawnBurst(idx, 3);
+        }, 560));
+
+        // Stage 03: Execute or Fail
+        timers.push(setTimeout(() => {
+          stageEls[1].className = "stage-node done";
+          stageBadges[1].textContent = "DONE";
+          if (simulateFail) {
+            runState = "failed";
+            stageEls[2].className = "stage-node failed";
+            stageBadges[2].textContent = "FAILED";
+            setBadge("failed", "FAILED");
+            coreStatus.textContent = `Fault caught on ${branch.name} · Safe rollback ready`;
+            appendLog(trace[2].log, "err");
+            spawnBurst(idx, 2);
+          } else {
+            stageEls[2].classList.add("active");
+            stageBadges[2].textContent = "STREAMING";
+            renderSubEngines(branch, 4);
+            spawnBurst(idx, 5);
+            timers.push(setTimeout(() => {
+              runState = "completed";
+              stageEls[2].className = "stage-node done";
+              stageBadges[2].textContent = "COMPLETE";
+              setBadge("completed", "COMPLETED");
+              coreStatus.textContent = `Execution completed via ${branch.name} · 3 / 3 stages verified`;
+              appendLog(trace[2].log, "ok");
+              updateCards();
+              drawSvgPaths();
+            }, 580));
+          }
+          updateCards();
+          drawSvgPaths();
+        }, 1150));
+      }
+
+      function resetIdle() {
+        clearTimers();
+        selectedId = null;
+        runState = "idle";
+        inspector.classList.remove("active");
+        setBadge("", "IDLE");
+        coreStatus.textContent = "Standby · Ambient optical telemetry active — click any product branch below";
+        consoleEndpoint.textContent = "ROUTE: STANDBY";
+        stageEls.forEach((el, i) => {
+          el.className = "stage-node";
+          stageBadges[i].textContent = "READY";
+        });
+        consoleLines.innerHTML = `<div class="console-line" style="color:#8B98A5">&gt; Architecture idle. Click Gyra Chat, Image, Video, or API to launch a live signal wave across the optic canopy.</div>`;
+        renderSubEngines(null);
+        updateCards();
+        drawSvgPaths();
+      }
+
+      function stopAuto() {
+        autoOn = false;
+        clearInterval(autoTimer);
+        document.getElementById("btnAuto").textContent = "Auto-Cycle Flow";
+      }
+
+      document.getElementById("btnAuto").addEventListener("click", () => {
+        if (autoOn) { stopAuto(); return; }
+        autoOn = true;
+        document.getElementById("btnAuto").textContent = "Stop Auto-Cycle";
+        let i = 0;
+        triggerBranch(arch.branches[0].id, false);
+        autoTimer = setInterval(() => {
+          i = (i + 1) % arch.branches.length;
+          triggerBranch(arch.branches[i].id, false);
+        }, 2900);
+      });
+      document.getElementById("btnFail").addEventListener("click", () => {
+        stopAuto();
+        triggerBranch(selectedId || "chat", true);
+      });
+      document.getElementById("btnReset").addEventListener("click", () => {
+        stopAuto();
+        resetIdle();
+      });
+
+      renderBranches();
+      renderSubEngines(null);
+      drawSvgPaths();
+      resizeCanvas();
+      window.addEventListener("resize", resizeCanvas);
+      requestAnimationFrame(animateCanvas);
+    })();
+  </script>
+</body>
+</html>

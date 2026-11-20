@@ -145,26 +145,27 @@ export function ChatShowcase({ routeBase = "" }: ChatShowcaseProps) {
           : Math.round(70 + (visibleLines / Math.max(1, outputLines.length)) * 30);
 
   return (
-    <section id="chat" className="gyra-band-defer border-b border-[#1F1F1F] bg-black py-24 lg:py-32">
+    <section id="chat" className="gyra-band-defer border-b border-[#DCE4EC] bg-white py-24 transition-colors duration-200 lg:py-32 dark:border-[#1F1F1F] dark:bg-black">
       <div className="mx-auto max-w-[1380px] px-5 sm:px-8">
         {/* Header Row */}
         <div className="grid grid-cols-1 items-end gap-6 lg:grid-cols-12">
           <div className="lg:col-span-7">
-            <p className="font-mono-tech text-[12px] tracking-[0.14em] text-[#5B9EC2] uppercase">
-              01 · Gyra Chat
+            <p className="font-mono-tech text-[12px] tracking-[0.14em] text-[#164E6D] uppercase dark:text-[#78B0CE]">
+              [ 01 · Gyra Chat ]
             </p>
-            <h2 className="font-display mt-3.5 text-[clamp(2.35rem,4.2vw,3.75rem)] font-bold leading-[0.98] tracking-[-0.02em] text-white uppercase [text-wrap:balance]">
-              Conversational reasoning built for real engineering.
+            <h2 className="font-display mt-3.5 text-[clamp(2.35rem,4.2vw,3.75rem)] leading-[0.96] tracking-[-0.02em] uppercase [text-wrap:balance]">
+              <span className="font-light text-[#4A5C6E] dark:text-white/75">Conversational reasoning</span>{" "}
+              <span className="font-bold text-[#0B1218] dark:text-white">built for real engineering.</span>
             </h2>
           </div>
           <div className="lg:col-span-5 lg:pl-6">
-            <p className="text-[15px] leading-[1.65] text-[#9A9A9A]">
+            <p className="text-[15px] leading-[1.65] text-[#4A5B6B] dark:text-[#9A9A9A]">
               Fast everyday answers on Gyra 1.0 and deep multi-step reasoning on SuperGyra 2.0.
               Drop any build prompt to watch the six-agent pipeline verify and stream output live.
             </p>
             <a
               href={resolveGyraRoute("/dashboard", routeBase)}
-              className="font-mono-tech mt-4 inline-flex items-center gap-1.5 text-[12px] tracking-[0.1em] text-white uppercase underline decoration-[#5B9EC2] underline-offset-4 transition-colors hover:text-[#5B9EC2]"
+              className="font-mono-tech mt-4 inline-flex items-center gap-1.5 text-[12px] tracking-[0.1em] text-[#0B1218] uppercase underline decoration-[#1B587A] underline-offset-4 transition-colors hover:text-[#1B587A] dark:text-white dark:decoration-[#5B9EC2] dark:hover:text-[#5B9EC2]"
             >
               Open Gyra Chat
               <ArrowUpRight className="h-3.5 w-3.5" />
@@ -173,9 +174,9 @@ export function ChatShowcase({ routeBase = "" }: ChatShowcaseProps) {
         </div>
 
         {/* Pitch-Black Razor-Bordered Interactive Workbench */}
-        <div className="mt-12 border border-[#1F1F1F] bg-black">
+        <div className="mt-12 border border-[#D4DFE9] bg-white shadow-[0_22px_60px_-34px_rgba(11,18,24,0.18)] dark:border-[#1F1F1F] dark:bg-black dark:shadow-none">
           {/* Toolbar */}
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#1F1F1F] bg-[#050505] px-4 py-3 sm:px-5">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#DCE4EC] bg-[#F7FAFC] px-4 py-3 sm:px-5 dark:border-[#1F1F1F] dark:bg-[#050505]">
             <div role="tablist" aria-label="Gyra Chat scenarios" className="flex flex-wrap gap-1.5">
               {CHAT_SCENARIOS.map((item) => {
                 const selected = item.id === scenario.id;
@@ -190,8 +191,8 @@ export function ChatShowcase({ routeBase = "" }: ChatShowcaseProps) {
                     onClick={() => startLiveRun(item.id, modelTier)}
                     className={`font-mono-tech min-h-[34px] border px-3 text-[11px] tracking-[0.06em] uppercase transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#5B9EC2] ${
                       selected
-                        ? "border-[#5B9EC2] bg-[#1F5B7C]/20 text-white"
-                        : "border-[#242424] bg-black text-[#8A8A8A] hover:border-[#444] hover:text-white"
+                        ? "border-[#1B587A] bg-[#1B587A] text-white dark:border-[#5B9EC2] dark:bg-[#1F5B7C]/20 dark:text-white"
+                        : "border-[#D4DFE9] bg-white text-[#4A5C6E] hover:border-[#1B587A] hover:text-[#0B1218] dark:border-[#242424] dark:bg-black dark:text-[#8A8A8A] dark:hover:border-[#444] dark:hover:text-white"
                     }`}
                   >
                     {item.label}
@@ -204,7 +205,7 @@ export function ChatShowcase({ routeBase = "" }: ChatShowcaseProps) {
               <div
                 role="group"
                 aria-label="Select Gyra Chat model"
-                className="inline-flex border border-[#242424] bg-black"
+                className="inline-flex border border-[#D4DFE9] bg-white dark:border-[#242424] dark:bg-black"
               >
                 <button
                   type="button"
@@ -212,8 +213,8 @@ export function ChatShowcase({ routeBase = "" }: ChatShowcaseProps) {
                   aria-pressed={modelTier === "gyra-1.0"}
                   className={`font-mono-tech min-h-[32px] px-3 text-[11px] tracking-[0.06em] uppercase transition-colors cursor-pointer ${
                     modelTier === "gyra-1.0"
-                      ? "bg-white font-medium text-black"
-                      : "text-[#8A8A8A] hover:text-white"
+                      ? "bg-[#0B1218] font-medium text-white dark:bg-white dark:text-black"
+                      : "text-[#526475] hover:text-[#0B1218] dark:text-[#8A8A8A] dark:hover:text-white"
                   }`}
                 >
                   Gyra 1.0
@@ -224,8 +225,8 @@ export function ChatShowcase({ routeBase = "" }: ChatShowcaseProps) {
                   aria-pressed={modelTier === "gyra-super2.0"}
                   className={`font-mono-tech min-h-[32px] border-l border-[#242424] px-3 text-[11px] tracking-[0.06em] uppercase transition-colors cursor-pointer ${
                     modelTier === "gyra-super2.0"
-                      ? "bg-white font-medium text-black"
-                      : "text-[#8A8A8A] hover:text-white"
+                      ? "bg-[#0B1218] font-medium text-white dark:bg-white dark:text-black"
+                      : "text-[#526475] hover:text-[#0B1218] dark:text-[#8A8A8A] dark:hover:text-white"
                   }`}
                 >
                   SuperGyra 2.0
@@ -258,7 +259,7 @@ export function ChatShowcase({ routeBase = "" }: ChatShowcaseProps) {
               className="h-full transition-all duration-300 ease-out"
               style={{
                 width: `${progressPct}%`,
-                backgroundColor: traceStage === "complete" ? "#34D399" : "#5B9EC2",
+                backgroundColor: traceStage === "complete" ? "#4A9A80" : "#5B9EC2",
               }}
             />
           </div>
@@ -268,14 +269,14 @@ export function ChatShowcase({ routeBase = "" }: ChatShowcaseProps) {
             id="gyra-chat-tabpanel"
             role="tabpanel"
             aria-labelledby={`gyra-chat-tab-${scenario.id}`}
-            className="grid grid-cols-1 divide-y divide-[#1F1F1F] lg:grid-cols-12 lg:divide-x lg:divide-y-0"
+            className="grid grid-cols-1 divide-y divide-[#DCE4EC] lg:grid-cols-12 lg:divide-x lg:divide-y-0 dark:divide-[#1F1F1F]"
           >
             {/* Left 4 cols: 6-Agent Pipeline Rail */}
             <div className="flex flex-col justify-between bg-black p-5 sm:p-6 lg:col-span-4">
               <div>
                 <div className="flex items-center justify-between font-mono-tech text-[11px] tracking-[0.1em] uppercase">
                   <span className="text-[#8A8A8A]">{agents.length}-Agent Pipeline</span>
-                  <span className={traceStage === "complete" ? "text-[#34D399]" : "text-[#5B9EC2]"}>
+                  <span className={traceStage === "complete" ? "text-[#4A9A80]" : "text-[#5B9EC2]"}>
                     {traceStage === "dropping"
                       ? "Ingesting Prompt"
                       : traceStage === "agents"
@@ -316,7 +317,7 @@ export function ChatShowcase({ routeBase = "" }: ChatShowcaseProps) {
                               isCurrent && traceStage === "agents"
                                 ? "text-[#9CC4DC]"
                                 : isPassed
-                                  ? "text-[#34D399]"
+                                  ? "text-[#4A9A80]"
                                   : "text-[#555555]"
                             }`}
                           >
@@ -352,7 +353,7 @@ export function ChatShowcase({ routeBase = "" }: ChatShowcaseProps) {
                 {/* Inbound Prompt Card with crisp drop-in settle animation */}
                 <div
                   key={`${scenario.id}-${dropNonce}`}
-                  className="gyra-prompt-drop border border-[#1E3244] bg-[#050C13] px-4 py-3.5"
+                  className="gyra-prompt-drop border border-[#1E3244] bg-[#05090F] px-4 py-3.5"
                 >
                   <div className="flex items-center justify-between gap-2 font-mono-tech text-[10px] tracking-[0.12em] uppercase">
                     <span className="inline-flex items-center gap-1.5 text-[#78B0CE]">
@@ -400,7 +401,7 @@ export function ChatShowcase({ routeBase = "" }: ChatShowcaseProps) {
                     >
                       {copied ? (
                         <>
-                          <Check className="h-3 w-3 text-[#34D399]" />
+                          <Check className="h-3 w-3 text-[#4A9A80]" />
                           Copied
                         </>
                       ) : (

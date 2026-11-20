@@ -40,22 +40,23 @@ export function DeveloperQuickstart({ routeBase = "" }: DeveloperQuickstartProps
   return (
     <section
       id="developers"
-      className="gyra-band-defer border-b border-[#1F1F1F] bg-black py-24 lg:py-32"
+      className="gyra-band-defer border-b border-[#DCE4EC] bg-white py-24 transition-colors duration-200 lg:py-32 dark:border-[#1F1F1F] dark:bg-black"
     >
       <div className="mx-auto max-w-[1380px] px-5 sm:px-8">
         {/* Header Row */}
         <div className="grid grid-cols-1 items-end gap-6 lg:grid-cols-12">
           <div className="lg:col-span-7">
-            <p className="font-mono-tech text-[12px] tracking-[0.14em] text-[#5B9EC2] uppercase">
+            <p className="font-mono-tech text-[12px] tracking-[0.14em] text-[#164E6D] uppercase dark:text-[#5B9EC2]">
               [ 04 · Developer Platform ]
             </p>
-            <h2 className="font-display mt-3.5 text-[clamp(2.35rem,4.2vw,3.75rem)] font-bold leading-[0.98] tracking-[-0.02em] text-white uppercase [text-wrap:balance]">
-              Drop-in endpoints for every Gyra capability.
+            <h2 className="font-display mt-3.5 text-[clamp(2.35rem,4.2vw,3.75rem)] leading-[0.96] tracking-[-0.02em] uppercase [text-wrap:balance]">
+              <span className="font-light text-[#4A5C6E] dark:text-white/75">Drop-in endpoints for</span>{" "}
+              <span className="font-bold text-[#0B1218] dark:text-white">every Gyra capability.</span>
             </h2>
           </div>
 
           <div className="lg:col-span-5 lg:pl-6">
-            <p className="text-[15px] leading-[1.65] text-[#9A9A9A]">
+            <p className="text-[15px] leading-[1.65] text-[#4A5B6B] dark:text-[#9A9A9A]">
               Integrate Gyra Chat, async video generation, voice synthesis, and media extraction
               using category-scoped keys, server-side rate limits, and a live Playground.
             </p>
@@ -69,7 +70,7 @@ export function DeveloperQuickstart({ routeBase = "" }: DeveloperQuickstartProps
                 <a
                   key={link.label}
                   href={resolveGyraRoute(link.href, routeBase)}
-                  className="inline-flex items-center gap-1 text-white underline decoration-[#303030] underline-offset-4 transition-colors hover:text-[#5B9EC2] hover:decoration-[#5B9EC2]"
+                  className="inline-flex items-center gap-1 text-[#0B1218] underline decoration-[#C5D3DF] underline-offset-4 transition-colors hover:text-[#1B587A] hover:decoration-[#1B587A] dark:text-white dark:decoration-[#303030] dark:hover:text-[#5B9EC2] dark:hover:decoration-[#5B9EC2]"
                 >
                   {link.label}
                   <ArrowUpRight className="h-3 w-3" />
@@ -80,7 +81,7 @@ export function DeveloperQuickstart({ routeBase = "" }: DeveloperQuickstartProps
         </div>
 
         {/* Pitch-Black API Console */}
-        <div className="mt-12 border border-[#1F1F1F] bg-black">
+        <div className="mt-12 border border-[#C6D3DF] bg-[#06090E] shadow-[0_24px_64px_-32px_rgba(11,18,24,0.28)] dark:border-[#1F1F1F] dark:bg-black dark:shadow-none">
           {/* Endpoint + Language Bar */}
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#1F1F1F] bg-[#050505] px-4 py-3 sm:px-5">
             <div role="tablist" aria-label="API Endpoints" className="flex flex-wrap gap-1.5">

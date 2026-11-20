@@ -4,6 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import { Layers, Pause, Play } from "lucide-react";
 import { computeRemainingMs } from "../../lib/carouselPhysics";
 import { resolveGyraRoute } from "../../lib/landingSimulations";
+import {
+  WAFER_RETURN_SPRING,
+  clampRadialOffset,
+  clampReleaseVelocity,
+  createSpring2D,
+  stepSpring2D,
+} from "../../lib/coreSpringPhysics";
 
 export interface ArchitectureBandProps {
   routeBase?: string;
@@ -34,7 +41,7 @@ const MODULE_SPECS: Record<CoreModuleId, ModuleSpec> = {
     endpoint: "Governance · Policy · Infrastructure",
     specs: [
       { label: "Ownership", value: "Genvia AI Company · Unified Ecosystem" },
-      { label: "Surfaces", value: "Web · Android · Telegram (@Gyra_AiBot) · API" },
+      { label: "Surfaces", value: "Web · Android · Telegram (@GyraAi) · API" },
       { label: "Safety", value: "Server-verified auth, moderation & quotas" },
       { label: "Identity", value: "Single account & unified credits ledger" },
     ],
@@ -132,9 +139,133 @@ const CONDUIT_PATHS: Record<"chat" | "image" | "video" | "api", string> = {
 
 export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
   const [activeId, setActiveId] = useState<CoreModuleId>("chat");
+  const [hoveredId, setHoveredId] = useState<CoreModuleId | null>(null);
   const [exploded, setExploded] = useState(false);
   const [autoCascade, setAutoCascade] = useState(true);
   const [activeDie, setActiveDie] = useState(2);
+  const [waferOffset, setWaferOffset] = useState({ x: 0, y: 0 });
+  const [waferDragging, setWaferDragging] = useState(false);
+
+  const svgRef = useRef<SVGSVGElement>(null);
+  const waferSpringRef = useRef(createSpring2D(0, 0));
+  const waferRafRef = useRef<number | null>(null);
+  const waferDragRef = useRef({
+    active: false,
+    pointerId: null as number | null,
+    startClientX: 0,
+    startClientY: 0,
+    lastX: 0,
+    lastY: 0,
+    lastTs: 0,
+    vx: 0,
+    vy: 0,
+    moved: false,
+  });
+
+  useEffect(() => {
+    return () => {
+      if (waferRafRef.current !== null) cancelAnimationFrame(waferRafRef.current);
+    };
+  }, []);
+
+  const startWaferReturnLoop = () => {
+    if (waferRafRef.current !== null) cancelAnimationFrame(waferRafRef.current);
+    let lastTs = performance.now();
+    const tick = (now: number) => {
+      const dt = Math.min(0.05, Math.max(0.004, (now - lastTs) / 1000));
+      lastTs = now;
+      const res = stepSpring2D(waferSpringRef.current, 0, 0, dt, WAFER_RETURN_SPRING);
+      waferSpringRef.current = res.state;
+      setWaferOffset({ x: res.state.x, y: res.state.y });
+      if (!res.settled) {
+        waferRafRef.current = requestAnimationFrame(tick);
+      } else {
+        waferRafRef.current = null;
+      }
+    };
+    waferRafRef.current = requestAnimationFrame(tick);
+  };
+
+  const clientToSvgDelta = (dxPx: number, dyPx: number) => {
+    const svg = svgRef.current;
+    if (!svg) return { dx: dxPx, dy: dyPx };
+    const rect = svg.getBoundingClientRect();
+    return {
+      dx: (dxPx / Math.max(1, rect.width)) * 840,
+      dy: (dyPx / Math.max(1, rect.height)) * 650,
+    };
+  };
+
+  const handleWaferPointerDown = (e: React.PointerEvent<SVGGElement>) => {
+    if (e.button !== 0 && e.pointerType === "mouse") return;
+    if (waferRafRef.current !== null) {
+      cancelAnimationFrame(waferRafRef.current);
+      waferRafRef.current = null;
+    }
+    const now = performance.now();
+    waferDragRef.current = {
+      active: true,
+      pointerId: e.pointerId,
+      startClientX: e.clientX,
+      startClientY: e.clientY,
+      lastX: waferSpringRef.current.x,
+      lastY: waferSpringRef.current.y,
+      lastTs: now,
+      vx: 0,
+      vy: 0,
+      moved: false,
+    };
+    setWaferDragging(true);
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // ignore synthetic events
+    }
+  };
+
+  const handleWaferPointerMove = (e: React.PointerEvent<SVGGElement>) => {
+    const d = waferDragRef.current;
+    if (!d.active) return;
+    const travel = Math.hypot(e.clientX - d.startClientX, e.clientY - d.startClientY);
+    if (travel > 5) d.moved = true;
+
+    const { dx, dy } = clientToSvgDelta(e.clientX - d.startClientX, e.clientY - d.startClientY);
+    const clamped = clampRadialOffset(dx, dy, 128);
+    const now = performance.now();
+    const dtMs = Math.max(4, now - d.lastTs);
+    d.vx = d.vx * 0.55 + (((clamped.x - d.lastX) / dtMs) * 1000) * 0.45;
+    d.vy = d.vy * 0.55 + (((clamped.y - d.lastY) / dtMs) * 1000) * 0.45;
+    d.lastX = clamped.x;
+    d.lastY = clamped.y;
+    d.lastTs = now;
+
+    waferSpringRef.current = { x: clamped.x, y: clamped.y, vx: 0, vy: 0 };
+    setWaferOffset({ x: clamped.x, y: clamped.y });
+  };
+
+  const handleWaferPointerUp = (e: React.PointerEvent<SVGGElement>) => {
+    const d = waferDragRef.current;
+    if (!d.active) return;
+    d.active = false;
+    setWaferDragging(false);
+    if (d.pointerId !== null) {
+      try {
+        if (e.currentTarget.hasPointerCapture(d.pointerId)) {
+          e.currentTarget.releasePointerCapture(d.pointerId);
+        }
+      } catch {
+        // ignore
+      }
+    }
+    if (d.moved) {
+      const vel = clampReleaseVelocity(d.vx * 0.35, d.vy * 0.35, 950);
+      waferSpringRef.current.vx = vel.x;
+      waferSpringRef.current.vy = vel.y;
+      startWaferReturnLoop();
+    } else {
+      selectModule("core");
+    }
+  };
 
   const timerRef = useRef<{
     id: number | null;
@@ -224,21 +355,21 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
   return (
     <section
       id="architecture"
-      className="gyra-band-defer border-b border-[#1F1F1F] bg-black py-24 lg:py-32"
+      className="gyra-band-defer border-b border-[#DCE4EC] bg-[#F6F8FA] py-24 transition-colors duration-200 lg:py-32 dark:border-[#1F1F1F] dark:bg-black"
     >
       <div className="mx-auto max-w-[1380px] px-5 sm:px-8">
         {/* Section Heading */}
         <div className="flex flex-wrap items-end justify-between gap-6">
           <div className="max-w-3xl">
-            <p className="font-mono-tech text-[12px] tracking-[0.14em] text-[#5B9EC2] uppercase">
-              Where Gyra Fits · Machined Silicon Core
+            <p className="font-mono-tech text-[12px] tracking-[0.14em] text-[#164E6D] uppercase dark:text-[#78B0CE]">
+              [ System Architecture · Unified Core ]
             </p>
-            <h2 className="font-display mt-3.5 text-[clamp(2.5rem,4.4vw,4rem)] font-bold leading-[0.96] tracking-[-0.02em] text-white uppercase [text-wrap:balance]">
-              One intelligence core.
+            <h2 className="font-display mt-3.5 text-[clamp(2.5rem,4.4vw,4rem)] leading-[0.95] tracking-[-0.02em] uppercase [text-wrap:balance]">
+              <span className="font-light text-[#4A5C6E] dark:text-white/75">One intelligence core.</span>
               <br />
-              Every product runs on it.
+              <span className="font-bold text-[#0B1218] dark:text-white">Every product runs on it.</span>
             </h2>
-            <p className="mt-4 max-w-[58ch] text-[15.5px] leading-[1.6] text-[#9A9A9A]">
+            <p className="mt-4 max-w-[58ch] text-[15.5px] leading-[1.6] text-[#4A5B6B] dark:text-[#9A9A9A]">
               Built by Genvia AI Company as a unified ecosystem — click any 3D stratum or product
               plinth to inspect how requests travel through one engineered core.
             </p>
@@ -252,7 +383,7 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
               className={`font-mono-tech inline-flex min-h-[38px] items-center gap-2 border px-3.5 text-[11px] tracking-[0.09em] uppercase transition-colors cursor-pointer ${
                 exploded
                   ? "border-[#78B0CE] bg-[#0D273B] text-white"
-                  : "border-[#223546] bg-[#050A10] text-[#B8CBD9] hover:border-[#5B9EC2] hover:text-white"
+                  : "border-[#CBD7E3] bg-white text-[#354656] hover:border-[#1B587A] hover:text-[#0B1218] dark:border-[#223546] dark:bg-[#050A10] dark:text-[#B8CBD9] dark:hover:border-[#5B9EC2] dark:hover:text-white"
               }`}
             >
               <Layers className="h-3.5 w-3.5" />
@@ -265,7 +396,7 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
               className={`font-mono-tech inline-flex min-h-[38px] items-center gap-2 border px-3.5 text-[11px] tracking-[0.09em] uppercase transition-colors cursor-pointer ${
                 autoCascade
                   ? "border-[#5B9EC2] bg-[#1F5B7C] text-white"
-                  : "border-[#223546] bg-[#050A10] text-[#B8CBD9] hover:border-[#5B9EC2] hover:text-white"
+                  : "border-[#CBD7E3] bg-white text-[#354656] hover:border-[#1B587A] hover:text-[#0B1218] dark:border-[#223546] dark:bg-[#050A10] dark:text-[#B8CBD9] dark:hover:border-[#5B9EC2] dark:hover:text-white"
               }`}
             >
               {autoCascade ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
@@ -275,7 +406,7 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
         </div>
 
         {/* Living 3D Machined Isometric Core + Editorial Spec Inspector */}
-        <div className="mt-12 grid grid-cols-1 border border-[#192836] bg-black lg:grid-cols-12">
+        <div className="mt-12 grid grid-cols-1 border border-[#D4DFE9] bg-white shadow-[0_22px_60px_-34px_rgba(11,18,24,0.18)] lg:grid-cols-12 dark:border-[#192836] dark:bg-black dark:shadow-none">
           {/* Left 7 cols: Living 3D Isometric Machined Silicon Strata (Adv 04) */}
           <div
             className="relative flex items-center justify-center overflow-hidden border-b border-[#192836] px-4 py-8 sm:px-6 lg:col-span-7 lg:border-b-0 lg:border-r"
@@ -285,7 +416,17 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
             }}
           >
             <svg
+              ref={svgRef}
               viewBox="0 0 840 650"
+              data-wafer-state={
+                waferDragging
+                  ? "dragging"
+                  : Math.hypot(waferOffset.x, waferOffset.y) > 0.5
+                    ? "returning"
+                    : hoveredId === "core"
+                      ? "hover"
+                      : "idle"
+              }
               className="h-auto w-full max-w-[760px] select-none overflow-visible"
               role="group"
               aria-labelledby="gyra-arch-svg-title"
@@ -326,8 +467,8 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
                   <stop offset="100%" stopColor="#1F5B7C" stopOpacity="0.02" />
                 </linearGradient>
                 <linearGradient id="gyraShaftOk" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#34D399" stopOpacity="0.48" />
-                  <stop offset="100%" stopColor="#34D399" stopOpacity="0.02" />
+                  <stop offset="0%" stopColor="#4A9A80" stopOpacity="0.48" />
+                  <stop offset="100%" stopColor="#4A9A80" stopOpacity="0.02" />
                 </linearGradient>
               </defs>
 
@@ -443,7 +584,7 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
                         stroke={
                           isAct
                             ? activeDie === 2
-                              ? "#34D399"
+                              ? "#4A9A80"
                               : "#78B0CE"
                             : isProductActive
                               ? "#152B3B"
@@ -468,6 +609,8 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
               {/* STRATUM 0: GENVIA PARENT CREST */}
               <g
                 onClick={() => selectModule("genvia")}
+                onMouseEnter={() => setHoveredId("genvia")}
+                onMouseLeave={() => setHoveredId((prev) => (prev === "genvia" ? null : prev))}
                 role="button"
                 tabIndex={0}
                 aria-label="Inspect Genvia Parent AI Company"
@@ -479,8 +622,8 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
                 }}
                 className="cursor-pointer focus:outline-none focus-visible:outline-2 focus-visible:outline-[#5B9EC2]"
                 style={{
-                  transform: exploded ? "translateY(-18px)" : "translateY(0px)",
-                  transition: "transform 480ms cubic-bezier(0.16, 1, 0.3, 1)",
+                  transform: `translateY(${(exploded ? -18 : 0) + (hoveredId === "genvia" ? -6 : 0)}px)`,
+                  transition: "transform 320ms cubic-bezier(0.16, 1, 0.3, 1)",
                 }}
               >
                 <polygon
@@ -501,22 +644,52 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
                 </text>
               </g>
 
-              {/* STRATUM 1: GYRA INTELLIGENCE CORE MACHINED WAFER */}
+              {/* STRATUM 1: GYRA INTELLIGENCE CORE MACHINED WAFER (HOVER LIFT + FREE DRAG & ELASTIC RETURN) */}
+              {Math.hypot(waferOffset.x, waferOffset.y) > 2 && (
+                <g className="pointer-events-none" opacity="0.55">
+                  <polygon
+                    points="410,174 668,258 410,342 152,258"
+                    fill="none"
+                    stroke="#7EB8D8"
+                    strokeWidth="1.2"
+                    strokeDasharray="6 6"
+                  />
+                  <line
+                    x1="410"
+                    y1="258"
+                    x2={410 + waferOffset.x}
+                    y2={258 + waferOffset.y}
+                    stroke="#7EB8D8"
+                    strokeWidth="1.1"
+                    strokeDasharray="4 5"
+                  />
+                </g>
+              )}
               <g
-                onClick={() => selectModule("core")}
+                data-testid="arch-core-wafer"
+                onPointerDown={handleWaferPointerDown}
+                onPointerMove={handleWaferPointerMove}
+                onPointerUp={handleWaferPointerUp}
+                onPointerCancel={handleWaferPointerUp}
+                onMouseEnter={() => setHoveredId("core")}
+                onMouseLeave={() => setHoveredId((prev) => (prev === "core" ? null : prev))}
                 role="button"
                 tabIndex={0}
-                aria-label="Inspect Gyra Intelligence Core Wafer"
+                aria-label="Inspect or drag Gyra Intelligence Core Wafer"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
                     selectModule("core");
                   }
                 }}
-                className="cursor-pointer focus:outline-none focus-visible:outline-2 focus-visible:outline-[#5B9EC2]"
+                className="cursor-grab active:cursor-grabbing focus:outline-none focus-visible:outline-2 focus-visible:outline-[#5B9EC2]"
                 style={{
-                  transform: exploded ? "translateY(-4px)" : "translateY(0px)",
-                  transition: "transform 480ms cubic-bezier(0.16, 1, 0.3, 1)",
+                  touchAction: "none",
+                  transform: `translate3d(${waferOffset.x.toFixed(1)}px, ${(waferOffset.y + (exploded ? -4 : 0) + (hoveredId === "core" && !waferDragging ? -7 : 0)).toFixed(1)}px, 0)`,
+                  transition:
+                    waferDragging || Math.hypot(waferOffset.x, waferOffset.y) > 0.2
+                      ? "none"
+                      : "transform 320ms cubic-bezier(0.16, 1, 0.3, 1)",
                 }}
               >
                 <polygon points="410,204 662,286 410,368 158,286" fill="#000000" opacity="0.52" />
@@ -554,11 +727,11 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
                       <polygon
                         points={die.pts}
                         fill={isCurr ? "#1F5B7C" : isLit ? "#0A2D25" : "#061623"}
-                        stroke={isCurr ? "#FFFFFF" : isLit ? "#34D399" : "#78B0CE"}
+                        stroke={isCurr ? "#FFFFFF" : isLit ? "#4A9A80" : "#78B0CE"}
                         strokeWidth="1.3"
                         style={{ transition: "fill 260ms ease, stroke 260ms ease" }}
                       />
-                      <circle cx={die.cx} cy={die.ledY} r="2.8" fill={isCurr ? "#FFFFFF" : isLit ? "#34D399" : "#5B9EC2"} />
+                      <circle cx={die.cx} cy={die.ledY} r="2.8" fill={isCurr ? "#FFFFFF" : isLit ? "#4A9A80" : "#5B9EC2"} />
                       <text x={die.cx} y={die.cy} textAnchor="middle" fill="#FFFFFF" fontFamily="JetBrains Mono, monospace" fontSize="9.2" fontWeight="600">
                         {die.label}
                       </text>
@@ -607,6 +780,8 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
                       tabIndex={0}
                       aria-label={`Inspect ${m.title}`}
                       onClick={() => selectModule(m.id)}
+                      onMouseEnter={() => setHoveredId(m.id)}
+                      onMouseLeave={() => setHoveredId((prev) => (prev === m.id ? null : prev))}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" || e.key === " ") {
                           e.preventDefault();
@@ -615,15 +790,19 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
                       }}
                       className="cursor-pointer focus:outline-none focus-visible:outline-2 focus-visible:outline-[#5B9EC2]"
                       style={{
-                        transform: isAct ? "translateY(-10px)" : "translateY(0px)",
-                        opacity: isProductActive && !isAct ? 0.56 : 1,
-                        transition: "transform 280ms cubic-bezier(0.16, 1, 0.3, 1), opacity 260ms ease",
+                        transform: isAct
+                          ? "translateY(-10px)"
+                          : hoveredId === m.id
+                            ? "translateY(-6px)"
+                            : "translateY(0px)",
+                        opacity: isProductActive && !isAct && hoveredId !== m.id ? 0.56 : 1,
+                        transition: "transform 260ms cubic-bezier(0.16, 1, 0.3, 1), opacity 240ms ease",
                       }}
                     >
                       <polygon
                         points={topPts}
                         fill={isAct ? "url(#gyraModTopActive)" : "url(#gyraModTop)"}
-                        stroke={isAct ? (activeDie === 2 ? "#34D399" : "#FFFFFF") : "#5B9EC2"}
+                        stroke={isAct ? (activeDie === 2 ? "#4A9A80" : "#FFFFFF") : "#5B9EC2"}
                         strokeWidth={isAct ? 1.9 : 1.4}
                       />
                       <polyline
@@ -649,13 +828,13 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
           </div>
 
           {/* Right 5 cols: Interactive Module Selector + Razor Hairline Spec Table */}
-          <div className="flex flex-col justify-between bg-[#03070C] p-6 sm:p-7 lg:col-span-5">
+          <div className="flex flex-col justify-between bg-white p-6 sm:p-7 lg:col-span-5 dark:bg-[#03070C]">
             <div>
               {/* Clean 6-item Architectural Layer/Module Tab Strip */}
               <div
                 role="tablist"
                 aria-label="Gyra 3D architecture modules"
-                className="grid grid-cols-3 border border-[#192836] bg-[#04090F] sm:grid-cols-6"
+                className="grid grid-cols-3 border border-[#D4DFE9] bg-[#F4F7FA] sm:grid-cols-6 dark:border-[#192836] dark:bg-[#04090F]"
               >
                 {(["genvia", "core", "chat", "image", "video", "api"] as const).map((id) => {
                   const mod = MODULE_SPECS[id];
@@ -669,10 +848,10 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
                       aria-selected={selected}
                       aria-controls="gyra-arch-tabpanel"
                       onClick={() => selectModule(id)}
-                      className={`font-mono-tech border-b border-r border-[#192836] px-2 py-2.5 text-[10.5px] tracking-[0.06em] uppercase transition-colors cursor-pointer sm:border-b-0 last:border-r-0 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[#5B9EC2] ${
+                      className={`font-mono-tech border-b border-r border-[#D4DFE9] px-2 py-2.5 dark:border-[#192836] text-[10.5px] tracking-[0.06em] uppercase transition-colors cursor-pointer sm:border-b-0 last:border-r-0 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[#5B9EC2] ${
                         selected
                           ? "bg-[#1F5B7C] font-medium text-white"
-                          : "text-[#8398AB] hover:bg-[#081521] hover:text-white"
+                          : "text-[#4D6072] hover:bg-[#E7EFF6] hover:text-[#0B1218] dark:text-[#8398AB] dark:hover:bg-[#081521] dark:hover:text-white"
                       }`}
                     >
                       {mod.tabLabel}
@@ -687,22 +866,22 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
                 aria-labelledby={`gyra-arch-tab-${activeId}`}
                 className="mt-7"
               >
-                <p className="font-mono-tech text-[11px] tracking-[0.13em] text-[#5B9EC2] uppercase">
+                <p className="font-mono-tech text-[11px] tracking-[0.13em] text-[#164E6D] uppercase dark:text-[#5B9EC2]">
                   {active.kicker}
                 </p>
-                <h3 className="font-display mt-2.5 text-[30px] font-bold leading-[1.05] tracking-[-0.015em] text-white uppercase">
+                <h3 className="font-display mt-2.5 text-[30px] font-bold leading-[1.05] tracking-[-0.015em] text-[#0B1218] uppercase dark:text-white">
                   {active.headline}
                 </h3>
-                <p className="mt-3 text-[14.5px] leading-[1.6] text-[#9EB0BF]">{active.summary}</p>
+                <p className="mt-3 text-[14.5px] leading-[1.6] text-[#4A5B6B] dark:text-[#9EB0BF]">{active.summary}</p>
               </div>
 
-              <dl className="mt-7 divide-y divide-[#152433] border-y border-[#152433]">
+              <dl className="mt-7 divide-y divide-[#E2EAF2] border-y border-[#E2EAF2] dark:divide-[#152433] dark:border-[#152433]">
                 {active.specs.map((spec) => (
                   <div key={spec.label} className="grid grid-cols-12 items-baseline gap-4 py-3.5">
-                    <dt className="col-span-4 text-[13.5px] font-medium text-white">
+                    <dt className="col-span-4 text-[13.5px] font-medium text-[#0B1218] dark:text-white">
                       {spec.label}
                     </dt>
-                    <dd className="font-mono-tech col-span-8 text-[12px] leading-[1.55] text-[#9BB0C2]">
+                    <dd className="font-mono-tech col-span-8 text-[12px] leading-[1.55] text-[#47596A] dark:text-[#9BB0C2]">
                       {spec.value}
                     </dd>
                   </div>
@@ -716,7 +895,7 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
               </span>
               <a
                 href={resolveGyraRoute("/about", routeBase)}
-                className="font-mono-tech inline-flex items-center gap-2 text-[11.5px] tracking-[0.1em] text-white uppercase underline decoration-[#5B9EC2] underline-offset-4 transition-colors hover:text-[#5B9EC2]"
+                className="font-mono-tech inline-flex items-center gap-2 text-[11.5px] tracking-[0.1em] text-[#0B1218] uppercase underline decoration-[#1B587A] underline-offset-4 transition-colors hover:text-[#1B587A] dark:text-white dark:decoration-[#5B9EC2] dark:hover:text-[#5B9EC2]"
               >
                 About Genvia AI Company →
               </a>
