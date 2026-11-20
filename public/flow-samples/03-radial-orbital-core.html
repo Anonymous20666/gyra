@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sample 03 — Radial Orbital Core · Gyra</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #000000;
+      --border: #1A2632;
+      --steel: #1F5B7C;
+      --steel-bright: #5B9EC2;
+      --steel-ice: #9CC4DC;
+      --text: #F5F5F5;
+      --muted: #8B98A5;
+      --ok: #34D399;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: "DM Sans", system-ui, sans-serif;
+      min-height: 100vh; overflow-x: hidden;
+    }
+    .font-display { font-family: "Barlow Semi Condensed", sans-serif; letter-spacing: -0.02em; }
+    .font-mono { font-family: "JetBrains Mono", monospace; font-variant-numeric: tabular-nums; }
+    .wrap { max-width: 1440px; margin: 0 auto; padding: 26px 24px 52px; }
+    .header {
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px;
+      margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid #141C24;
+    }
+    .header h1 { font-size: 22px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .header p { font-size: 13px; color: var(--muted); margin-top: 2px; }
+    .btn {
+      background: #070E15; color: var(--text); border: 1px solid var(--border);
+      padding: 8px 14px; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer;
+    }
+    .btn:hover { border-color: var(--steel-bright); background: #0C1A26; }
+    .btn.primary { background: var(--steel); border-color: var(--steel-bright); color: #fff; }
+
+    /* Orbital Stage */
+    .orbital-stage {
+      position: relative;
+      border: 1px solid var(--border);
+      background: radial-gradient(circle at 50% 48%, rgba(31,91,124,0.22) 0%, rgba(7,17,27,0.45) 36%, #000000 72%);
+      padding: 24px 24px 28px;
+      overflow: hidden;
+    }
+    .parent-bar {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 10px;
+    }
+    .parent-badge {
+      border: 1px solid rgba(91,158,194,0.34);
+      background: rgba(4, 10, 16, 0.92);
+      padding: 7px 18px;
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .parent-badge strong { color: #fff; letter-spacing: 0.24em; margin-right: 8px; }
+
+    /* 3-Column Orbital Arena on Desktop */
+    .arena {
+      position: relative;
+      display: grid;
+      grid-template-columns: 310px 1fr 310px;
+      align-items: center;
+      min-height: 540px;
+      gap: 20px;
+    }
+    #orbitalSvg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .side-col {
+      position: relative;
+      z-index: 3;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 28px;
+    }
+    .orb-node {
+      text-align: left;
+      width: 100%;
+      border: 1px solid var(--border);
+      background: rgba(5, 10, 15, 0.94);
+      padding: 20px 20px;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 240ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .orb-node:hover { border-color: var(--steel-bright); background: #091B29; transform: scale(1.018); }
+    .orb-node.selected {
+      border-color: var(--steel-ice);
+      background: linear-gradient(135deg, #0D273B 0%, #050C14 100%);
+    }
+    .orb-node.completed { border-color: rgba(52,211,153,0.68); }
+    .orb-kicker {
+      display: flex; justify-content: space-between; font-size: 10px;
+      letter-spacing: 0.16em; text-transform: uppercase; color: var(--steel-bright); margin-bottom: 8px;
+    }
+    .orb-name { font-size: 26px; font-weight: 700; text-transform: uppercase; line-height: 1.05; }
+    .orb-desc { font-size: 12.5px; color: var(--muted); margin-top: 8px; line-height: 1.5; }
+    .orb-route {
+      margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.06);
+      font-size: 11px; color: var(--steel-ice); display: flex; justify-content: space-between;
+    }
+
+    /* Center Core Reactor */
+    .center-reactor {
+      position: relative;
+      z-index: 3;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 460px;
+    }
+    .reactor-svg {
+      width: 390px;
+      height: 390px;
+      max-width: 100%;
+      overflow: visible;
+    }
+    .ring-spin-cw { transform-origin: 200px 200px; animation: spinCW 28s linear infinite; }
+    .ring-spin-ccw { transform-origin: 200px 200px; animation: spinCCW 20s linear infinite; }
+    .ring-pulse { transform-origin: 200px 200px; animation: reactorPulse 3.6s ease-in-out infinite; }
+    @keyframes spinCW { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes spinCCW { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
+    @keyframes reactorPulse {
+      0%, 100% { transform: scale(0.98); opacity: 0.4; }
+      50% { transform: scale(1.06); opacity: 0.9; }
+    }
+
+    .stage-strip {
+      position: relative;
+      z-index: 3;
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      width: 100%;
+      max-width: 540px;
+    }
+    .mini-stage {
+      border: 1px solid var(--border);
+      background: rgba(4, 9, 14, 0.92);
+      padding: 10px 12px;
+      text-align: center;
+      transition: all 220ms ease;
+    }
+    .mini-stage.active { border-color: var(--steel-ice); background: #0B2233; }
+    .mini-stage.done { border-color: rgba(52,211,153,0.65); background: #061A15; }
+    .mini-stage .m-num { font-size: 10px; letter-spacing: 0.14em; color: var(--steel-bright); }
+    .mini-stage.done .m-num { color: var(--ok); }
+    .mini-stage .m-title { font-size: 14px; font-weight: 700; text-transform: uppercase; margin-top: 2px; }
+
+    /* Bottom Dock */
+    .dock {
+      position: relative;
+      z-index: 3;
+      margin-top: 20px;
+      border-top: 1px solid var(--border);
+      padding-top: 18px;
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 20px;
+    }
+    .dock-chips {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .dock-engine {
+      border: 1px solid #16222E;
+      background: #04090F;
+      padding: 12px 14px;
+    }
+    .dock-engine strong { display: block; font-size: 13px; color: #fff; margin-bottom: 2px; }
+    .dock-engine span { font-size: 12px; color: var(--muted); }
+    .dock-console {
+      border: 1px solid #16222E;
+      background: #020508;
+      padding: 14px 16px;
+      font-size: 12px;
+      line-height: 1.7;
+      color: #C4D4E0;
+    }
+
+    @media (max-width: 1040px) {
+      .arena { grid-template-columns: 1fr; min-height: auto; }
+      #orbitalSvg { display: none; }
+      .center-reactor { order: -1; min-height: 300px; }
+      .reactor-svg { width: 280px; height: 280px; }
+      .side-col { gap: 12px; }
+      .dock { grid-template-columns: 1fr; }
+      .dock-chips { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <div>
+        <h1 class="font-display">Sample 03 · Radial Orbital Intelligence Core</h1>
+        <p>Central concentric orbital core with harmonic rings sweeping curved signal beams out to all 4 Gyra product quadrants.</p>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn primary font-mono" id="btnPulseAll">Auto-Sweep Quadrants</button>
+        <button class="btn font-mono" id="btnReset">Reset Idle</button>
+      </div>
+    </div>
+
+    <div class="orbital-stage">
+      <div class="parent-bar">
+        <div class="parent-badge font-mono"><strong>GENVIA</strong> / PARENT AI COMPANY → GYRA AI PLATFORM</div>
+      </div>
+
+      <div class="arena" id="arena">
+        <svg id="orbitalSvg" viewBox="0 0 1200 540" preserveAspectRatio="none" aria-hidden="true"></svg>
+
+        <div class="side-col" id="leftCol"></div>
+
+        <div class="center-reactor">
+          <svg class="reactor-svg" viewBox="0 0 400 400" aria-label="Gyra Orbital Core">
+            <defs>
+              <radialGradient id="coreHalo" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#5B9EC2" stop-opacity="0.34" />
+                <stop offset="55%" stop-color="#1F5B7C" stop-opacity="0.12" />
+                <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+              </radialGradient>
+            </defs>
+            <circle cx="200" cy="200" r="185" fill="url(#coreHalo)" />
+            <!-- Outer rotating technical ring -->
+            <g class="ring-spin-cw">
+              <circle cx="200" cy="200" r="168" fill="none" stroke="#1E384B" stroke-width="1" stroke-dasharray="14 8" />
+              <path d="M 200 32 A 168 168 0 0 1 345 116" fill="none" stroke="#5B9EC2" stroke-width="2.2" />
+              <path d="M 200 368 A 168 168 0 0 1 55 284" fill="none" stroke="#5B9EC2" stroke-width="2.2" />
+              <circle cx="200" cy="32" r="4" fill="#9CC4DC" />
+              <circle cx="200" cy="368" r="4" fill="#5B9EC2" />
+            </g>
+            <!-- Mid counter-rotating ring -->
+            <g class="ring-spin-ccw">
+              <circle cx="200" cy="200" r="126" fill="none" stroke="#244860" stroke-width="1.2" stroke-dasharray="4 7" />
+              <path d="M 326 200 A 126 126 0 0 1 200 326" fill="none" stroke="#8EC2DF" stroke-width="2" />
+              <circle cx="326" cy="200" r="3.5" fill="#8EC2DF" />
+              <circle cx="74" cy="200" r="3.5" fill="#5B9EC2" />
+            </g>
+            <!-- Inner pulse ring -->
+            <circle id="corePulseRing" class="ring-pulse" cx="200" cy="200" r="88" fill="none" stroke="#5B9EC2" stroke-width="1.5" />
+            <!-- Core housing -->
+            <circle cx="200" cy="200" r="76" fill="#050E16" stroke="#5B9EC2" stroke-width="1.8" />
+            <text x="200" y="184" text-anchor="middle" fill="#9CC4DC" font-family="JetBrains Mono, monospace" font-size="10" letter-spacing="3">GYRA CORE</text>
+            <text id="coreCenterLabel" x="200" y="210" text-anchor="middle" fill="#FFFFFF" font-family="Barlow Semi Condensed, sans-serif" font-weight="700" font-size="25" letter-spacing="1.5">INTELLIGENCE</text>
+            <text id="coreCenterSub" x="200" y="232" text-anchor="middle" fill="#8B98A5" font-family="JetBrains Mono, monospace" font-size="10">STANDBY · 4 ARMS</text>
+          </svg>
+
+          <div class="stage-strip">
+            <div class="mini-stage" id="o-st-0">
+              <div class="m-num font-mono">01</div>
+              <div class="m-title font-display">Understand</div>
+            </div>
+            <div class="mini-stage" id="o-st-1">
+              <div class="m-num font-mono">02</div>
+              <div class="m-title font-display">Orchestrate</div>
+            </div>
+            <div class="mini-stage" id="o-st-2">
+              <div class="m-num font-mono">03</div>
+              <div class="m-title font-display">Execute</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="side-col" id="rightCol"></div>
+      </div>
+
+      <div class="dock">
+        <div class="dock-chips" id="dockChips"></div>
+        <div class="dock-console font-mono" id="dockConsole">
+          &gt; Gyra Orbital Core standing by.<br/>
+          &gt; Select any surrounding product quadrant to fire an orbital beam through Understand → Orchestrate → Execute.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="./shared.js"></script>
+  <script>
+    (function () {
+      const arch = window.GYRA_ARCH;
+      const leftCol = document.getElementById("leftCol");
+      const rightCol = document.getElementById("rightCol");
+      const svg = document.getElementById("orbitalSvg");
+      const dockChips = document.getElementById("dockChips");
+      const dockConsole = document.getElementById("dockConsole");
+      const coreCenterLabel = document.getElementById("coreCenterLabel");
+      const coreCenterSub = document.getElementById("coreCenterSub");
+      const stageEls = [0,1,2].map(i => document.getElementById("o-st-" + i));
+
+      let selectedId = null;
+      let done = false;
+      let timers = [];
+      let sweep = null;
+
+      // 4 Curved arms from center (600, 230) to 4 quadrant anchors
+      const armPaths = {
+        chat:  "M 600 230 C 470 230, 420 115, 310 115",
+        image: "M 600 230 C 470 230, 420 385, 310 385",
+        video: "M 600 230 C 730 230, 780 115, 890 115",
+        api:   "M 600 230 C 730 230, 780 385, 890 385"
+      };
+
+      function buildCard(b) {
+        const btn = document.createElement("button");
+        btn.className = "orb-node";
+        btn.dataset.id = b.id;
+        btn.innerHTML = `
+          <div class="orb-kicker font-mono"><span>${b.code} · ${b.category}</span><span>${b.status}</span></div>
+          <div class="orb-name font-display">${b.name}</div>
+          <div class="orb-desc">${b.summary}</div>
+          <div class="orb-route font-mono"><span>${b.endpoint}</span><span>Activate →</span></div>
+        `;
+        btn.addEventListener("click", () => {
+          clearInterval(sweep);
+          activate(b.id);
+        });
+        return btn;
+      }
+
+      leftCol.appendChild(buildCard(arch.branches[0]));
+      leftCol.appendChild(buildCard(arch.branches[1]));
+      rightCol.appendChild(buildCard(arch.branches[2]));
+      rightCol.appendChild(buildCard(arch.branches[3]));
+
+      function renderArms() {
+        let html = "";
+        arch.branches.forEach((b, idx) => {
+          const d = armPaths[b.id];
+          const isSel = b.id === selectedId;
+          const color = isSel ? (done ? "#34D399" : "#9CC4DC") : "#234257";
+          const sw = isSel ? 3 : 1.5;
+          const op = selectedId === null ? 0.78 : (isSel ? 1 : 0.22);
+          html += `<path id="arm-${b.id}" d="${d}" fill="none" stroke="${color}" stroke-width="${sw}" stroke-opacity="${op}" />`;
+          // Smooth moving photon along every arm (faster + brighter when selected)
+          const dur = isSel ? "1.1s" : (2.6 + idx * 0.35) + "s";
+          const r = isSel ? 5 : 3;
+          const dotColor = isSel ? (done ? "#34D399" : "#FFFFFF") : "#5B9EC2";
+          if (selectedId === null || isSel) {
+            html += `
+              <circle r="${r}" fill="${dotColor}">
+                <animateMotion dur="${dur}" repeatCount="indefinite" path="${d}" />
+              </circle>
+            `;
+            if (isSel) {
+              html += `
+                <circle r="3.2" fill="#5B9EC2" opacity="0.8">
+                  <animateMotion dur="${dur}" begin="0.35s" repeatCount="indefinite" path="${d}" />
+                </circle>
+              `;
+            }
+          }
+        });
+        svg.innerHTML = html;
+      }
+
+      function renderDock(branch) {
+        if (!branch) {
+          dockChips.innerHTML = arch.branches.map(b => `
+            <div class="dock-engine">
+              <strong>${b.name}</strong>
+              <span>${b.subEngines.map(s => s.name).join(" · ")}</span>
+            </div>
+          `).join("");
+          return;
+        }
+        dockChips.innerHTML = branch.subEngines.map(s => `
+          <div class="dock-engine" style="border-color:rgba(91,158,194,0.45);background:#071520;">
+            <strong>${s.name}</strong>
+            <span>${s.role}</span>
+          </div>
+        `).join("");
+      }
+
+      function activate(id) {
+        timers.forEach(clearTimeout);
+        timers = [];
+        selectedId = id;
+        done = false;
+        const b = arch.branches.find(x => x.id === id);
+        document.querySelectorAll(".orb-node").forEach(el => {
+          el.classList.toggle("selected", el.dataset.id === id);
+          el.classList.remove("completed");
+        });
+        stageEls.forEach(s => s.className = "mini-stage");
+        coreCenterLabel.textContent = b.name.toUpperCase();
+        coreCenterSub.textContent = "ROUTING · " + b.endpoint;
+        renderArms();
+        renderDock(b);
+
+        stageEls[0].classList.add("active");
+        dockConsole.innerHTML = `&gt; ${b.trace[0].log}`;
+
+        timers.push(setTimeout(() => {
+          stageEls[0].className = "mini-stage done";
+          stageEls[1].classList.add("active");
+          dockConsole.innerHTML += `<br/>&gt; ${b.trace[1].log}`;
+        }, 520));
+
+        timers.push(setTimeout(() => {
+          stageEls[1].className = "mini-stage done";
+          stageEls[2].classList.add("active");
+        }, 1020));
+
+        timers.push(setTimeout(() => {
+          stageEls[2].className = "mini-stage done";
+          done = true;
+          coreCenterSub.textContent = "COMPLETED · 3/3 STAGES";
+          dockConsole.innerHTML += `<br/><span style="color:#34D399">&gt; ${b.trace[2].log}</span>`;
+          document.querySelector(`.orb-node[data-id="${id}"]`).classList.add("completed");
+          renderArms();
+        }, 1520));
+      }
+
+      function reset() {
+        timers.forEach(clearTimeout);
+        clearInterval(sweep);
+        selectedId = null;
+        done = false;
+        coreCenterLabel.textContent = "INTELLIGENCE";
+        coreCenterSub.textContent = "STANDBY · 4 ARMS";
+        stageEls.forEach(s => s.className = "mini-stage");
+        document.querySelectorAll(".orb-node").forEach(el => el.classList.remove("selected", "completed"));
+        dockConsole.innerHTML = `&gt; Gyra Orbital Core standing by.<br/>&gt; Select any surrounding product quadrant to fire an orbital beam through Understand → Orchestrate → Execute.`;
+        renderArms();
+        renderDock(null);
+      }
+
+      document.getElementById("btnPulseAll").addEventListener("click", () => {
+        clearInterval(sweep);
+        let i = 0;
+        activate(arch.branches[0].id);
+        sweep = setInterval(() => {
+          i = (i + 1) % 4;
+          activate(arch.branches[i].id);
+        }, 2800);
+      });
+      document.getElementById("btnReset").addEventListener("click", reset);
+
+      renderArms();
+      renderDock(null);
+    })();
+  </script>
+</body>
+</html>

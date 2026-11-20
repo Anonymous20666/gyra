@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sample 04 — Isometric Spatial Strata · Gyra</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #000000;
+      --border: #1A2632;
+      --steel: #1F5B7C;
+      --steel-bright: #5B9EC2;
+      --steel-ice: #9CC4DC;
+      --text: #F5F5F5;
+      --muted: #8B98A5;
+      --ok: #34D399;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: "DM Sans", system-ui, sans-serif;
+      min-height: 100vh; overflow-x: hidden;
+    }
+    .font-display { font-family: "Barlow Semi Condensed", sans-serif; letter-spacing: -0.02em; }
+    .font-mono { font-family: "JetBrains Mono", monospace; font-variant-numeric: tabular-nums; }
+    .wrap { max-width: 1440px; margin: 0 auto; padding: 26px 24px 52px; }
+    .header {
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px;
+      margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid #141C24;
+    }
+    .header h1 { font-size: 22px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .header p { font-size: 13px; color: var(--muted); margin-top: 2px; }
+    .btn {
+      background: #070E15; color: var(--text); border: 1px solid var(--border);
+      padding: 8px 14px; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer;
+    }
+    .btn:hover { border-color: var(--steel-bright); background: #0C1A26; }
+    .btn.primary { background: var(--steel); border-color: var(--steel-bright); color: #fff; }
+
+    /* Spatial 3D-Stack Split Layout (Wide Desktop Hero Scale) */
+    .spatial-frame {
+      border: 1px solid var(--border);
+      background: radial-gradient(ellipse 65% 55% at 38% 50%, rgba(31,91,124,0.18), #020509 68%, #000000 100%);
+      display: grid;
+      grid-template-columns: 1.38fr 0.92fr;
+      min-height: 650px;
+    }
+    .iso-viewport {
+      position: relative;
+      border-right: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow: hidden;
+    }
+    .iso-svg {
+      width: 100%;
+      max-width: 780px;
+      height: auto;
+      overflow: visible;
+    }
+    .iso-layer {
+      transition: transform 380ms cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: pointer;
+    }
+    .iso-layer:hover { transform: translateY(-6px); }
+    .iso-module {
+      cursor: pointer;
+      transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1), opacity 260ms ease;
+    }
+    .iso-module:hover { transform: translateY(-7px); }
+    .iso-module.active { transform: translateY(-10px); }
+
+    /* Right Interactive Control & Live Telemetry Panel */
+    .side-panel {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 26px 26px;
+      background: #03060A;
+    }
+    .panel-kicker {
+      font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--steel-bright);
+      margin-bottom: 10px;
+    }
+    .panel-title { font-size: 32px; font-weight: 700; text-transform: uppercase; line-height: 1.05; }
+    .panel-sub { font-size: 13.5px; color: var(--muted); margin-top: 8px; line-height: 1.55; }
+
+    .branch-pills {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin: 20px 0 18px;
+    }
+    .b-btn {
+      text-align: left;
+      border: 1px solid var(--border);
+      background: #060C12;
+      padding: 13px 14px;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 200ms ease;
+    }
+    .b-btn:hover { border-color: var(--steel-bright); background: #0A1B29; }
+    .b-btn.active { border-color: var(--steel-ice); background: #0D263A; }
+    .b-btn.done { border-color: rgba(52,211,153,0.68); }
+    .b-btn .b-code { font-size: 10px; letter-spacing: 0.14em; color: var(--steel-bright); display: block; }
+    .b-btn .b-name { font-size: 17px; font-weight: 700; text-transform: uppercase; margin-top: 2px; display: block; }
+
+    .engines-list {
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 0;
+      margin-bottom: 16px;
+      display: grid;
+      gap: 8px;
+    }
+    .eng-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 12px;
+      padding: 6px 10px;
+      background: #060D14;
+      border: 1px solid #13202D;
+    }
+    .eng-row strong { color: #fff; font-weight: 600; }
+    .eng-row span { color: var(--muted); text-align: right; }
+
+    .iso-console {
+      border: 1px solid #162330;
+      background: #010407;
+      padding: 14px 16px;
+      font-size: 11.5px;
+      line-height: 1.7;
+      color: #C7D7E3;
+      min-height: 116px;
+    }
+
+    @media (max-width: 1040px) {
+      .spatial-frame { grid-template-columns: 1fr; }
+      .iso-viewport { border-right: none; border-bottom: 1px solid var(--border); padding: 14px; }
+      .side-panel { padding: 18px 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <div>
+        <h1 class="font-display">Sample 04 · Isometric 3D Spatial Strata</h1>
+        <p>Layered 3D architectural hardware stack where signals cascade vertically from Genvia → Gyra Core wafer → 4 elevated product modules.</p>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn primary font-mono" id="btnAuto">Cascade Demo</button>
+        <button class="btn font-mono" id="btnReset">Reset Idle</button>
+      </div>
+    </div>
+
+    <div class="spatial-frame">
+      <div class="iso-viewport">
+        <svg class="iso-svg" viewBox="0 0 780 610" aria-label="Gyra Isometric Intelligence Strata">
+          <defs>
+            <linearGradient id="slabTop" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#276E96" />
+              <stop offset="100%" stop-color="#143D54" />
+            </linearGradient>
+            <linearGradient id="slabTopDark" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#121C26" />
+              <stop offset="100%" stop-color="#070C12" />
+            </linearGradient>
+            <linearGradient id="beamV" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#9CC4DC" stop-opacity="0.95" />
+              <stop offset="100%" stop-color="#1F5B7C" stop-opacity="0.2" />
+            </linearGradient>
+          </defs>
+
+          <!-- Faint perspective base grid -->
+          <polygon points="390,410 730,520 390,602 50,520" fill="#03070B" stroke="#152330" stroke-width="1" />
+          <line x1="220" y1="465" x2="560" y2="561" stroke="#101B26" stroke-width="1" />
+          <line x1="560" y1="465" x2="220" y2="561" stroke="#101B26" stroke-width="1" />
+
+          <!-- Vertical animated signal beams between strata -->
+          <g id="beamsLayer">
+            <!-- GenVIA to Gyra Core -->
+            <line x1="390" y1="108" x2="390" y2="210" stroke="#24475F" stroke-width="1.5" stroke-dasharray="4 4" />
+            <circle cx="390" cy="115" r="4" fill="#8EC2DF">
+              <animate attributeName="cy" values="108;212" dur="1.7s" repeatCount="indefinite" />
+              <animate attributeName="opacity" values="0;1;1;0" dur="1.7s" repeatCount="indefinite" />
+            </circle>
+
+            <!-- Core down to 4 product modules -->
+            <path id="iso-beam-chat"  d="M 320 302 C 250 355, 195 370, 155 430" fill="none" stroke="#264A62" stroke-width="1.8" />
+            <path id="iso-beam-image" d="M 370 315 C 345 365, 325 405, 310 475" fill="none" stroke="#264A62" stroke-width="1.8" />
+            <path id="iso-beam-video" d="M 410 315 C 435 365, 455 405, 470 475" fill="none" stroke="#264A62" stroke-width="1.8" />
+            <path id="iso-beam-api"   d="M 460 302 C 530 355, 585 370, 625 430" fill="none" stroke="#264A62" stroke-width="1.8" />
+
+            <!-- Ambient traveling pulses on all 4 vertical conduits -->
+            <circle r="3.2" fill="#78B0CE"><animateMotion dur="2.2s" repeatCount="indefinite" path="M 320 302 C 250 355, 195 370, 155 430" /></circle>
+            <circle r="3.2" fill="#78B0CE"><animateMotion dur="2.5s" repeatCount="indefinite" path="M 370 315 C 345 365, 325 405, 310 475" /></circle>
+            <circle r="3.2" fill="#78B0CE"><animateMotion dur="2.3s" repeatCount="indefinite" path="M 410 315 C 435 365, 455 405, 470 475" /></circle>
+            <circle r="3.2" fill="#78B0CE"><animateMotion dur="2.6s" repeatCount="indefinite" path="M 460 302 C 530 355, 585 370, 625 430" /></circle>
+            <g id="activePulseGroup"></g>
+          </g>
+
+          <!-- STRATUM 1 (TOP): GENVIA PARENT CREST -->
+          <g class="iso-layer">
+            <polygon points="390,26 530,72 390,118 250,72" fill="url(#slabTopDark)" stroke="#4A86A8" stroke-width="1.3" />
+            <polygon points="250,72 390,118 390,130 250,84" fill="#0B1620" stroke="#1E3647" stroke-width="1" />
+            <polygon points="530,72 390,118 390,130 530,84" fill="#060D14" stroke="#172A38" stroke-width="1" />
+            <text x="390" y="68" text-anchor="middle" fill="#FFFFFF" font-family="Barlow Semi Condensed, sans-serif" font-weight="700" font-size="18" letter-spacing="3">GENVIA</text>
+            <text x="390" y="86" text-anchor="middle" fill="#8EC2DF" font-family="JetBrains Mono, monospace" font-size="9.5" letter-spacing="1.6">PARENT AI COMPANY</text>
+          </g>
+
+          <!-- STRATUM 2 (MIDDLE): GYRA INTELLIGENCE CORE SILICON WAFER -->
+          <g class="iso-layer" id="coreWafer">
+            <!-- Wafer top -->
+            <polygon points="390,164 635,244 390,324 145,244" fill="url(#slabTop)" stroke="#8EC2DF" stroke-width="1.6" />
+            <!-- Left & right machined bevels -->
+            <polygon points="145,244 390,324 390,348 145,268" fill="#12354A" stroke="#2E6584" stroke-width="1" />
+            <polygon points="635,244 390,324 390,348 635,268" fill="#0B2230" stroke="#1E465E" stroke-width="1" />
+            <!-- Etched stage channels inside wafer -->
+            <polygon id="wafer-s0" points="285,222 350,200 415,222 350,244" fill="rgba(5,16,25,0.68)" stroke="#78B0CE" stroke-width="1" />
+            <polygon id="wafer-s1" points="355,246 420,224 485,246 420,268" fill="rgba(5,16,25,0.68)" stroke="#78B0CE" stroke-width="1" />
+            <polygon id="wafer-s2" points="425,270 490,248 555,270 490,292" fill="rgba(5,16,25,0.68)" stroke="#78B0CE" stroke-width="1" />
+
+            <!-- Laser trace connecting the 3 wafer stages -->
+            <path d="M 320 222 L 420 246 L 515 270" fill="none" stroke="#9CC4DC" stroke-width="2" stroke-dasharray="10 10">
+              <animate attributeName="stroke-dashoffset" values="40;0" dur="1.1s" repeatCount="indefinite" />
+            </path>
+
+            <text x="350" y="226" text-anchor="middle" fill="#FFFFFF" font-family="JetBrains Mono, monospace" font-size="9.5" font-weight="600">01 UNDERSTAND</text>
+            <text x="420" y="250" text-anchor="middle" fill="#FFFFFF" font-family="JetBrains Mono, monospace" font-size="9.5" font-weight="600">02 ORCHESTRATE</text>
+            <text x="490" y="274" text-anchor="middle" fill="#FFFFFF" font-family="JetBrains Mono, monospace" font-size="9.5" font-weight="600">03 EXECUTE</text>
+            <text x="235" y="268" fill="#D5E9F5" font-family="Barlow Semi Condensed, sans-serif" font-weight="700" font-size="14" letter-spacing="2">GYRA CORE</text>
+          </g>
+
+          <!-- STRATUM 3 (LOWER): 4 ELEVATED PRODUCT MODULES -->
+          <g id="mod-chat" class="iso-module" data-id="chat">
+            <polygon points="155,404 250,436 155,468 60,436" fill="#0B1924" stroke="#5B9EC2" stroke-width="1.4" />
+            <polygon points="60,436 155,468 155,486 60,454" fill="#07121B" stroke="#1E3B4F" stroke-width="1" />
+            <polygon points="250,436 155,468 155,486 250,454" fill="#040B11" stroke="#152B3A" stroke-width="1" />
+            <text x="155" y="434" text-anchor="middle" fill="#FFFFFF" font-family="Barlow Semi Condensed, sans-serif" font-weight="700" font-size="16">GYRA CHAT</text>
+            <text x="155" y="450" text-anchor="middle" fill="#8EC2DF" font-family="JetBrains Mono, monospace" font-size="9">6-AGENT CORE</text>
+          </g>
+
+          <g id="mod-image" class="iso-module" data-id="image">
+            <polygon points="310,458 405,490 310,522 215,490" fill="#0B1924" stroke="#5B9EC2" stroke-width="1.4" />
+            <polygon points="215,490 310,522 310,540 215,508" fill="#07121B" stroke="#1E3B4F" stroke-width="1" />
+            <polygon points="405,490 310,522 310,540 405,508" fill="#040B11" stroke="#152B3A" stroke-width="1" />
+            <text x="310" y="488" text-anchor="middle" fill="#FFFFFF" font-family="Barlow Semi Condensed, sans-serif" font-weight="700" font-size="16">GYRA IMAGE</text>
+            <text x="310" y="504" text-anchor="middle" fill="#8EC2DF" font-family="JetBrains Mono, monospace" font-size="9">PRO ULTRA I2I</text>
+          </g>
+
+          <g id="mod-video" class="iso-module" data-id="video">
+            <polygon points="470,458 565,490 470,522 375,490" fill="#0B1924" stroke="#5B9EC2" stroke-width="1.4" />
+            <polygon points="375,490 470,522 470,540 375,508" fill="#07121B" stroke="#1E3B4F" stroke-width="1" />
+            <polygon points="565,490 470,522 470,540 565,508" fill="#040B11" stroke="#152B3A" stroke-width="1" />
+            <text x="470" y="488" text-anchor="middle" fill="#FFFFFF" font-family="Barlow Semi Condensed, sans-serif" font-weight="700" font-size="16">GYRA VIDEO</text>
+            <text x="470" y="504" text-anchor="middle" fill="#8EC2DF" font-family="JetBrains Mono, monospace" font-size="9">LTX-VIDEO 720P</text>
+          </g>
+
+          <g id="mod-api" class="iso-module" data-id="api">
+            <polygon points="625,404 720,436 625,468 530,436" fill="#0B1924" stroke="#5B9EC2" stroke-width="1.4" />
+            <polygon points="530,436 625,468 625,486 530,454" fill="#07121B" stroke="#1E3B4F" stroke-width="1" />
+            <polygon points="720,436 625,468 625,486 720,454" fill="#040B11" stroke="#152B3A" stroke-width="1" />
+            <text x="625" y="434" text-anchor="middle" fill="#FFFFFF" font-family="Barlow Semi Condensed, sans-serif" font-weight="700" font-size="16">GYRA API</text>
+            <text x="625" y="450" text-anchor="middle" fill="#8EC2DF" font-family="JetBrains Mono, monospace" font-size="9">OPENAI V1 + MEDIA</text>
+          </g>
+        </svg>
+      </div>
+
+      <div class="side-panel">
+        <div>
+          <div class="panel-kicker font-mono" id="isoKicker">ISOMETRIC STRATA · STANDBY</div>
+          <h2 class="panel-title font-display" id="isoTitle">Gyra Intelligence Core</h2>
+          <p class="panel-sub" id="isoSub">Click any elevated 3D module on the left—or choose a product below—to cascade a signal down through the Genvia → Gyra Core wafer.</p>
+
+          <div class="branch-pills" id="branchPills"></div>
+
+          <div class="engines-list" id="enginesList"></div>
+        </div>
+
+        <div class="iso-console font-mono" id="isoConsole">
+          &gt; 3D Spatial Strata ready.<br/>
+          &gt; Select a module to trace vertical layer execution.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="./shared.js"></script>
+  <script>
+    (function () {
+      const arch = window.GYRA_ARCH;
+      const branchPills = document.getElementById("branchPills");
+      const enginesList = document.getElementById("enginesList");
+      const isoKicker = document.getElementById("isoKicker");
+      const isoTitle = document.getElementById("isoTitle");
+      const isoSub = document.getElementById("isoSub");
+      const isoConsole = document.getElementById("isoConsole");
+      const activePulseGroup = document.getElementById("activePulseGroup");
+
+      const beamPaths = {
+        chat:  "M 320 302 C 250 355, 195 370, 155 430",
+        image: "M 370 315 C 345 365, 325 405, 310 475",
+        video: "M 410 315 C 435 365, 455 405, 470 475",
+        api:   "M 460 302 C 530 355, 585 370, 625 430"
+      };
+
+      let timers = [];
+      let autoInt = null;
+
+      arch.branches.forEach(b => {
+        const btn = document.createElement("button");
+        btn.className = "b-btn";
+        btn.dataset.id = b.id;
+        btn.innerHTML = `<span class="b-code font-mono">${b.code} · ${b.category}</span><span class="b-name font-display">${b.name}</span>`;
+        btn.addEventListener("click", () => { clearInterval(autoInt); select(b.id); });
+        branchPills.appendChild(btn);
+      });
+
+      document.querySelectorAll(".iso-module").forEach(m => {
+        m.addEventListener("click", () => { clearInterval(autoInt); select(m.dataset.id); });
+      });
+
+      function renderEngines(branch) {
+        if (!branch) {
+          enginesList.innerHTML = arch.stages.map(s => `
+            <div class="eng-row"><strong>${s.code} · ${s.name}</strong><span>${s.short}</span></div>
+          `).join("");
+          return;
+        }
+        enginesList.innerHTML = branch.subEngines.map(e => `
+          <div class="eng-row"><strong>${e.name}</strong><span>${e.role}</span></div>
+        `).join("");
+      }
+
+      function highlightWafer(stepIdx) {
+        [0,1,2].forEach(i => {
+          const poly = document.getElementById("wafer-s" + i);
+          if (stepIdx === -1) {
+            poly.setAttribute("fill", "rgba(5,16,25,0.68)");
+            poly.setAttribute("stroke", "#78B0CE");
+          } else if (i < stepIdx) {
+            poly.setAttribute("fill", "rgba(16,85,62,0.72)");
+            poly.setAttribute("stroke", "#34D399");
+          } else if (i === stepIdx) {
+            poly.setAttribute("fill", "rgba(91,158,194,0.65)");
+            poly.setAttribute("stroke", "#FFFFFF");
+          } else {
+            poly.setAttribute("fill", "rgba(5,16,25,0.68)");
+            poly.setAttribute("stroke", "#4B7E9C");
+          }
+        });
+      }
+
+      function select(id) {
+        timers.forEach(clearTimeout);
+        timers = [];
+        const b = arch.branches.find(x => x.id === id);
+        isoKicker.textContent = `${b.code} · ${b.category.toUpperCase()} · ${b.endpoint}`;
+        isoTitle.textContent = b.name;
+        isoSub.textContent = b.summary;
+        renderEngines(b);
+
+        document.querySelectorAll(".b-btn").forEach(el => {
+          el.classList.toggle("active", el.dataset.id === id);
+          el.classList.remove("done");
+        });
+        document.querySelectorAll(".iso-module").forEach(el => {
+          el.classList.toggle("active", el.dataset.id === id);
+          el.style.opacity = el.dataset.id === id ? "1" : "0.45";
+        });
+        Object.keys(beamPaths).forEach(k => {
+          const p = document.getElementById("iso-beam-" + k);
+          p.setAttribute("stroke", k === id ? "#9CC4DC" : "#1A3040");
+          p.setAttribute("stroke-width", k === id ? "3.2" : "1.3");
+        });
+
+        activePulseGroup.innerHTML = `
+          <circle r="5.5" fill="#FFFFFF"><animateMotion dur="0.95s" repeatCount="indefinite" path="${beamPaths[id]}" /></circle>
+          <circle r="3.5" fill="#5B9EC2"><animateMotion dur="0.95s" begin="0.32s" repeatCount="indefinite" path="${beamPaths[id]}" /></circle>
+        `;
+
+        highlightWafer(0);
+        isoConsole.innerHTML = `&gt; ${b.trace[0].log}`;
+
+        timers.push(setTimeout(() => {
+          highlightWafer(1);
+          isoConsole.innerHTML += `<br/>&gt; ${b.trace[1].log}`;
+        }, 520));
+
+        timers.push(setTimeout(() => {
+          highlightWafer(2);
+        }, 1020));
+
+        timers.push(setTimeout(() => {
+          highlightWafer(3);
+          document.getElementById("iso-beam-" + id).setAttribute("stroke", "#34D399");
+          document.querySelector(`.b-btn[data-id="${id}"]`).classList.add("done");
+          isoConsole.innerHTML += `<br/><span style="color:#34D399">&gt; ${b.trace[2].log}</span>`;
+        }, 1520));
+      }
+
+      function reset() {
+        timers.forEach(clearTimeout);
+        clearInterval(autoInt);
+        highlightWafer(-1);
+        activePulseGroup.innerHTML = "";
+        isoKicker.textContent = "ISOMETRIC STRATA · STANDBY";
+        isoTitle.textContent = "Gyra Intelligence Core";
+        isoSub.textContent = "Click any elevated 3D module on the left—or choose a product below—to cascade a signal down through the Genvia → Gyra Core wafer.";
+        document.querySelectorAll(".b-btn").forEach(el => el.classList.remove("active", "done"));
+        document.querySelectorAll(".iso-module").forEach(el => { el.classList.remove("active"); el.style.opacity = "1"; });
+        Object.keys(beamPaths).forEach(k => {
+          const p = document.getElementById("iso-beam-" + k);
+          p.setAttribute("stroke", "#264A62");
+          p.setAttribute("stroke-width", "1.8");
+        });
+        isoConsole.innerHTML = `&gt; 3D Spatial Strata ready.<br/>&gt; Select a module to trace vertical layer execution.`;
+        renderEngines(null);
+      }
+
+      document.getElementById("btnAuto").addEventListener("click", () => {
+        clearInterval(autoInt);
+        let i = 0;
+        select(arch.branches[0].id);
+        autoInt = setInterval(() => {
+          i = (i + 1) % 4;
+          select(arch.branches[i].id);
+        }, 2800);
+      });
+      document.getElementById("btnReset").addEventListener("click", reset);
+
+      renderEngines(null);
+    })();
+  </script>
+</body>
+</html>

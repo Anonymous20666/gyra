@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sample 05 — Live Synaptic Neural Canopy · Gyra</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #000000;
+      --border: #1A2632;
+      --steel: #1F5B7C;
+      --steel-bright: #5B9EC2;
+      --steel-ice: #9CC4DC;
+      --text: #F5F5F5;
+      --muted: #8B98A5;
+      --ok: #34D399;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: "DM Sans", system-ui, sans-serif;
+      min-height: 100vh; overflow-x: hidden;
+    }
+    .font-display { font-family: "Barlow Semi Condensed", sans-serif; letter-spacing: -0.02em; }
+    .font-mono { font-family: "JetBrains Mono", monospace; font-variant-numeric: tabular-nums; }
+    .wrap { max-width: 1440px; margin: 0 auto; padding: 26px 24px 52px; }
+    .header {
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px;
+      margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid #141C24;
+    }
+    .header h1 { font-size: 22px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .header p { font-size: 13px; color: var(--muted); margin-top: 2px; }
+    .btn {
+      background: #070E15; color: var(--text); border: 1px solid var(--border);
+      padding: 8px 14px; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer;
+    }
+    .btn:hover { border-color: var(--steel-bright); background: #0C1A26; }
+    .btn.primary { background: var(--steel); border-color: var(--steel-bright); color: #fff; }
+
+    /* Full-Bleed Live Neural Canvas */
+    .canvas-shell {
+      position: relative;
+      border: 1px solid var(--border);
+      background: radial-gradient(circle at 50% 34%, rgba(31,91,124,0.22) 0%, #02060A 55%, #000000 100%);
+      height: 670px;
+      overflow: hidden;
+    }
+    #meshCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: pointer;
+    }
+    .hud-top {
+      position: absolute;
+      top: 18px;
+      left: 20px;
+      right: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .hud-badge {
+      background: rgba(3, 8, 13, 0.88);
+      border: 1px solid rgba(91,158,194,0.34);
+      padding: 6px 12px;
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--steel-ice);
+    }
+
+    .hud-bottom {
+      position: absolute;
+      left: 20px;
+      right: 20px;
+      bottom: 18px;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 14px;
+      align-items: end;
+      pointer-events: none;
+    }
+    .quick-pills {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      pointer-events: auto;
+    }
+    .q-btn {
+      background: rgba(5, 11, 17, 0.94);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 9px 14px;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .q-btn:hover, .q-btn.active { border-color: var(--steel-ice); background: #0C2538; color: #fff; }
+
+    .live-strip {
+      background: rgba(2, 6, 10, 0.92);
+      border: 1px solid #1A2D3D;
+      padding: 12px 16px;
+      font-size: 12px;
+      line-height: 1.6;
+      color: #C7D7E3;
+      pointer-events: auto;
+    }
+
+    @media (max-width: 900px) {
+      .canvas-shell { height: 610px; }
+      .hud-bottom { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <div>
+        <h1 class="font-display">Sample 05 · Live Synaptic Neural Canopy (60fps Canvas)</h1>
+        <p>Full-viewport 60fps living intelligence tree displaying Genvia → Gyra Core → 3 Stages → 4 Products → 12 Sub-Engines with cascading synaptic impulses.</p>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn primary font-mono" id="btnWave">Fire All Synapses</button>
+        <button class="btn font-mono" id="btnReset">Idle Canopy</button>
+      </div>
+    </div>
+
+    <div class="canvas-shell" id="shell">
+      <canvas id="meshCanvas"></canvas>
+      <div class="hud-top">
+        <div class="hud-badge font-mono">GENVIA (PARENT) → GYRA INTELLIGENCE CANOPY</div>
+        <div class="hud-badge font-mono" id="meshStatus">CLICK ANY NODE OR BRANCH BELOW TO FIRE IMPULSE</div>
+      </div>
+
+      <div class="hud-bottom">
+        <div class="quick-pills" id="quickPills"></div>
+        <div class="live-strip font-mono" id="meshLog">
+          &gt; Living synaptic canopy idle · 21 active architecture nodes (Genvia → Gyra → 3 Stages → 4 Products → 12 Sub-Engines).
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="./shared.js"></script>
+  <script>
+    (function () {
+      const arch = window.GYRA_ARCH;
+      const shell = document.getElementById("shell");
+      const canvas = document.getElementById("meshCanvas");
+      const ctx = canvas.getContext("2d");
+      const quickPills = document.getElementById("quickPills");
+      const meshLog = document.getElementById("meshLog");
+      const meshStatus = document.getElementById("meshStatus");
+
+      let W = 1200, H = 670;
+      let selectedBranch = null;
+      let hoveredNode = null;
+      let nodes = [];
+      let edges = [];
+      let impulses = [];
+      let ripples = [];
+      let t = 0;
+
+      arch.branches.forEach(b => {
+        const btn = document.createElement("button");
+        btn.className = "q-btn font-mono";
+        btn.dataset.id = b.id;
+        btn.textContent = b.name;
+        btn.addEventListener("click", () => fireBranch(b.id));
+        quickPills.appendChild(btn);
+      });
+
+      function buildGraph() {
+        nodes = [];
+        edges = [];
+        const cx = W * 0.5;
+        const compact = W < 820;
+
+        // Tier 0: GENVIA Parent
+        const nParent = { id: "genvia", label: "GENVIA", sub: "PARENT AI COMPANY", x: cx, y: 78, r: 20, tier: 0, branch: null };
+        // Tier 1: GYRA CORE
+        const nCore = { id: "core", label: "GYRA CORE", sub: "AI PLATFORM ENGINE", x: cx, y: 168, r: 28, tier: 1, branch: null };
+        nodes.push(nParent, nCore);
+        edges.push({ from: nParent, to: nCore, branch: null });
+
+        // Tier 2: Understand, Orchestrate, Execute
+        const stageSpread = compact ? W * 0.3 : Math.min(270, W * 0.22);
+        const stageNodes = arch.stages.map((s, i) => {
+          const n = {
+            id: "st-" + s.id,
+            label: s.name.toUpperCase(),
+            sub: s.code,
+            x: cx + (i - 1) * stageSpread,
+            y: 266,
+            r: 17,
+            tier: 2,
+            branch: null
+          };
+          nodes.push(n);
+          edges.push({ from: nCore, to: n, branch: null });
+          return n;
+        });
+        edges.push({ from: stageNodes[0], to: stageNodes[1], branch: null });
+        edges.push({ from: stageNodes[1], to: stageNodes[2], branch: null });
+
+        // Tier 3: 4 Product Branches
+        const bXs = compact
+          ? [W * 0.16, W * 0.39, W * 0.62, W * 0.84]
+          : [W * 0.14, W * 0.38, W * 0.62, W * 0.86];
+
+        arch.branches.forEach((b, bi) => {
+          const bn = {
+            id: b.id,
+            label: b.name.toUpperCase(),
+            sub: b.category.toUpperCase(),
+            x: bXs[bi],
+            y: 392,
+            r: compact ? 18 : 23,
+            tier: 3,
+            branch: b.id,
+            data: b
+          };
+          nodes.push(bn);
+          // Connect every stage to product branches with soft natural fan
+          stageNodes.forEach(sn => {
+            edges.push({ from: sn, to: bn, branch: b.id });
+          });
+
+          // Tier 4: 3 key sub-engines per product (12 visible leaf nodes!)
+          if (!compact) {
+            const leaves = b.subEngines.slice(0, 3);
+            leaves.forEach((se, li) => {
+              const spread = Math.min(82, W * 0.062);
+              const ln = {
+                id: `${b.id}-leaf-${li}`,
+                label: se.name,
+                sub: "",
+                x: bn.x + (li - 1) * spread,
+                y: 512 + (li === 1 ? 18 : 0),
+                r: 10,
+                tier: 4,
+                branch: b.id
+              };
+              nodes.push(ln);
+              edges.push({ from: bn, to: ln, branch: b.id });
+            });
+          }
+        });
+      }
+
+      function spawnImpulse(edge, speed = 0.018, bright = false, color = "#9CC4DC") {
+        impulses.push({ edge, p: 0, speed, bright, color });
+      }
+
+      function fireBranch(id) {
+        selectedBranch = id;
+        const b = arch.branches.find(x => x.id === id);
+        document.querySelectorAll(".q-btn").forEach(btn => btn.classList.toggle("active", btn.dataset.id === id));
+        meshStatus.textContent = `ACTIVE SYNAPSE → ${b.name.toUpperCase()} (${b.endpoint})`;
+        meshLog.innerHTML = `&gt; ${b.trace[0].log}<br/>&gt; ${b.trace[1].log}<br/><span style="color:#34D399">&gt; ${b.trace[2].log}</span>`;
+
+        // Cascade electrical impulses from GenVIA → Core → Stages → Selected Product → Sub-Engines
+        edges.forEach(e => {
+          if (e.from.tier === 0) spawnImpulse(e, 0.032, true, "#FFFFFF");
+          if (e.from.tier === 1) setTimeout(() => spawnImpulse(e, 0.028, true, "#9CC4DC"), 160);
+          if (e.from.tier === 2 && e.branch === id) setTimeout(() => spawnImpulse(e, 0.024, true, "#8EC2DF"), 360);
+          if (e.from.tier === 3 && e.branch === id) setTimeout(() => spawnImpulse(e, 0.026, true, "#34D399"), 660);
+        });
+
+        const bn = nodes.find(n => n.id === id);
+        if (bn) {
+          setTimeout(() => ripples.push({ x: bn.x, y: bn.y, r: bn.r, maxR: 72, alpha: 0.9, color: "#34D399" }), 650);
+        }
+      }
+
+      function drawCurve(e, alpha, width, color) {
+        const { from, to } = e;
+        const midY = (from.y + to.y) * 0.5;
+        ctx.beginPath();
+        ctx.moveTo(from.x, from.y);
+        ctx.bezierCurveTo(from.x, midY, to.x, midY, to.x, to.y);
+        ctx.strokeStyle = color;
+        ctx.globalAlpha = alpha;
+        ctx.lineWidth = width;
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+
+      function curvePoint(e, p) {
+        const { from, to } = e;
+        const midY = (from.y + to.y) * 0.5;
+        const m = 1 - p;
+        return {
+          x: m*m*m*from.x + 3*m*m*p*from.x + 3*m*p*p*to.x + p*p*p*to.x,
+          y: m*m*m*from.y + 3*m*m*p*midY + 3*m*p*p*midY + p*p*p*to.y
+        };
+      }
+
+      function resize() {
+        const r = shell.getBoundingClientRect();
+        W = r.width;
+        H = r.height;
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = W * dpr;
+        canvas.height = H * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        buildGraph();
+      }
+
+      function tick() {
+        t += 0.016;
+        ctx.clearRect(0, 0, W, H);
+
+        // Ambient subtle neural firing
+        if (Math.random() < 0.08 && edges.length) {
+          const pool = selectedBranch
+            ? edges.filter(e => e.branch === null || e.branch === selectedBranch)
+            : edges;
+          const pick = pool[Math.floor(Math.random() * pool.length)];
+          if (pick) spawnImpulse(pick, 0.01 + Math.random() * 0.008, false, "#5B9EC2");
+        }
+
+        // Draw edges
+        for (const e of edges) {
+          const isFocus = !selectedBranch || e.branch === null || e.branch === selectedBranch;
+          const isSel = selectedBranch && e.branch === selectedBranch;
+          drawCurve(
+            e,
+            isSel ? 0.82 : (isFocus ? 0.34 : 0.09),
+            isSel ? 2.1 : 1.1,
+            isSel ? "#5B9EC2" : "#2D5975"
+          );
+        }
+
+        // Update & draw traveling synaptic impulses
+        for (let i = impulses.length - 1; i >= 0; i--) {
+          const imp = impulses[i];
+          imp.p += imp.speed;
+          if (imp.p >= 1) {
+            if (imp.bright) {
+              ripples.push({ x: imp.edge.to.x, y: imp.edge.to.y, r: imp.edge.to.r, maxR: imp.edge.to.r + 24, alpha: 0.65, color: imp.color });
+            }
+            impulses.splice(i, 1);
+            continue;
+          }
+          const trail = imp.bright ? 10 : 5;
+          for (let s = 0; s < trail; s++) {
+            const pp = Math.max(0, imp.p - s * 0.018);
+            const pt = curvePoint(imp.edge, pp);
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, (1 - s / trail) * (imp.bright ? 3.8 : 2.1), 0, Math.PI * 2);
+            ctx.fillStyle = imp.color;
+            ctx.globalAlpha = (1 - s / trail) * (imp.bright ? 0.95 : 0.6);
+            ctx.fill();
+          }
+          ctx.globalAlpha = 1;
+        }
+
+        // Draw expanding ripples
+        for (let i = ripples.length - 1; i >= 0; i--) {
+          const rp = ripples[i];
+          rp.r += 1.2;
+          rp.alpha -= 0.022;
+          if (rp.alpha <= 0) { ripples.splice(i, 1); continue; }
+          ctx.beginPath();
+          ctx.arc(rp.x, rp.y, rp.r, 0, Math.PI * 2);
+          ctx.strokeStyle = rp.color;
+          ctx.globalAlpha = rp.alpha;
+          ctx.lineWidth = 1.4;
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
+
+        // Draw nodes
+        for (const n of nodes) {
+          const isFocus = !selectedBranch || n.branch === null || n.branch === selectedBranch;
+          const isSel = selectedBranch && n.branch === selectedBranch;
+          const isHover = hoveredNode === n;
+          const breathe = Math.sin(t * 2 + n.x * 0.01) * 1.4;
+          const r = n.r + (isHover ? 3 : 0);
+
+          // Outer aura for core & active product nodes
+          if (n.tier === 1 || isSel || isHover) {
+            const g = ctx.createRadialGradient(n.x, n.y, r * 0.4, n.x, n.y, r * 2.4 + breathe);
+            g.addColorStop(0, isSel && n.tier === 3 ? "rgba(52,211,153,0.28)" : "rgba(91,158,194,0.28)");
+            g.addColorStop(1, "rgba(0,0,0,0)");
+            ctx.beginPath();
+            ctx.arc(n.x, n.y, r * 2.4 + breathe, 0, Math.PI * 2);
+            ctx.fillStyle = g;
+            ctx.fill();
+          }
+
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+          ctx.fillStyle = n.tier === 1 ? "#0C2538" : (isSel ? "#0B2030" : "#050B11");
+          ctx.globalAlpha = isFocus ? 1 : 0.32;
+          ctx.fill();
+          ctx.lineWidth = (n.tier === 1 || isSel || isHover) ? 2 : 1.2;
+          ctx.strokeStyle = isSel && n.tier >= 3 ? "#34D399" : (n.tier === 1 || isSel || isHover ? "#9CC4DC" : "#305B75");
+          ctx.stroke();
+
+          // Node labels
+          ctx.textAlign = "center";
+          if (n.tier <= 3) {
+            ctx.fillStyle = "#FFFFFF";
+            ctx.font = n.tier === 1 ? "700 12px 'JetBrains Mono', monospace" : (n.tier === 3 ? "700 13px 'Barlow Semi Condensed', sans-serif" : "600 10.5px 'JetBrains Mono', monospace");
+            ctx.fillText(n.label, n.x, n.y + (n.tier === 3 ? -r - 10 : (n.tier === 0 ? -r - 8 : 4)));
+            if (n.sub && n.tier !== 2) {
+              ctx.fillStyle = "#8EC2DF";
+              ctx.font = "500 9px 'JetBrains Mono', monospace";
+              ctx.fillText(n.sub, n.x, n.y + r + 15);
+            }
+          } else {
+            ctx.fillStyle = isSel ? "#FFFFFF" : "#9BB0C2";
+            ctx.font = "500 10px 'JetBrains Mono', monospace";
+            ctx.fillText(n.label, n.x, n.y + r + 14);
+          }
+          ctx.globalAlpha = 1;
+        }
+
+        requestAnimationFrame(tick);
+      }
+
+      canvas.addEventListener("mousemove", e => {
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+        hoveredNode = nodes.find(n => Math.hypot(n.x - mx, n.y - my) <= n.r + 10) || null;
+      });
+
+      canvas.addEventListener("click", () => {
+        if (hoveredNode && hoveredNode.branch) {
+          fireBranch(hoveredNode.branch);
+        }
+      });
+
+      document.getElementById("btnWave").addEventListener("click", () => {
+        arch.branches.forEach((b, i) => {
+          setTimeout(() => fireBranch(b.id), i * 850);
+        });
+      });
+
+      document.getElementById("btnReset").addEventListener("click", () => {
+        selectedBranch = null;
+        document.querySelectorAll(".q-btn").forEach(btn => btn.classList.remove("active"));
+        meshStatus.textContent = "CLICK ANY NODE OR BRANCH BELOW TO FIRE IMPULSE";
+        meshLog.innerHTML = `&gt; Living synaptic canopy idle · 21 active architecture nodes (Genvia → Gyra → 3 Stages → 4 Products → 12 Sub-Engines).`;
+      });
+
+      resize();
+      window.addEventListener("resize", resize);
+      requestAnimationFrame(tick);
+    })();
+  </script>
+</body>
+</html>

@@ -7,7 +7,13 @@
    Design tokens — light theme (default)
    ============================================================ */
 :root {
-  --background: #f7f7f8;
+  --in-oklab: ;
+  --in-oklch: ;
+  --background: #f6f8fa;
+  --gl-orbital-scrim: radial-gradient(ellipse 52% 48% at 50% 45%, rgba(246,248,250,0.88) 0%, rgba(246,248,250,0.52) 54%, rgba(246,248,250,0.96) 100%);
+  --gl-orbital-fade: linear-gradient(to top, #f6f8fa 0%, rgba(246,248,250,0.88) 44%, transparent 100%);
+  --gl-dither-dot: rgba(15, 23, 42, 0.08);
+  --gl-cta-glow: radial-gradient(circle at 50% 42%, rgba(31, 91, 124, 0.14), transparent 64%);
   --foreground: #0a0a0a;
   --card: #ffffff;
   --card-2: #f4f4f5;
@@ -25,6 +31,10 @@
    ============================================================ */
 .dark {
   --background: #000000;
+  --gl-orbital-scrim: radial-gradient(ellipse 50% 46% at 50% 45%, rgba(0,0,0,0.64) 0%, rgba(0,0,0,0.28) 55%, rgba(0,0,0,0.88) 100%);
+  --gl-orbital-fade: linear-gradient(to top, #000000 0%, rgba(0,0,0,0.82) 42%, transparent 100%);
+  --gl-dither-dot: rgba(255, 255, 255, 0.08);
+  --gl-cta-glow: radial-gradient(circle at 50% 50%, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.72) 50%, rgba(0,0,0,0.25) 100%);
   --foreground: #ffffff;
   --card: #0a0a0a;
   --card-2: #18181b;
@@ -413,6 +423,147 @@ dialog.gyra-lightbox-dialog[open]:where(:not([data-closing])) {
     transition-duration: 0.08s;
   }
 }
+
+/* ============================================================
+   Gyra Pro Lab — Kinetic Marquee, Dither Hover & Scroll Reveals
+   ============================================================ */
+@keyframes gyra-marquee-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .gyra-marquee-track {
+    animation: gyra-marquee-scroll 34s linear infinite;
+  }
+
+  .gyra-marquee-track:hover {
+    animation-play-state: paused;
+  }
+
+  /* Whisper-slow institutional editorial ribbon (compositor-only translateX, pauses on hover) */
+  .gyra-ticker-slow {
+    animation: gyra-marquee-scroll 68s linear infinite;
+  }
+
+  .gyra-ticker-slow:hover {
+    animation-play-state: paused;
+  }
+}
+
+.gyra-mask-edge-x {
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
+}
+
+.gyra-dither-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.gyra-dither-btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.28) 1px, transparent 1px);
+  background-size: 4px 4px;
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.gyra-dither-btn:hover::after {
+  opacity: 1;
+}
+
+@keyframes gyra-reveal-up {
+  from {
+    opacity: 0.25;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes gyra-scene-glide-in {
+  from {
+    opacity: 0.28;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@supports (background: linear-gradient(in oklab, white, black)) {
+  :root {
+    --in-oklab: in oklab;
+    --in-oklch: in oklch;
+  }
+}
+
+/* Soft-edge mask fades for wall-free / unboxed live flows (soft-edge-content-fade guide) */
+.gyra-mask-void {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 88%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 88%, transparent 100%);
+}
+
+/* Unboxed 21-orb canopy mask: keep top GENVIA node 100% crisp under the Live Prompt tether, soft bottom exit */
+.gyra-mask-canopy {
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 92%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 0%, black 92%, transparent 100%);
+}
+
+.gyra-mask-orbital {
+  -webkit-mask-image: radial-gradient(ellipse 86% 78% at 50% 44%, black 38%, rgba(0, 0, 0, 0.55) 72%, transparent 100%);
+  mask-image: radial-gradient(ellipse 86% 78% at 50% 44%, black 38%, rgba(0, 0, 0, 0.55) 72%, transparent 100%);
+}
+
+@keyframes gyra-tether-drop {
+  0% { transform: translateY(-100%); opacity: 0; }
+  25% { opacity: 1; }
+  75% { opacity: 1; }
+  100% { transform: translateY(220%); opacity: 0; }
+}
+
+@keyframes gyra-lazy-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .gyra-tether-pulse {
+    animation: gyra-tether-drop 3.8s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  }
+
+  .gyra-lazy-in {
+    animation: gyra-lazy-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .gyra-scene-glide {
+    animation: gyra-scene-glide-in 540ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+
+/* Baseline Scroll-Driven Lazy Section Choreography (scrollytelling guide — compositor-only + reduced-motion guarded) */
+@supports ((animation-timeline: view()) and (animation-range: 0% 100%)) {
+  @media (prefers-reduced-motion: no-preference) {
+    .gyra-scroll-reveal {
+      animation: gyra-reveal-up linear both;
+      animation-timeline: view();
+      animation-range: entry 4% cover 24%;
+    }
+  }
+}
 input[type="range"].gyra-slider {
   -webkit-appearance: none;
   appearance: none;
@@ -446,3 +597,27 @@ input[type="range"].gyra-slider::-moz-range-thumb {
 }
 
 
+
+@keyframes gyra-smart-shimmer-sweep {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.gyra-smart-shimmer {
+  background: linear-gradient(
+    110deg,
+    #05080C 18%,
+    #0D1B27 42%,
+    #142A3B 50%,
+    #0D1B27 58%,
+    #05080C 82%
+  );
+  background-size: 220% 100%;
+  animation: gyra-smart-shimmer-sweep 1.75s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gyra-smart-shimmer {
+    animation: none;
+  }
+}

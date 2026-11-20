@@ -1,0 +1,1041 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Adv 04 · Living 3D Isometric Core · One Intelligence Core · Gyra</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #000000;
+      --surface: #04080D;
+      --border: #172736;
+      --border-strong: #284C66;
+      --steel: #1F5B7C;
+      --steel-hover: #296E93;
+      --steel-bright: #5B9EC2;
+      --steel-ice: #9CC4DC;
+      --text: #F5F5F5;
+      --muted: #8B9AA8;
+      --ok: #34D399;
+      --err: #F87171;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: "DM Sans", system-ui, sans-serif;
+      min-height: 100%;
+      overflow-x: hidden;
+    }
+    .font-display { font-family: "Barlow Semi Condensed", sans-serif; letter-spacing: -0.02em; }
+    .font-mono { font-family: "JetBrains Mono", monospace; font-variant-numeric: tabular-nums; }
+
+    .page {
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 16px 24px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Section Header matching "One intelligence core. Every product runs on it." */
+    .hero-head {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #131E29;
+    }
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--steel-bright);
+      margin-bottom: 4px;
+    }
+    .kicker-dot {
+      width: 6px; height: 6px; border-radius: 999px;
+      background: var(--steel-ice);
+    }
+    .hero-head h1 {
+      font-size: clamp(24px, 2.5vw, 34px);
+      line-height: 1.0;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #FFFFFF;
+    }
+    .hero-head h1 span { color: var(--steel-bright); }
+    .hero-head p {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 4px;
+      max-width: 660px;
+      line-height: 1.4;
+    }
+
+    .controls { display: flex; flex-wrap: wrap; gap: 7px; }
+    .btn {
+      background: #060C13;
+      color: #D8E6F0;
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+      font-size: 10.5px;
+      letter-spacing: 0.11em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 180ms ease;
+    }
+    .btn:hover { border-color: var(--steel-bright); background: #0B1B28; color: #FFFFFF; }
+    .btn.primary { background: var(--steel); border-color: var(--steel-ice); color: #FFFFFF; }
+    .btn.primary:hover { background: var(--steel-hover); }
+    .btn.active { background: #0C283C; border-color: var(--steel-ice); color: #FFFFFF; }
+    .btn.danger { border-color: rgba(248, 113, 113, 0.45); color: #FCA5A5; }
+    .btn.danger.active { background: #311216; border-color: var(--err); color: #FFFFFF; }
+
+    /* Architectural Split Frame */
+    .split-frame {
+      border: 1px solid var(--border);
+      background: #000000;
+      display: grid;
+      grid-template-columns: minmax(0, 1.38fr) minmax(380px, 0.86fr);
+      min-height: 675px;
+    }
+
+    /* Left 3D Machined Hardware Stage */
+    .iso-stage {
+      position: relative;
+      border-right: 1px solid var(--border);
+      background: radial-gradient(ellipse 68% 58% at 50% 46%, rgba(31, 91, 124, 0.22) 0%, #02060B 62%, #000000 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px 20px;
+      overflow: hidden;
+    }
+
+    #fxCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .stage-hud {
+      position: absolute;
+      top: 14px;
+      left: 16px;
+      right: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      pointer-events: none;
+      z-index: 4;
+    }
+    .hud-chip {
+      background: #03070C;
+      border: 1px solid #1C3244;
+      padding: 6px 11px;
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--steel-ice);
+    }
+    .hud-chip.ok { border-color: rgba(52, 211, 153, 0.5); color: #A7F3D0; }
+    .hud-chip.err { border-color: rgba(248, 113, 113, 0.55); color: #FECACA; }
+
+    .iso-svg {
+      position: relative;
+      z-index: 3;
+      width: 100%;
+      max-width: 810px;
+      height: auto;
+      overflow: visible;
+    }
+
+    /* Smooth 3D Explode & Interactive Hover Elevation */
+    .stratum-genvia,
+    .stratum-core,
+    .stratum-modules,
+    .stratum-base {
+      transition: transform 520ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .iso-stage.exploded .stratum-genvia { transform: translateY(-20px); }
+    .iso-stage.exploded .stratum-core { transform: translateY(-3px); }
+    .iso-stage.exploded .stratum-modules { transform: translateY(14px); }
+    .iso-stage.exploded .stratum-base { transform: translateY(20px); }
+
+    .explode-callouts {
+      opacity: 0;
+      transition: opacity 360ms ease;
+    }
+    .iso-stage.exploded .explode-callouts { opacity: 1; }
+
+    .clickable-stratum { cursor: pointer; }
+    .iso-module {
+      cursor: pointer;
+      transition: transform 280ms cubic-bezier(0.16, 1, 0.3, 1), opacity 260ms ease;
+    }
+    .iso-module:hover { transform: translateY(-8px); }
+    .iso-module.active { transform: translateY(-11px); }
+    .iso-module.dimmed { opacity: 0.54; }
+
+    .wafer-die {
+      transition: fill 260ms ease, stroke 260ms ease;
+    }
+
+    /* Right Breathable Editorial Story Rail (Zero cramped boxes) */
+    .story-rail {
+      background: #03070C;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    /* Clean Horizontal Product Switcher */
+    .prod-tabs {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      border: 1px solid var(--border);
+      background: #050B11;
+    }
+    .p-tab {
+      background: transparent;
+      border: none;
+      border-right: 1px solid var(--border);
+      padding: 11px 8px;
+      color: #8EA4B7;
+      cursor: pointer;
+      text-align: center;
+      transition: all 180ms ease;
+    }
+    .p-tab:last-child { border-right: none; }
+    .p-tab:hover { background: #091724; color: #FFFFFF; }
+    .p-tab.active { background: #0D273B; color: #FFFFFF; box-shadow: inset 0 -2px 0 var(--steel-ice); }
+    .p-tab.done { box-shadow: inset 0 -2px 0 var(--ok); color: #FFFFFF; }
+    .p-tab.failed { box-shadow: inset 0 -2px 0 var(--err); color: #FECACA; }
+    .p-tab .t-code { display: block; font-size: 9.5px; letter-spacing: 0.12em; color: var(--steel-bright); }
+    .p-tab .t-name { display: block; font-size: 13.5px; font-weight: 700; text-transform: uppercase; margin-top: 2px; }
+
+    .rail-header { margin-top: 4px; }
+    .rail-kicker {
+      font-size: 10.5px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--steel-bright);
+    }
+    .rail-title {
+      font-size: 30px;
+      font-weight: 700;
+      text-transform: uppercase;
+      line-height: 1.04;
+      color: #FFFFFF;
+      margin-top: 4px;
+    }
+    .rail-prompt {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-left: 2px solid var(--steel-bright);
+      background: #060E16;
+      font-size: 13px;
+      line-height: 1.5;
+      color: #E4EFF7;
+    }
+
+    /* Architectural Execution Timeline */
+    .exec-timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      border-top: 1px solid #142230;
+    }
+    .tl-row {
+      display: grid;
+      grid-template-columns: 20px 1fr;
+      gap: 11px;
+      padding: 10px 0;
+      border-bottom: 1px solid #111D28;
+      opacity: 0.62;
+      transition: opacity 220ms ease;
+    }
+    .tl-row.active, .tl-row.done, .tl-row.failed { opacity: 1; }
+    .tl-marker {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 3px;
+    }
+    .tl-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      border: 1.5px solid #2F5670;
+      background: #03080D;
+      transition: all 220ms ease;
+    }
+    .tl-row.active .tl-dot { border-color: #FFFFFF; background: var(--steel-bright); box-shadow: 0 0 10px var(--steel-bright); }
+    .tl-row.done .tl-dot { border-color: var(--ok); background: var(--ok); }
+    .tl-row.failed .tl-dot { border-color: var(--err); background: var(--err); }
+
+    .tl-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--steel-bright);
+      margin-bottom: 3px;
+    }
+    .tl-row.done .tl-meta { color: var(--ok); }
+    .tl-row.failed .tl-meta { color: var(--err); }
+    .tl-head { font-size: 13.5px; font-weight: 600; color: #FFFFFF; line-height: 1.35; }
+    .tl-desc { font-size: 12px; color: #95A8B8; margin-top: 3px; line-height: 1.45; }
+
+    /* Sub-Engine Inline Tags */
+    .sub-engine-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 2px;
+    }
+    .sub-tag {
+      border: 1px solid #1A2E40;
+      background: #060E16;
+      padding: 5px 10px;
+      font-size: 10.5px;
+      color: #C7D9E6;
+      letter-spacing: 0.04em;
+    }
+    .sub-tag strong { color: #FFFFFF; font-weight: 600; margin-right: 5px; }
+
+    /* Compact Live Artifact Console */
+    .artifact-bar {
+      border: 1px solid #182C3D;
+      background: #010407;
+      padding: 13px 15px;
+    }
+    .artifact-bar.ok { border-color: rgba(52, 211, 153, 0.5); }
+    .artifact-bar.err { border-color: rgba(248, 113, 113, 0.55); }
+    .artifact-top {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--steel-ice);
+      margin-bottom: 5px;
+    }
+    .artifact-bar.ok .artifact-top { color: var(--ok); }
+    .artifact-bar.err .artifact-top { color: var(--err); }
+    .artifact-out {
+      font-size: 11.5px;
+      line-height: 1.6;
+      color: #DCE9F3;
+      word-break: break-word;
+    }
+
+    @media (max-width: 1080px) {
+      .split-frame { grid-template-columns: 1fr; }
+      .iso-stage { border-right: none; border-bottom: 1px solid var(--border); min-height: 500px; }
+      .story-rail { padding: 20px 18px; }
+    }
+    @media (max-width: 560px) {
+      .page { padding: 14px 12px 28px; }
+      .prod-tabs { grid-template-columns: repeat(2, 1fr); }
+      .p-tab:nth-child(2) { border-right: none; }
+      .p-tab:nth-child(1), .p-tab:nth-child(2) { border-bottom: 1px solid var(--border); }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="hero-head">
+      <div>
+        <div class="kicker font-mono"><span class="kicker-dot"></span>GENVIA · ARCHITECTURAL HARDWARE STACK</div>
+        <h1 class="font-display">One intelligence core. <span>Every product runs on it.</span></h1>
+        <p>Living 3D isometric machined silicon strata replacing the stagnant core graphic — click any product plinth, explode the stack, or trace a live optical request through Genvia → Gyra Core → Product Engines.</p>
+      </div>
+      <div class="controls">
+        <button class="btn font-mono" id="btnExplode" type="button" aria-pressed="false">Exploded 3D View</button>
+        <button class="btn primary font-mono" id="btnCascade" type="button">Auto-Cascade</button>
+        <button class="btn danger font-mono" id="btnFault" type="button" aria-pressed="false">Fault Guard: Off</button>
+        <button class="btn font-mono" id="btnReset" type="button">Reset Idle</button>
+      </div>
+    </header>
+
+    <section class="split-frame" id="mainFrame" data-state="idle">
+      <div class="iso-stage" id="isoStage">
+        <canvas id="fxCanvas" aria-hidden="true"></canvas>
+
+        <div class="stage-hud">
+          <div class="hud-chip font-mono">MACHINED 3D STRATA · LIVE OPTICAL BUS</div>
+          <div class="hud-chip font-mono" id="stageStatus">STANDBY · SELECT ANY 3D MODULE</div>
+        </div>
+
+        <svg class="iso-svg" viewBox="0 0 840 668" role="img" aria-label="Gyra Living 3D Isometric Intelligence Core">
+          <defs>
+            <!-- Machined Metallic Steel-Blue Gradients (exact Gyra logo palette) -->
+            <linearGradient id="waferTop" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#296E93" />
+              <stop offset="52%" stop-color="#1B4F6D" />
+              <stop offset="100%" stop-color="#0E2E42" />
+            </linearGradient>
+            <linearGradient id="waferSideL" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#153E56" />
+              <stop offset="100%" stop-color="#0B2230" />
+            </linearGradient>
+            <linearGradient id="waferSideR" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#0C2636" />
+              <stop offset="100%" stop-color="#06141E" />
+            </linearGradient>
+            <linearGradient id="crestTop" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#1A3245" />
+              <stop offset="100%" stop-color="#08121B" />
+            </linearGradient>
+            <linearGradient id="modTop" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#153247" />
+              <stop offset="100%" stop-color="#08131D" />
+            </linearGradient>
+            <linearGradient id="modTopActive" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#286E94" />
+              <stop offset="100%" stop-color="#11374D" />
+            </linearGradient>
+            <linearGradient id="shaftBlue" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#9CC4DC" stop-opacity="0.46" />
+              <stop offset="100%" stop-color="#1F5B7C" stop-opacity="0.02" />
+            </linearGradient>
+            <linearGradient id="shaftOk" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#34D399" stop-opacity="0.5" />
+              <stop offset="100%" stop-color="#34D399" stop-opacity="0.02" />
+            </linearGradient>
+            <linearGradient id="shaftErr" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#F87171" stop-opacity="0.52" />
+              <stop offset="100%" stop-color="#F87171" stop-opacity="0.02" />
+            </linearGradient>
+            <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation="4" result="b" />
+              <feMerge>
+                <feMergeNode in="b" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+
+          <!-- STRATUM BASEPLATE: Precision Isometric Engineering Floor Grid -->
+          <g class="stratum-base">
+            <polygon points="410,418 776,538 410,632 44,538" fill="#03070B" stroke="#162838" stroke-width="1.2" />
+            <!-- Perspective architectural gridlines -->
+            <line x1="136" y1="508" x2="502" y2="608" stroke="#0E1B26" stroke-width="1" />
+            <line x1="227" y1="478" x2="593" y2="585" stroke="#0E1B26" stroke-width="1" />
+            <line x1="318" y1="448" x2="684" y2="562" stroke="#0E1B26" stroke-width="1" />
+            <line x1="684" y1="508" x2="318" y2="608" stroke="#0E1B26" stroke-width="1" />
+            <line x1="593" y1="478" x2="227" y2="585" stroke="#0E1B26" stroke-width="1" />
+            <line x1="502" y1="448" x2="136" y2="562" stroke="#0E1B26" stroke-width="1" />
+            <text x="410" y="616" text-anchor="middle" fill="#47667C" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="2.2">GYRA UNIFIED RUNTIME FABRIC · WEB · ANDROID · TELEGRAM · REST API V1</text>
+          </g>
+
+          <!-- EXPLODED-VIEW DEPTH CALLOUTS (Visible when Exploded 3D View toggled) -->
+          <g class="explode-callouts" font-family="JetBrains Mono, monospace" font-size="9" fill="#78B0CE" letter-spacing="1.4">
+            <line x1="560" y1="63" x2="672" y2="63" stroke="#366B8B" stroke-dasharray="3 3" />
+            <text x="678" y="66">L0 · GENVIA PARENT</text>
+
+            <line x1="670" y1="255" x2="712" y2="255" stroke="#366B8B" stroke-dasharray="3 3" />
+            <text x="718" y="258">L1 · CORE WAFER</text>
+
+            <line x1="744" y1="464" x2="760" y2="464" stroke="#366B8B" stroke-dasharray="3 3" />
+            <text x="688" y="422">L2 · PRODUCT PLINTHS</text>
+          </g>
+
+          <!-- OPTICAL CONDUITS & VERTICAL LIGHT SHAFTS (Core -> 4 Product Plinths) -->
+          <g id="opticalConduits">
+            <!-- Inbound Surface Stream entering Core Die 01 Understand -->
+            <path id="inboundPath" d="M 86 168 C 150 185, 224 205, 314 236" fill="none" stroke="#366987" stroke-width="1.8" stroke-dasharray="5 5" />
+            <text x="78" y="152" fill="#8EC2DF" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="1.4">INBOUND REQUEST</text>
+            <text x="78" y="164" fill="#5D7D94" font-family="JetBrains Mono, monospace" font-size="8.5">WEB · ANDROID · API</text>
+            <circle r="3.4" fill="#9CC4DC"><animateMotion dur="2.1s" repeatCount="indefinite" path="M 86 168 C 150 185, 224 205, 314 236" /></circle>
+
+            <!-- Governance Tether: Genvia Crest -> Gyra Core Wafer -->
+            <polygon points="392,126 428,126 436,192 384,192" fill="url(#shaftBlue)" opacity="0.35" />
+            <line x1="410" y1="126" x2="410" y2="196" stroke="#5B9EC2" stroke-width="1.6" stroke-dasharray="4 4" />
+            <circle cx="410" cy="128" r="3.6" fill="#FFFFFF">
+              <animate attributeName="cy" values="126;194" dur="1.7s" repeatCount="indefinite" />
+              <animate attributeName="opacity" values="0;1;1;0" dur="1.7s" repeatCount="indefinite" />
+            </circle>
+
+            <!-- Vertical Optical Light Shafts (highlighted per active product) -->
+            <polygon id="shaft-chat"  points="318,322 346,331 196,458 148,442" fill="url(#shaftBlue)" opacity="0.16" />
+            <polygon id="shaft-image" points="366,336 394,344 352,506 300,490" fill="url(#shaftBlue)" opacity="0.16" />
+            <polygon id="shaft-video" points="426,344 454,336 520,490 468,506" fill="url(#shaftBlue)" opacity="0.16" />
+            <polygon id="shaft-api"   points="474,331 502,322 672,442 624,458" fill="url(#shaftBlue)" opacity="0.16" />
+
+            <!-- Fiber Conduit Curves from Wafer Bus Pins -> Product Plinths -->
+            <path id="conduit-chat"  d="M 332 326 C 266 368, 210 388, 172 448" fill="none" stroke="#285069" stroke-width="2" />
+            <path id="conduit-image" d="M 380 340 C 356 386, 340 426, 326 496" fill="none" stroke="#285069" stroke-width="2" />
+            <path id="conduit-video" d="M 440 340 C 464 386, 480 426, 494 496" fill="none" stroke="#285069" stroke-width="2" />
+            <path id="conduit-api"   d="M 488 326 C 554 368, 610 388, 648 448" fill="none" stroke="#285069" stroke-width="2" />
+
+            <!-- Ambient optical packets -->
+            <circle r="2.8" fill="#6EB1D4"><animateMotion dur="2.5s" repeatCount="indefinite" path="M 332 326 C 266 368, 210 388, 172 448" /></circle>
+            <circle r="2.8" fill="#6EB1D4"><animateMotion dur="2.7s" repeatCount="indefinite" path="M 380 340 C 356 386, 340 426, 326 496" /></circle>
+            <circle r="2.8" fill="#6EB1D4"><animateMotion dur="2.4s" repeatCount="indefinite" path="M 440 340 C 464 386, 480 426, 494 496" /></circle>
+            <circle r="2.8" fill="#6EB1D4"><animateMotion dur="2.8s" repeatCount="indefinite" path="M 488 326 C 554 368, 610 388, 648 448" /></circle>
+
+            <!-- High-velocity active pulses injected dynamically -->
+            <g id="activeBeamGroup"></g>
+          </g>
+
+          <!-- STRATUM 0: GENVIA PARENT AI COMPANY CREST -->
+          <g class="stratum-genvia clickable-stratum" id="stratumGenvia">
+            <!-- Machined Crest Slab -->
+            <polygon points="410,36 554,83 410,130 266,83" fill="url(#crestTop)" stroke="#68A8CB" stroke-width="1.5" />
+            <!-- Specular top ridge -->
+            <polyline points="268,83 410,37 552,83" fill="none" stroke="#A7D1E8" stroke-width="1" opacity="0.7" />
+            <!-- Bevel walls -->
+            <polygon points="266,83 410,130 410,145 266,98" fill="#0B1924" stroke="#224358" stroke-width="1" />
+            <polygon points="554,83 410,130 410,145 554,98" fill="#061018" stroke="#183244" stroke-width="1" />
+            <!-- Inner etched border -->
+            <polygon points="410,48 524,83 410,118 296,83" fill="none" stroke="#2F6280" stroke-width="0.9" stroke-dasharray="3 3" />
+            <text x="410" y="80" text-anchor="middle" fill="#FFFFFF" font-family="Barlow Semi Condensed, sans-serif" font-weight="700" font-size="20" letter-spacing="3.5">GENVIA</text>
+            <text x="410" y="98" text-anchor="middle" fill="#8EC2DF" font-family="JetBrains Mono, monospace" font-size="9.5" letter-spacing="1.8">PARENT AI COMPANY</text>
+          </g>
+
+          <!-- STRATUM 1: GYRA INTELLIGENCE CORE SILICON WAFER (CENTERPIECE) -->
+          <g class="stratum-core clickable-stratum" id="stratumCore">
+            <!-- Shadow under wafer -->
+            <polygon points="410,204 662,286 410,368 158,286" fill="#000000" opacity="0.52" />
+
+            <!-- Machined Silicon Wafer Top Plate -->
+            <polygon points="410,174 668,258 410,342 152,258" fill="url(#waferTop)" stroke="#8EC2DF" stroke-width="1.8" />
+            <!-- Specular metallic rim highlight -->
+            <polyline points="154,258 410,175 666,258" fill="none" stroke="#D2ECFA" stroke-width="1.1" opacity="0.85" />
+            <!-- Outer metallic bevels (thick machined hardware profile) -->
+            <polygon points="152,258 410,342 410,372 152,288" fill="url(#waferSideL)" stroke="#387699" stroke-width="1.1" />
+            <polygon points="668,258 410,342 410,372 668,288" fill="url(#waferSideR)" stroke="#234F69" stroke-width="1.1" />
+
+            <!-- Recessed inner wafer circuit frame -->
+            <polygon points="410,188 634,258 410,328 186,258" fill="none" stroke="#4D8FB3" stroke-width="0.9" opacity="0.55" />
+
+            <!-- Micro-Via Bus Pins along front-left & front-right wafer bevels -->
+            <g id="waferPins" stroke="#78B0CE" stroke-width="1.6" stroke-linecap="round" opacity="0.72">
+              <line x1="210" y1="292" x2="210" y2="300" />
+              <line x1="234" y1="300" x2="234" y2="308" />
+              <line x1="258" y1="308" x2="258" y2="316" />
+              <line x1="282" y1="316" x2="282" y2="324" />
+              <line x1="306" y1="324" x2="306" y2="332" />
+              <line x1="330" y1="332" x2="330" y2="340" />
+              <line x1="354" y1="340" x2="354" y2="348" />
+              <line x1="378" y1="348" x2="378" y2="356" />
+              <line x1="442" y1="348" x2="442" y2="356" />
+              <line x1="466" y1="340" x2="466" y2="348" />
+              <line x1="490" y1="332" x2="490" y2="340" />
+              <line x1="514" y1="324" x2="514" y2="332" />
+              <line x1="538" y1="316" x2="538" y2="324" />
+              <line x1="562" y1="308" x2="562" y2="316" />
+              <line x1="586" y1="300" x2="586" y2="308" />
+              <line x1="610" y1="292" x2="610" y2="300" />
+            </g>
+
+            <!-- Recessed 3D Silicon Stage Dies inside Wafer: 01 Understand -> 02 Orchestrate -> 03 Execute -->
+            <!-- Die 01: Understand -->
+            <g>
+              <polygon id="die-0" class="wafer-die" points="326,216 392,238 326,260 260,238" fill="#061623" stroke="#78B0CE" stroke-width="1.3" />
+              <circle id="led-0" cx="326" cy="226" r="3" fill="#5B9EC2" />
+              <text x="326" y="241" text-anchor="middle" fill="#FFFFFF" font-family="JetBrains Mono, monospace" font-size="9.5" font-weight="600">01 UNDERSTAND</text>
+            </g>
+            <!-- Die 02: Orchestrate -->
+            <g>
+              <polygon id="die-1" class="wafer-die" points="410,242 478,264 410,286 342,264" fill="#061623" stroke="#78B0CE" stroke-width="1.3" />
+              <circle id="led-1" cx="410" cy="252" r="3" fill="#5B9EC2" />
+              <text x="410" y="267" text-anchor="middle" fill="#FFFFFF" font-family="JetBrains Mono, monospace" font-size="9.5" font-weight="600">02 ORCHESTRATE</text>
+            </g>
+            <!-- Die 03: Execute -->
+            <g>
+              <polygon id="die-2" class="wafer-die" points="494,268 560,290 494,312 428,290" fill="#061623" stroke="#78B0CE" stroke-width="1.3" />
+              <circle id="led-2" cx="494" cy="278" r="3" fill="#5B9EC2" />
+              <text x="494" y="293" text-anchor="middle" fill="#FFFFFF" font-family="JetBrains Mono, monospace" font-size="9.5" font-weight="600">03 EXECUTE</text>
+            </g>
+
+            <!-- High-speed internal silicon trace connecting 01 -> 02 -> 03 -->
+            <path id="siliconBus" d="M 326 238 L 410 264 L 494 290" fill="none" stroke="#9CC4DC" stroke-width="2" stroke-dasharray="10 8" opacity="0.9">
+              <animate attributeName="stroke-dashoffset" values="36;0" dur="1s" repeatCount="indefinite" />
+            </path>
+
+            <!-- Precision Wafer Engraving (aligned cleanly on upper-right inner quadrant — zero overflow!) -->
+            <text x="530" y="232" text-anchor="middle" fill="#D4ECF9" font-family="Barlow Semi Condensed, sans-serif" font-weight="700" font-size="14" letter-spacing="2.2">GYRA CORE</text>
+            <text x="530" y="245" text-anchor="middle" fill="#8EC2DF" font-family="JetBrains Mono, monospace" font-size="8.5" letter-spacing="1.4">SILICON ROUTER</text>
+          </g>
+
+          <!-- STRATUM 2: 4 ELEVATED 3D PRODUCT PLINTH MODULES -->
+          <g class="stratum-modules">
+            <!-- Module 01: GYRA CHAT -->
+            <g id="mod-chat" class="iso-module" data-id="chat" role="button" tabindex="0" aria-label="Select Gyra Chat 3D Module">
+              <polygon id="mod-top-chat" points="172,418 268,450 172,482 76,450" fill="url(#modTop)" stroke="#5B9EC2" stroke-width="1.5" />
+              <polyline points="78,450 172,419 266,450" fill="none" stroke="#A7D1E8" stroke-width="0.9" opacity="0.7" />
+              <polygon points="76,450 172,482 172,504 76,472" fill="#0B1C29" stroke="#244B63" stroke-width="1" />
+              <polygon points="268,450 172,482 172,504 268,472" fill="#06121B" stroke="#183447" stroke-width="1" />
+              <text x="172" y="448" text-anchor="middle" fill="#FFFFFF" font-family="Barlow Semi Condensed, sans-serif" font-weight="700" font-size="16.5" letter-spacing="0.8">GYRA CHAT</text>
+              <text x="172" y="464" text-anchor="middle" fill="#8EC2DF" font-family="JetBrains Mono, monospace" font-size="9">6-AGENT CORE</text>
+            </g>
+
+            <!-- Module 02: GYRA IMAGE -->
+            <g id="mod-image" class="iso-module" data-id="image" role="button" tabindex="0" aria-label="Select Gyra Image 3D Module">
+              <polygon id="mod-top-image" points="326,474 422,506 326,538 230,506" fill="url(#modTop)" stroke="#5B9EC2" stroke-width="1.5" />
+              <polyline points="232,506 326,475 420,506" fill="none" stroke="#A7D1E8" stroke-width="0.9" opacity="0.7" />
+              <polygon points="230,506 326,538 326,560 230,528" fill="#0B1C29" stroke="#244B63" stroke-width="1" />
+              <polygon points="422,506 326,538 326,560 422,528" fill="#06121B" stroke="#183447" stroke-width="1" />
+              <text x="326" y="504" text-anchor="middle" fill="#FFFFFF" font-family="Barlow Semi Condensed, sans-serif" font-weight="700" font-size="16.5" letter-spacing="0.8">GYRA IMAGE</text>
+              <text x="326" y="520" text-anchor="middle" fill="#8EC2DF" font-family="JetBrains Mono, monospace" font-size="9">PRO ULTRA I2I</text>
+            </g>
+
+            <!-- Module 03: GYRA VIDEO -->
+            <g id="mod-video" class="iso-module" data-id="video" role="button" tabindex="0" aria-label="Select Gyra Video 3D Module">
+              <polygon id="mod-top-video" points="494,474 590,506 494,538 398,506" fill="url(#modTop)" stroke="#5B9EC2" stroke-width="1.5" />
+              <polyline points="400,506 494,475 588,506" fill="none" stroke="#A7D1E8" stroke-width="0.9" opacity="0.7" />
+              <polygon points="398,506 494,538 494,560 398,528" fill="#0B1C29" stroke="#244B63" stroke-width="1" />
+              <polygon points="590,506 494,538 494,560 590,528" fill="#06121B" stroke="#183447" stroke-width="1" />
+              <text x="494" y="504" text-anchor="middle" fill="#FFFFFF" font-family="Barlow Semi Condensed, sans-serif" font-weight="700" font-size="16.5" letter-spacing="0.8">GYRA VIDEO</text>
+              <text x="494" y="520" text-anchor="middle" fill="#8EC2DF" font-family="JetBrains Mono, monospace" font-size="9">LTX-VIDEO 720P</text>
+            </g>
+
+            <!-- Module 04: GYRA API -->
+            <g id="mod-api" class="iso-module" data-id="api" role="button" tabindex="0" aria-label="Select Gyra API 3D Module">
+              <polygon id="mod-top-api" points="648,418 744,450 648,482 552,450" fill="url(#modTop)" stroke="#5B9EC2" stroke-width="1.5" />
+              <polyline points="554,450 648,419 742,450" fill="none" stroke="#A7D1E8" stroke-width="0.9" opacity="0.7" />
+              <polygon points="552,450 648,482 648,504 552,472" fill="#0B1C29" stroke="#244B63" stroke-width="1" />
+              <polygon points="744,450 648,482 648,504 744,472" fill="#06121B" stroke="#183447" stroke-width="1" />
+              <text x="648" y="448" text-anchor="middle" fill="#FFFFFF" font-family="Barlow Semi Condensed, sans-serif" font-weight="700" font-size="16.5" letter-spacing="0.8">GYRA API</text>
+              <text x="648" y="464" text-anchor="middle" fill="#8EC2DF" font-family="JetBrains Mono, monospace" font-size="9">OPENAI V1 + MEDIA</text>
+            </g>
+          </g>
+        </svg>
+      </div>
+
+      <!-- Right Editorial Story Rail -->
+      <aside class="story-rail" aria-label="Gyra 3D Core Execution Story">
+        <div>
+          <div class="prod-tabs" id="prodTabs" role="tablist" aria-label="Select Product Module"></div>
+
+          <div class="rail-header" style="margin-top:20px;">
+            <div class="rail-kicker font-mono" id="railKicker">GYRA INTELLIGENCE CORE · STANDBY</div>
+            <h2 class="rail-title font-display" id="railTitle">Select a 3D Product Plinth</h2>
+            <div class="rail-prompt" id="railPrompt">
+              Every Gyra product — Chat, Image, Video, and API — runs through one engineered silicon core: Understand → Orchestrate → Execute. Click any elevated 3D module on the left to watch a real request travel through the hardware stack.
+            </div>
+          </div>
+
+          <div class="exec-timeline" id="execTimeline" style="margin-top:16px;"></div>
+
+          <div style="margin-top:14px;">
+            <div class="rail-kicker font-mono" style="margin-bottom:8px;color:#7A92A6;">REAL SUB-ENGINES</div>
+            <div class="sub-engine-strip" id="subEngineStrip"></div>
+          </div>
+        </div>
+
+        <div class="artifact-bar" id="artifactBar">
+          <div class="artifact-top font-mono">
+            <span id="artifactTitle">RUNTIME TELEMETRY</span>
+            <span id="artifactState">IDLE</span>
+          </div>
+          <div class="artifact-out font-mono" id="artifactOut">&gt; 3D Strata standing by. Toggle Exploded View or select a product module to trace real execution.</div>
+        </div>
+      </aside>
+    </section>
+  </div>
+
+  <script src="./story-data.js"></script>
+  <script>
+    (function () {
+      const story = window.GYRA_STORY;
+      const frame = document.getElementById("mainFrame");
+      const isoStage = document.getElementById("isoStage");
+      const stageStatus = document.getElementById("stageStatus");
+      const prodTabs = document.getElementById("prodTabs");
+      const railKicker = document.getElementById("railKicker");
+      const railTitle = document.getElementById("railTitle");
+      const railPrompt = document.getElementById("railPrompt");
+      const execTimeline = document.getElementById("execTimeline");
+      const subEngineStrip = document.getElementById("subEngineStrip");
+      const artifactBar = document.getElementById("artifactBar");
+      const artifactTitle = document.getElementById("artifactTitle");
+      const artifactState = document.getElementById("artifactState");
+      const artifactOut = document.getElementById("artifactOut");
+      const activeBeamGroup = document.getElementById("activeBeamGroup");
+
+      const btnExplode = document.getElementById("btnExplode");
+      const btnCascade = document.getElementById("btnCascade");
+      const btnFault = document.getElementById("btnFault");
+      const btnReset = document.getElementById("btnReset");
+
+      const conduitPaths = {
+        chat:  "M 332 326 C 266 368, 210 388, 172 448",
+        image: "M 380 340 C 356 386, 340 426, 326 496",
+        video: "M 440 340 C 464 386, 480 426, 494 496",
+        api:   "M 488 326 C 554 368, 610 388, 648 448"
+      };
+
+      let selectedId = null;
+      let faultMode = false;
+      let timers = [];
+      let cascadeInt = null;
+
+      // Subtle 60fps Canvas atmospheric energy field behind SVG strata
+      const fxCanvas = document.getElementById("fxCanvas");
+      const fctx = fxCanvas.getContext("2d");
+      let fw = 800, fh = 650, ft = 0;
+      const motes = Array.from({ length: 46 }, (_, i) => ({
+        x: ((i * 89) % 997) / 997,
+        y: ((i * 173) % 991) / 991,
+        vy: 0.00035 + (i % 7) * 0.00012,
+        r: 0.7 + (i % 4) * 0.4,
+        phase: i * 0.9
+      }));
+
+      function resizeFx() {
+        const rect = isoStage.getBoundingClientRect();
+        fw = Math.max(300, rect.width);
+        fh = Math.max(400, rect.height);
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        fxCanvas.width = Math.round(fw * dpr);
+        fxCanvas.height = Math.round(fh * dpr);
+        fctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      function tickFx() {
+        ft += 0.016;
+        fctx.clearRect(0, 0, fw, fh);
+        for (const m of motes) {
+          m.y -= m.vy;
+          if (m.y < -0.05) m.y = 1.05;
+          const a = (0.18 + 0.22 * Math.sin(ft * 1.6 + m.phase)) * (selectedId ? 1.25 : 0.8);
+          fctx.fillStyle = "#6FB0D4";
+          fctx.globalAlpha = a;
+          fctx.beginPath();
+          fctx.arc(m.x * fw, m.y * fh, m.r, 0, Math.PI * 2);
+          fctx.fill();
+        }
+        fctx.globalAlpha = 1;
+        requestAnimationFrame(tickFx);
+      }
+
+      // Build clean 4-column product switcher
+      story.products.forEach((p) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.role = "tab";
+        b.className = "p-tab";
+        b.dataset.id = p.id;
+        b.innerHTML = `<span class="t-code font-mono">${p.code}</span><span class="t-name font-display">${p.name.replace("Gyra ", "")}</span>`;
+        b.addEventListener("click", () => {
+          stopCascade();
+          runProduct(p.id);
+        });
+        prodTabs.appendChild(b);
+      });
+
+      // Attach click + keyboard support on all 4 3D SVG product plinths
+      document.querySelectorAll(".iso-module").forEach((el) => {
+        const activate = () => {
+          stopCascade();
+          runProduct(el.dataset.id);
+        };
+        el.addEventListener("click", activate);
+        el.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            activate();
+          }
+        });
+      });
+
+      function clearTimers() {
+        timers.forEach(clearTimeout);
+        timers = [];
+      }
+
+      function stopCascade() {
+        if (cascadeInt) {
+          clearInterval(cascadeInt);
+          cascadeInt = null;
+          btnCascade.textContent = "Auto-Cascade";
+        }
+      }
+
+      function setDieVisuals(activeStep, status) {
+        [0, 1, 2].forEach((i) => {
+          const die = document.getElementById("die-" + i);
+          const led = document.getElementById("led-" + i);
+          if (activeStep === -1) {
+            die.setAttribute("fill", "#061623");
+            die.setAttribute("stroke", "#78B0CE");
+            led.setAttribute("fill", "#5B9EC2");
+          } else if (status === "failed" && i === 1) {
+            die.setAttribute("fill", "#341016");
+            die.setAttribute("stroke", "#F87171");
+            led.setAttribute("fill", "#F87171");
+          } else if (status === "done" || i < activeStep) {
+            die.setAttribute("fill", "#0B3329");
+            die.setAttribute("stroke", "#34D399");
+            led.setAttribute("fill", "#34D399");
+          } else if (i === activeStep) {
+            die.setAttribute("fill", "#1F5B7C");
+            die.setAttribute("stroke", "#FFFFFF");
+            led.setAttribute("fill", "#FFFFFF");
+          } else {
+            die.setAttribute("fill", "#061623");
+            die.setAttribute("stroke", "#477894");
+            led.setAttribute("fill", "#3B6680");
+          }
+        });
+      }
+
+      function renderTimeline(product, activeStep, status) {
+        if (!product) {
+          execTimeline.innerHTML = story.stages.map((st) => `
+            <div class="tl-row">
+              <div class="tl-marker"><div class="tl-dot"></div></div>
+              <div>
+                <div class="tl-meta font-mono"><span>${st.code} · ${st.name}</span><span>READY</span></div>
+                <div class="tl-head">${st.tagline}</div>
+                <div class="tl-desc">${st.desc}</div>
+              </div>
+            </div>
+          `).join("");
+          subEngineStrip.innerHTML = story.platform.surfaces.map((s) => `<span class="sub-tag font-mono">${s}</span>`).join("");
+          return;
+        }
+
+        execTimeline.innerHTML = product.stageNarratives.map((sn, idx) => {
+          let cls = "tl-row";
+          let badge = "QUEUED";
+          if (status === "failed" && idx === 1) {
+            cls += " failed";
+            badge = "FAULT GUARD";
+          } else if (status === "failed" && idx > 1) {
+            badge = "HALTED";
+          } else if (status === "done" || idx < activeStep) {
+            cls += " done";
+            badge = "VERIFIED";
+          } else if (idx === activeStep) {
+            cls += " active";
+            badge = "RUNNING";
+          }
+          const head = (status === "failed" && idx === 1) ? product.failNarrative.headline : sn.headline;
+          const desc = (status === "failed" && idx === 1) ? product.failNarrative.detail : sn.detail;
+          return `
+            <div class="${cls}">
+              <div class="tl-marker"><div class="tl-dot"></div></div>
+              <div>
+                <div class="tl-meta font-mono"><span>${sn.stage}</span><span>${badge}</span></div>
+                <div class="tl-head">${head}</div>
+                <div class="tl-desc">${desc}</div>
+              </div>
+            </div>
+          `;
+        }).join("");
+
+        subEngineStrip.innerHTML = product.subEngines.map((se) => `
+          <span class="sub-tag"><strong>${se.name}</strong>${se.role}</span>
+        `).join("");
+      }
+
+      function updateConduits(activeId, status) {
+        story.products.forEach((p) => {
+          const isAct = p.id === activeId;
+          const mod = document.getElementById("mod-" + p.id);
+          const top = document.getElementById("mod-top-" + p.id);
+          const cond = document.getElementById("conduit-" + p.id);
+          const shaft = document.getElementById("shaft-" + p.id);
+
+          mod.classList.toggle("active", isAct);
+          mod.classList.toggle("dimmed", !!activeId && !isAct);
+
+          if (!activeId) {
+            top.setAttribute("fill", "url(#modTop)");
+            top.setAttribute("stroke", "#5B9EC2");
+            cond.setAttribute("stroke", "#285069");
+            cond.setAttribute("stroke-width", "2");
+            shaft.setAttribute("fill", "url(#shaftBlue)");
+            shaft.setAttribute("opacity", "0.16");
+          } else if (isAct) {
+            const col = status === "done" ? "#34D399" : (status === "failed" ? "#F87171" : "#9CC4DC");
+            top.setAttribute("fill", status === "done" ? "#0B3228" : (status === "failed" ? "#2E1015" : "url(#modTopActive)"));
+            top.setAttribute("stroke", col);
+            cond.setAttribute("stroke", col);
+            cond.setAttribute("stroke-width", "3.4");
+            shaft.setAttribute("fill", status === "done" ? "url(#shaftOk)" : (status === "failed" ? "url(#shaftErr)" : "url(#shaftBlue)"));
+            shaft.setAttribute("opacity", "0.78");
+          } else {
+            top.setAttribute("fill", "url(#modTop)");
+            top.setAttribute("stroke", "#234357");
+            cond.setAttribute("stroke", "#132635");
+            cond.setAttribute("stroke-width", "1.3");
+            shaft.setAttribute("opacity", "0.05");
+          }
+        });
+      }
+
+      function runProduct(id) {
+        clearTimers();
+        const product = story.products.find((p) => p.id === id);
+        if (!product) return;
+        selectedId = id;
+        frame.dataset.state = `running-${id}`;
+
+        document.querySelectorAll(".p-tab").forEach((el) => {
+          el.classList.toggle("active", el.dataset.id === id);
+          el.classList.remove("done", "failed");
+        });
+
+        railKicker.textContent = `${product.code} · ${product.category.toUpperCase()} · ${product.endpoint}`;
+        railTitle.textContent = product.name;
+        railPrompt.textContent = product.inputPrompt;
+
+        stageStatus.className = "hud-chip font-mono";
+        stageStatus.textContent = `CASCADING ${product.name.toUpperCase()} · 01 UNDERSTAND`;
+
+        setDieVisuals(0, "running");
+        updateConduits(id, "running");
+        renderTimeline(product, 0, "running");
+
+        activeBeamGroup.innerHTML = `
+          <circle r="5.2" fill="#FFFFFF" filter="url(#softGlow)"><animateMotion dur="0.92s" repeatCount="indefinite" path="${conduitPaths[id]}" /></circle>
+          <circle r="3.4" fill="#78B0CE"><animateMotion dur="0.92s" begin="0.3s" repeatCount="indefinite" path="${conduitPaths[id]}" /></circle>
+        `;
+
+        artifactBar.className = "artifact-bar";
+        artifactTitle.textContent = `DISPATCHING → ${product.endpoint}`;
+        artifactState.textContent = "STAGE 01/03";
+        artifactOut.textContent = `> ${product.stageNarratives[0].headline}`;
+
+        // Step 02: Orchestrate (or Fault Guard)
+        timers.push(setTimeout(() => {
+          if (faultMode) {
+            frame.dataset.state = `failed-${id}`;
+            stageStatus.className = "hud-chip err font-mono";
+            stageStatus.textContent = `FAULT GUARD · ${product.name.toUpperCase()} ISOLATED`;
+            setDieVisuals(1, "failed");
+            updateConduits(id, "failed");
+            renderTimeline(product, 1, "failed");
+            activeBeamGroup.innerHTML = "";
+            document.querySelector(`.p-tab[data-id="${id}"]`).classList.add("failed");
+
+            artifactBar.className = "artifact-bar err";
+            artifactTitle.textContent = "FAULT GUARD · CLEAN RECOVERY";
+            artifactState.textContent = "INTERCEPTED";
+            artifactOut.textContent = `> ${product.failNarrative.headline} — ${product.failNarrative.detail}`;
+            return;
+          }
+
+          stageStatus.textContent = `CASCADING ${product.name.toUpperCase()} · 02 ORCHESTRATE`;
+          setDieVisuals(1, "running");
+          renderTimeline(product, 1, "running");
+          artifactState.textContent = "STAGE 02/03";
+          artifactOut.textContent = `> ${product.stageNarratives[1].headline}`;
+        }, 560));
+
+        if (faultMode) return;
+
+        // Step 03: Execute
+        timers.push(setTimeout(() => {
+          stageStatus.textContent = `CASCADING ${product.name.toUpperCase()} · 03 EXECUTE`;
+          setDieVisuals(2, "running");
+          renderTimeline(product, 2, "running");
+          artifactState.textContent = "STAGE 03/03";
+          artifactOut.textContent = `> ${product.stageNarratives[2].headline}`;
+        }, 1140));
+
+        // Step 04: Verified Delivery
+        timers.push(setTimeout(() => {
+          frame.dataset.state = `done-${id}`;
+          stageStatus.className = "hud-chip ok font-mono";
+          stageStatus.textContent = `DELIVERED · ${product.name.toUpperCase()} VERIFIED`;
+          setDieVisuals(3, "done");
+          updateConduits(id, "done");
+          renderTimeline(product, 3, "done");
+          document.querySelector(`.p-tab[data-id="${id}"]`).classList.add("done");
+
+          activeBeamGroup.innerHTML = `
+            <circle r="4.8" fill="#34D399" filter="url(#softGlow)"><animateMotion dur="1.15s" repeatCount="indefinite" path="${conduitPaths[id]}" /></circle>
+          `;
+
+          artifactBar.className = "artifact-bar ok";
+          artifactTitle.textContent = product.outputLabel.toUpperCase();
+          artifactState.textContent = "VERIFIED";
+          artifactOut.textContent = `> ${product.outputPreview}`;
+        }, 1720));
+      }
+
+      function resetIdle() {
+        clearTimers();
+        stopCascade();
+        selectedId = null;
+        frame.dataset.state = "idle";
+        stageStatus.className = "hud-chip font-mono";
+        stageStatus.textContent = "STANDBY · SELECT ANY 3D MODULE";
+        setDieVisuals(-1, "idle");
+        updateConduits(null, "idle");
+        activeBeamGroup.innerHTML = "";
+        document.querySelectorAll(".p-tab").forEach((el) => el.classList.remove("active", "done", "failed"));
+        railKicker.textContent = "GYRA INTELLIGENCE CORE · STANDBY";
+        railTitle.textContent = "Select a 3D Product Plinth";
+        railPrompt.textContent = "Every Gyra product — Chat, Image, Video, and API — runs through one engineered silicon core: Understand → Orchestrate → Execute. Click any elevated 3D module on the left to watch a real request travel through the hardware stack.";
+        renderTimeline(null, -1, "idle");
+        artifactBar.className = "artifact-bar";
+        artifactTitle.textContent = "RUNTIME TELEMETRY";
+        artifactState.textContent = "IDLE";
+        artifactOut.textContent = "> 3D Strata standing by. Toggle Exploded View or select a product module to trace real execution.";
+      }
+
+      btnExplode.addEventListener("click", () => {
+        const isExp = isoStage.classList.toggle("exploded");
+        btnExplode.classList.toggle("active", isExp);
+        btnExplode.setAttribute("aria-pressed", String(isExp));
+        btnExplode.textContent = isExp ? "Compact 3D Stack" : "Exploded 3D View";
+      });
+
+      btnCascade.addEventListener("click", () => {
+        if (cascadeInt) {
+          stopCascade();
+          return;
+        }
+        let idx = 0;
+        btnCascade.textContent = "Stop Cascade";
+        runProduct(story.products[0].id);
+        cascadeInt = setInterval(() => {
+          idx = (idx + 1) % story.products.length;
+          runProduct(story.products[idx].id);
+        }, 3200);
+      });
+
+      btnFault.addEventListener("click", () => {
+        faultMode = !faultMode;
+        btnFault.classList.toggle("active", faultMode);
+        btnFault.setAttribute("aria-pressed", String(faultMode));
+        btnFault.textContent = faultMode ? "Fault Guard: Armed" : "Fault Guard: Off";
+        if (selectedId) runProduct(selectedId);
+      });
+
+      btnReset.addEventListener("click", resetIdle);
+
+      resizeFx();
+      window.addEventListener("resize", resizeFx);
+      requestAnimationFrame(tickFx);
+      renderTimeline(null, -1, "idle");
+    })();
+  </script>
+</body>
+</html>

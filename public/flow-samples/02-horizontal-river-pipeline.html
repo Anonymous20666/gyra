@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sample 02 — Horizontal Intelligence River · Gyra</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #000000;
+      --border: #1A2632;
+      --steel: #1F5B7C;
+      --steel-bright: #5B9EC2;
+      --steel-ice: #9CC4DC;
+      --text: #F5F5F5;
+      --muted: #8896A4;
+      --ok: #34D399;
+      --err: #F87171;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: "DM Sans", system-ui, sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    .font-display { font-family: "Barlow Semi Condensed", sans-serif; letter-spacing: -0.02em; }
+    .font-mono { font-family: "JetBrains Mono", monospace; font-variant-numeric: tabular-nums; }
+    .wrap { max-width: 1440px; margin: 0 auto; padding: 26px 24px 52px; }
+    .header {
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px;
+      margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid #141C24;
+    }
+    .header h1 { font-size: 22px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .header p { font-size: 13px; color: var(--muted); margin-top: 2px; }
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn {
+      background: #070E15; color: var(--text); border: 1px solid var(--border);
+      padding: 8px 14px; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer;
+    }
+    .btn:hover { border-color: var(--steel-bright); background: #0C1A26; }
+    .btn.primary { background: var(--steel); border-color: var(--steel-bright); color: #fff; }
+
+    /* Massive Left-to-Right Widescreen Flow Board */
+    .river-board {
+      position: relative;
+      border: 1px solid var(--border);
+      background: radial-gradient(circle at 46% 50%, rgba(31,91,124,0.16), #020508 66%, #000000 100%);
+      min-height: 620px;
+      overflow: hidden;
+    }
+    #riverCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    .river-grid {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: 230px 1fr 370px;
+      min-height: 620px;
+      align-items: center;
+      gap: 24px;
+      padding: 28px 28px;
+    }
+
+    /* Left Column: GenVIA -> Gyra Gateway */
+    .left-origin {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .parent-box {
+      border: 1px solid rgba(91,158,194,0.35);
+      background: rgba(5, 11, 17, 0.94);
+      padding: 14px 16px;
+    }
+    .parent-box .kicker { font-size: 10px; letter-spacing: 0.18em; color: var(--steel-bright); text-transform: uppercase; }
+    .parent-box .title { font-size: 22px; font-weight: 700; letter-spacing: 0.12em; margin-top: 4px; }
+    .parent-box .sub { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
+    .connector-v {
+      height: 28px;
+      width: 2px;
+      margin-left: 28px;
+      background: linear-gradient(180deg, var(--steel-bright), rgba(91,158,194,0.2));
+    }
+    .platform-box {
+      border: 1px solid var(--steel-bright);
+      background: linear-gradient(180deg, #091B28 0%, #040A10 100%);
+      padding: 18px 16px;
+    }
+    .platform-box .row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .platform-box img { width: 24px; height: 24px; object-fit: contain; }
+    .platform-box .title { font-size: 20px; font-weight: 700; letter-spacing: 0.14em; }
+    .platform-box .meta { font-size: 11px; color: var(--steel-ice); line-height: 1.6; }
+
+    /* Center Column: 3-Stage Intelligence Core Pipeline */
+    .center-core {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+    .core-label {
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--steel-ice);
+      background: rgba(4, 11, 18, 0.9);
+      border: 1px solid rgba(91,158,194,0.32);
+      padding: 6px 14px;
+    }
+    .stages-chain {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      width: 100%;
+    }
+    .stage-pill {
+      position: relative;
+      border: 1px solid var(--border);
+      background: rgba(4, 9, 14, 0.92);
+      padding: 20px 16px;
+      transition: all 240ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .stage-pill.active {
+      border-color: var(--steel-ice);
+      background: rgba(11, 31, 46, 0.96);
+      transform: translateY(-4px);
+    }
+    .stage-pill.done {
+      border-color: rgba(52,211,153,0.6);
+      background: rgba(6, 24, 19, 0.95);
+    }
+    .stage-pill .num { font-size: 11px; color: var(--steel-bright); letter-spacing: 0.16em; }
+    .stage-pill.done .num { color: var(--ok); }
+    .stage-pill .name { font-size: 21px; font-weight: 700; text-transform: uppercase; margin: 6px 0 6px; }
+    .stage-pill .desc { font-size: 12px; color: var(--muted); line-height: 1.45; }
+    .stage-bar {
+      margin-top: 14px;
+      height: 2px;
+      background: #13212E;
+      overflow: hidden;
+    }
+    .stage-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--steel-bright);
+      transition: width 450ms ease;
+    }
+    .stage-pill.active .stage-bar-fill { width: 70%; }
+    .stage-pill.done .stage-bar-fill { width: 100%; background: var(--ok); }
+
+    .core-telemetry {
+      width: 100%;
+      border: 1px solid #162330;
+      background: rgba(2, 6, 10, 0.92);
+      padding: 14px 16px;
+      min-height: 98px;
+      font-size: 12px;
+      line-height: 1.65;
+      color: #C4D4E0;
+    }
+
+    /* Right Column: 4 Stacked Product Terminals */
+    .right-branches {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .term-card {
+      text-align: left;
+      width: 100%;
+      border: 1px solid var(--border);
+      background: rgba(5, 10, 16, 0.94);
+      padding: 15px 18px;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 220ms ease;
+    }
+    .term-card:hover { border-color: var(--steel-bright); background: #0A1B28; transform: translateX(-4px); }
+    .term-card.selected {
+      border-color: var(--steel-ice);
+      background: linear-gradient(90deg, #0D273B 0%, #050E16 100%);
+      transform: translateX(-6px);
+    }
+    .term-card.completed { border-color: rgba(52,211,153,0.65); }
+    .term-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+    .term-name { font-size: 21px; font-weight: 700; text-transform: uppercase; }
+    .term-cat { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--steel-bright); }
+    .term-sub { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
+    .term-engines {
+      display: none;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(91,158,194,0.22);
+      font-size: 11px;
+      color: var(--steel-ice);
+      line-height: 1.65;
+    }
+    .term-card.selected .term-engines { display: block; }
+
+    @media (max-width: 1060px) {
+      .river-grid { grid-template-columns: 1fr; padding: 18px 16px; gap: 20px; }
+      .stages-chain { grid-template-columns: 1fr; gap: 10px; }
+      .term-card:hover, .term-card.selected { transform: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <div>
+        <h1 class="font-display">Sample 02 · Horizontal Intelligence River</h1>
+        <p>Full-bleed left-to-right optical Sankey stream from Genvia → Gyra → 3-stage core → 4 live product terminals.</p>
+      </div>
+      <div class="controls">
+        <button class="btn primary font-mono" id="btnCycle">Cycle Stream</button>
+        <button class="btn font-mono" id="btnReset">Idle River</button>
+      </div>
+    </div>
+
+    <div class="river-board" id="riverBoard">
+      <canvas id="riverCanvas"></canvas>
+      <div class="river-grid">
+        <div class="left-origin">
+          <div class="parent-box">
+            <div class="kicker font-mono">Parent AI Company</div>
+            <div class="title font-display">GENVIA</div>
+            <div class="sub">Unified AI research & platform company building Gyra.</div>
+          </div>
+          <div class="connector-v"></div>
+          <div class="platform-box">
+            <div class="row">
+              <img src="/gyra-logo.png" alt="Gyra" onerror="this.style.display='none'" />
+              <span class="title font-display">GYRA</span>
+            </div>
+            <div class="meta font-mono">
+              AI PLATFORM GATEWAY<br/>
+              WEB · ANDROID · TELEGRAM · API<br/>
+              <span id="riverState" style="color:#8EC2DF">STATUS: AMBIENT IDLE</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="center-core">
+          <div class="core-label font-mono">GYRA INTELLIGENCE CORE · HORIZONTAL STREAM</div>
+          <div class="stages-chain">
+            <div class="stage-pill" id="r-st-0">
+              <div class="num font-mono">01 · STAGE</div>
+              <div class="name font-display">Understand</div>
+              <div class="desc">Parse prompt, media attachments & scoped auth.</div>
+              <div class="stage-bar"><div class="stage-bar-fill"></div></div>
+            </div>
+            <div class="stage-pill" id="r-st-1">
+              <div class="num font-mono">02 · STAGE</div>
+              <div class="name font-display">Orchestrate</div>
+              <div class="desc">Route models, 6-agent graph & render queues.</div>
+              <div class="stage-bar"><div class="stage-bar-fill"></div></div>
+            </div>
+            <div class="stage-pill" id="r-st-2">
+              <div class="num font-mono">03 · STAGE</div>
+              <div class="name font-display">Execute</div>
+              <div class="desc">Stream live tokens, images, video or JSON.</div>
+              <div class="stage-bar"><div class="stage-bar-fill"></div></div>
+            </div>
+          </div>
+          <div class="core-telemetry font-mono" id="riverLog">
+            &gt; Optical river flowing at standby across all 4 Gyra channels.<br/>
+            &gt; Click any product terminal on the right to focus the full intelligence stream.
+          </div>
+        </div>
+
+        <div class="right-branches" id="rightBranches"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="./shared.js"></script>
+  <script>
+    (function () {
+      const arch = window.GYRA_ARCH;
+      const rightEl = document.getElementById("rightBranches");
+      const riverLog = document.getElementById("riverLog");
+      const riverState = document.getElementById("riverState");
+      const canvas = document.getElementById("riverCanvas");
+      const ctx = canvas.getContext("2d");
+      const board = document.getElementById("riverBoard");
+      const stageEls = [0,1,2].map(i => document.getElementById("r-st-" + i));
+
+      let selectedIdx = -1;
+      let completed = false;
+      let timers = [];
+      let cycleTimer = null;
+
+      // Continuous flowing stream particles across 4 braided optical ribbons
+      const particles = [];
+      for (let b = 0; b < 4; b++) {
+        for (let k = 0; k < 14; k++) {
+          particles.push({
+            branch: b,
+            t: Math.random(),
+            speed: 0.0025 + Math.random() * 0.0025,
+            offset: (Math.random() - 0.5) * 14,
+            size: 1.2 + Math.random() * 1.8
+          });
+        }
+      }
+
+      function renderCards() {
+        rightEl.innerHTML = "";
+        arch.branches.forEach((b, idx) => {
+          const btn = document.createElement("button");
+          btn.className = "term-card";
+          btn.dataset.idx = idx;
+          btn.innerHTML = `
+            <div class="term-head">
+              <span class="term-name font-display">${b.name}</span>
+              <span class="term-cat font-mono">${b.code} · ${b.category}</span>
+            </div>
+            <div class="term-sub">${b.summary}</div>
+            <div class="term-engines font-mono">
+              ${b.subEngines.map(s => `→ ${s.name} (${s.role})`).join("<br/>")}
+            </div>
+          `;
+          btn.addEventListener("click", () => {
+            clearInterval(cycleTimer);
+            selectBranch(idx);
+          });
+          rightEl.appendChild(btn);
+        });
+      }
+
+      function resize() {
+        const r = board.getBoundingClientRect();
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = r.width * dpr;
+        canvas.height = r.height * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      function bezierPt(t, p0, p1, p2, p3) {
+        const m = 1 - t;
+        return {
+          x: m*m*m*p0.x + 3*m*m*t*p1.x + 3*m*t*t*p2.x + t*t*t*p3.x,
+          y: m*m*m*p0.y + 3*m*m*t*p1.y + 3*m*t*t*p2.y + t*t*t*p3.y
+        };
+      }
+
+      function draw() {
+        const w = board.clientWidth;
+        const h = board.clientHeight;
+        ctx.clearRect(0, 0, w, h);
+
+        if (w > 1020) {
+          const startX = 215;
+          const startY = h * 0.56;
+          const endX = w - 385;
+          const targetYs = [h * 0.16, h * 0.39, h * 0.62, h * 0.84];
+
+          // Draw braided Sankey ribbons
+          for (let b = 0; b < 4; b++) {
+            const isSel = b === selectedIdx;
+            const p0 = { x: startX, y: startY };
+            const p1 = { x: startX + (endX - startX) * 0.42, y: startY };
+            const p2 = { x: startX + (endX - startX) * 0.64, y: targetYs[b] };
+            const p3 = { x: endX, y: targetYs[b] };
+
+            ctx.beginPath();
+            ctx.moveTo(p0.x, p0.y);
+            ctx.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
+            ctx.lineWidth = isSel ? 22 : 8;
+            if (isSel && completed) {
+              ctx.strokeStyle = "rgba(52, 211, 153, 0.12)";
+            } else {
+              ctx.strokeStyle = isSel ? "rgba(91, 158, 194, 0.18)" : "rgba(31, 91, 124, 0.08)";
+            }
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(p0.x, p0.y);
+            ctx.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
+            ctx.lineWidth = isSel ? 2.2 : 1;
+            ctx.strokeStyle = isSel
+              ? (completed ? "rgba(52,211,153,0.85)" : "rgba(156,196,220,0.85)")
+              : (selectedIdx === -1 ? "rgba(91,158,194,0.28)" : "rgba(91,158,194,0.1)");
+            ctx.stroke();
+          }
+
+          // Animate optical particles flowing smoothly along ribbons
+          for (const pt of particles) {
+            const isSel = pt.branch === selectedIdx;
+            pt.t += pt.speed * (isSel ? 2.8 : 1);
+            if (pt.t > 1) pt.t = 0;
+            const p0 = { x: startX, y: startY + pt.offset * 0.3 };
+            const p1 = { x: startX + (endX - startX) * 0.42, y: startY + pt.offset * 0.5 };
+            const p2 = { x: startX + (endX - startX) * 0.64, y: targetYs[pt.branch] + pt.offset };
+            const p3 = { x: endX, y: targetYs[pt.branch] + pt.offset * 0.35 };
+            const pos = bezierPt(pt.t, p0, p1, p2, p3);
+            const alpha = selectedIdx === -1 ? 0.55 : (isSel ? 0.95 : 0.14);
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, isSel ? pt.size * 1.45 : pt.size, 0, Math.PI * 2);
+            ctx.fillStyle = (isSel && completed)
+              ? `rgba(52, 211, 153, ${alpha})`
+              : `rgba(156, 196, 220, ${alpha})`;
+            ctx.fill();
+          }
+        }
+        requestAnimationFrame(draw);
+      }
+
+      function selectBranch(idx) {
+        timers.forEach(clearTimeout);
+        timers = [];
+        selectedIdx = idx;
+        completed = false;
+        const b = arch.branches[idx];
+        riverState.textContent = "STREAMING → " + b.name.toUpperCase();
+        stageEls.forEach(el => el.className = "stage-pill");
+        document.querySelectorAll(".term-card").forEach((el, i) => {
+          el.classList.toggle("selected", i === idx);
+          el.classList.remove("completed");
+        });
+
+        stageEls[0].classList.add("active");
+        riverLog.innerHTML = `&gt; ${b.trace[0].log}`;
+
+        timers.push(setTimeout(() => {
+          stageEls[0].className = "stage-pill done";
+          stageEls[1].classList.add("active");
+          riverLog.innerHTML += `<br/>&gt; ${b.trace[1].log}`;
+        }, 520));
+
+        timers.push(setTimeout(() => {
+          stageEls[1].className = "stage-pill done";
+          stageEls[2].classList.add("active");
+        }, 1020));
+
+        timers.push(setTimeout(() => {
+          stageEls[2].className = "stage-pill done";
+          completed = true;
+          riverState.textContent = "COMPLETED · " + b.name.toUpperCase();
+          riverLog.innerHTML += `<br/><span style="color:#34D399">&gt; ${b.trace[2].log}</span>`;
+          document.querySelectorAll(".term-card")[idx].classList.add("completed");
+        }, 1520));
+      }
+
+      function resetRiver() {
+        timers.forEach(clearTimeout);
+        clearInterval(cycleTimer);
+        selectedIdx = -1;
+        completed = false;
+        riverState.textContent = "STATUS: AMBIENT IDLE";
+        stageEls.forEach(el => el.className = "stage-pill");
+        document.querySelectorAll(".term-card").forEach(el => el.classList.remove("selected", "completed"));
+        riverLog.innerHTML = `&gt; Optical river flowing at standby across all 4 Gyra channels.<br/>&gt; Click any product terminal on the right to focus the full intelligence stream.`;
+      }
+
+      document.getElementById("btnCycle").addEventListener("click", () => {
+        clearInterval(cycleTimer);
+        let i = 0;
+        selectBranch(0);
+        cycleTimer = setInterval(() => {
+          i = (i + 1) % 4;
+          selectBranch(i);
+        }, 2800);
+      });
+      document.getElementById("btnReset").addEventListener("click", resetRiver);
+
+      renderCards();
+      resize();
+      window.addEventListener("resize", resize);
+      requestAnimationFrame(draw);
+    })();
+  </script>
+</body>
+</html>

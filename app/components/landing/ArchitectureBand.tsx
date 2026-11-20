@@ -34,7 +34,7 @@ const MODULE_SPECS: Record<CoreModuleId, ModuleSpec> = {
     endpoint: "Governance · Policy · Infrastructure",
     specs: [
       { label: "Ownership", value: "Genvia AI Company · Unified Ecosystem" },
-      { label: "Surfaces", value: "Web · Android · Telegram (@Gyra_AiBot) · API" },
+      { label: "Surfaces", value: "Web · Android · Telegram (@GyraAi) · API" },
       { label: "Safety", value: "Server-verified auth, moderation & quotas" },
       { label: "Identity", value: "Single account & unified credits ledger" },
     ],
@@ -224,21 +224,21 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
   return (
     <section
       id="architecture"
-      className="gyra-band-defer border-b border-[#1F1F1F] bg-black py-24 lg:py-32"
+      className="gyra-band-defer border-b border-[#DCE4EC] bg-[#F6F8FA] py-24 transition-colors duration-200 lg:py-32 dark:border-[#1F1F1F] dark:bg-black"
     >
       <div className="mx-auto max-w-[1380px] px-5 sm:px-8">
         {/* Section Heading */}
         <div className="flex flex-wrap items-end justify-between gap-6">
           <div className="max-w-3xl">
-            <p className="font-mono-tech text-[12px] tracking-[0.14em] text-[#5B9EC2] uppercase">
-              Where Gyra Fits · Machined Silicon Core
+            <p className="font-mono-tech text-[12px] tracking-[0.14em] text-[#164E6D] uppercase dark:text-[#78B0CE]">
+              [ System Architecture · Unified Core ]
             </p>
-            <h2 className="font-display mt-3.5 text-[clamp(2.5rem,4.4vw,4rem)] font-bold leading-[0.96] tracking-[-0.02em] text-white uppercase [text-wrap:balance]">
-              One intelligence core.
+            <h2 className="font-display mt-3.5 text-[clamp(2.5rem,4.4vw,4rem)] leading-[0.95] tracking-[-0.02em] uppercase [text-wrap:balance]">
+              <span className="font-light text-[#4A5C6E] dark:text-white/75">One intelligence core.</span>
               <br />
-              Every product runs on it.
+              <span className="font-bold text-[#0B1218] dark:text-white">Every product runs on it.</span>
             </h2>
-            <p className="mt-4 max-w-[58ch] text-[15.5px] leading-[1.6] text-[#9A9A9A]">
+            <p className="mt-4 max-w-[58ch] text-[15.5px] leading-[1.6] text-[#4A5B6B] dark:text-[#9A9A9A]">
               Built by Genvia AI Company as a unified ecosystem — click any 3D stratum or product
               plinth to inspect how requests travel through one engineered core.
             </p>
@@ -252,7 +252,7 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
               className={`font-mono-tech inline-flex min-h-[38px] items-center gap-2 border px-3.5 text-[11px] tracking-[0.09em] uppercase transition-colors cursor-pointer ${
                 exploded
                   ? "border-[#78B0CE] bg-[#0D273B] text-white"
-                  : "border-[#223546] bg-[#050A10] text-[#B8CBD9] hover:border-[#5B9EC2] hover:text-white"
+                  : "border-[#CBD7E3] bg-white text-[#354656] hover:border-[#1B587A] hover:text-[#0B1218] dark:border-[#223546] dark:bg-[#050A10] dark:text-[#B8CBD9] dark:hover:border-[#5B9EC2] dark:hover:text-white"
               }`}
             >
               <Layers className="h-3.5 w-3.5" />
@@ -265,7 +265,7 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
               className={`font-mono-tech inline-flex min-h-[38px] items-center gap-2 border px-3.5 text-[11px] tracking-[0.09em] uppercase transition-colors cursor-pointer ${
                 autoCascade
                   ? "border-[#5B9EC2] bg-[#1F5B7C] text-white"
-                  : "border-[#223546] bg-[#050A10] text-[#B8CBD9] hover:border-[#5B9EC2] hover:text-white"
+                  : "border-[#CBD7E3] bg-white text-[#354656] hover:border-[#1B587A] hover:text-[#0B1218] dark:border-[#223546] dark:bg-[#050A10] dark:text-[#B8CBD9] dark:hover:border-[#5B9EC2] dark:hover:text-white"
               }`}
             >
               {autoCascade ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
@@ -275,7 +275,7 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
         </div>
 
         {/* Living 3D Machined Isometric Core + Editorial Spec Inspector */}
-        <div className="mt-12 grid grid-cols-1 border border-[#192836] bg-black lg:grid-cols-12">
+        <div className="mt-12 grid grid-cols-1 border border-[#D4DFE9] bg-white shadow-[0_22px_60px_-34px_rgba(11,18,24,0.18)] lg:grid-cols-12 dark:border-[#192836] dark:bg-black dark:shadow-none">
           {/* Left 7 cols: Living 3D Isometric Machined Silicon Strata (Adv 04) */}
           <div
             className="relative flex items-center justify-center overflow-hidden border-b border-[#192836] px-4 py-8 sm:px-6 lg:col-span-7 lg:border-b-0 lg:border-r"
@@ -326,8 +326,8 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
                   <stop offset="100%" stopColor="#1F5B7C" stopOpacity="0.02" />
                 </linearGradient>
                 <linearGradient id="gyraShaftOk" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#34D399" stopOpacity="0.48" />
-                  <stop offset="100%" stopColor="#34D399" stopOpacity="0.02" />
+                  <stop offset="0%" stopColor="#4A9A80" stopOpacity="0.48" />
+                  <stop offset="100%" stopColor="#4A9A80" stopOpacity="0.02" />
                 </linearGradient>
               </defs>
 
@@ -443,7 +443,7 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
                         stroke={
                           isAct
                             ? activeDie === 2
-                              ? "#34D399"
+                              ? "#4A9A80"
                               : "#78B0CE"
                             : isProductActive
                               ? "#152B3B"
@@ -554,11 +554,11 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
                       <polygon
                         points={die.pts}
                         fill={isCurr ? "#1F5B7C" : isLit ? "#0A2D25" : "#061623"}
-                        stroke={isCurr ? "#FFFFFF" : isLit ? "#34D399" : "#78B0CE"}
+                        stroke={isCurr ? "#FFFFFF" : isLit ? "#4A9A80" : "#78B0CE"}
                         strokeWidth="1.3"
                         style={{ transition: "fill 260ms ease, stroke 260ms ease" }}
                       />
-                      <circle cx={die.cx} cy={die.ledY} r="2.8" fill={isCurr ? "#FFFFFF" : isLit ? "#34D399" : "#5B9EC2"} />
+                      <circle cx={die.cx} cy={die.ledY} r="2.8" fill={isCurr ? "#FFFFFF" : isLit ? "#4A9A80" : "#5B9EC2"} />
                       <text x={die.cx} y={die.cy} textAnchor="middle" fill="#FFFFFF" fontFamily="JetBrains Mono, monospace" fontSize="9.2" fontWeight="600">
                         {die.label}
                       </text>
@@ -623,7 +623,7 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
                       <polygon
                         points={topPts}
                         fill={isAct ? "url(#gyraModTopActive)" : "url(#gyraModTop)"}
-                        stroke={isAct ? (activeDie === 2 ? "#34D399" : "#FFFFFF") : "#5B9EC2"}
+                        stroke={isAct ? (activeDie === 2 ? "#4A9A80" : "#FFFFFF") : "#5B9EC2"}
                         strokeWidth={isAct ? 1.9 : 1.4}
                       />
                       <polyline
@@ -649,13 +649,13 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
           </div>
 
           {/* Right 5 cols: Interactive Module Selector + Razor Hairline Spec Table */}
-          <div className="flex flex-col justify-between bg-[#03070C] p-6 sm:p-7 lg:col-span-5">
+          <div className="flex flex-col justify-between bg-white p-6 sm:p-7 lg:col-span-5 dark:bg-[#03070C]">
             <div>
               {/* Clean 6-item Architectural Layer/Module Tab Strip */}
               <div
                 role="tablist"
                 aria-label="Gyra 3D architecture modules"
-                className="grid grid-cols-3 border border-[#192836] bg-[#04090F] sm:grid-cols-6"
+                className="grid grid-cols-3 border border-[#D4DFE9] bg-[#F4F7FA] sm:grid-cols-6 dark:border-[#192836] dark:bg-[#04090F]"
               >
                 {(["genvia", "core", "chat", "image", "video", "api"] as const).map((id) => {
                   const mod = MODULE_SPECS[id];
@@ -669,10 +669,10 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
                       aria-selected={selected}
                       aria-controls="gyra-arch-tabpanel"
                       onClick={() => selectModule(id)}
-                      className={`font-mono-tech border-b border-r border-[#192836] px-2 py-2.5 text-[10.5px] tracking-[0.06em] uppercase transition-colors cursor-pointer sm:border-b-0 last:border-r-0 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[#5B9EC2] ${
+                      className={`font-mono-tech border-b border-r border-[#D4DFE9] px-2 py-2.5 dark:border-[#192836] text-[10.5px] tracking-[0.06em] uppercase transition-colors cursor-pointer sm:border-b-0 last:border-r-0 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[#5B9EC2] ${
                         selected
                           ? "bg-[#1F5B7C] font-medium text-white"
-                          : "text-[#8398AB] hover:bg-[#081521] hover:text-white"
+                          : "text-[#4D6072] hover:bg-[#E7EFF6] hover:text-[#0B1218] dark:text-[#8398AB] dark:hover:bg-[#081521] dark:hover:text-white"
                       }`}
                     >
                       {mod.tabLabel}
@@ -687,22 +687,22 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
                 aria-labelledby={`gyra-arch-tab-${activeId}`}
                 className="mt-7"
               >
-                <p className="font-mono-tech text-[11px] tracking-[0.13em] text-[#5B9EC2] uppercase">
+                <p className="font-mono-tech text-[11px] tracking-[0.13em] text-[#164E6D] uppercase dark:text-[#5B9EC2]">
                   {active.kicker}
                 </p>
-                <h3 className="font-display mt-2.5 text-[30px] font-bold leading-[1.05] tracking-[-0.015em] text-white uppercase">
+                <h3 className="font-display mt-2.5 text-[30px] font-bold leading-[1.05] tracking-[-0.015em] text-[#0B1218] uppercase dark:text-white">
                   {active.headline}
                 </h3>
-                <p className="mt-3 text-[14.5px] leading-[1.6] text-[#9EB0BF]">{active.summary}</p>
+                <p className="mt-3 text-[14.5px] leading-[1.6] text-[#4A5B6B] dark:text-[#9EB0BF]">{active.summary}</p>
               </div>
 
-              <dl className="mt-7 divide-y divide-[#152433] border-y border-[#152433]">
+              <dl className="mt-7 divide-y divide-[#E2EAF2] border-y border-[#E2EAF2] dark:divide-[#152433] dark:border-[#152433]">
                 {active.specs.map((spec) => (
                   <div key={spec.label} className="grid grid-cols-12 items-baseline gap-4 py-3.5">
-                    <dt className="col-span-4 text-[13.5px] font-medium text-white">
+                    <dt className="col-span-4 text-[13.5px] font-medium text-[#0B1218] dark:text-white">
                       {spec.label}
                     </dt>
-                    <dd className="font-mono-tech col-span-8 text-[12px] leading-[1.55] text-[#9BB0C2]">
+                    <dd className="font-mono-tech col-span-8 text-[12px] leading-[1.55] text-[#47596A] dark:text-[#9BB0C2]">
                       {spec.value}
                     </dd>
                   </div>
@@ -716,7 +716,7 @@ export function ArchitectureBand({ routeBase = "" }: ArchitectureBandProps) {
               </span>
               <a
                 href={resolveGyraRoute("/about", routeBase)}
-                className="font-mono-tech inline-flex items-center gap-2 text-[11.5px] tracking-[0.1em] text-white uppercase underline decoration-[#5B9EC2] underline-offset-4 transition-colors hover:text-[#5B9EC2]"
+                className="font-mono-tech inline-flex items-center gap-2 text-[11.5px] tracking-[0.1em] text-[#0B1218] uppercase underline decoration-[#1B587A] underline-offset-4 transition-colors hover:text-[#1B587A] dark:text-white dark:decoration-[#5B9EC2] dark:hover:text-[#5B9EC2]"
               >
                 About Genvia AI Company →
               </a>

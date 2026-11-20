@@ -240,7 +240,7 @@ const CORE_BRIEFS: Record<
     kicker: "TIER 1 · CENTRAL INTELLIGENCE ENGINE",
     title: "Gyra Intelligence Core",
     summary:
-      "Single unified orchestration core powering Web Workspace, Android, Telegram (@Gyra_AiBot), and REST API v1 through Understand → Orchestrate → Execute.",
+      "Single unified orchestration core powering Web Workspace, Android, Telegram (@GyraAi), and REST API v1 through Understand → Orchestrate → Execute.",
     tags: ["Intent Router", "Context Grounding", "Guardrail Boundary", "Multi-Modal Bus"],
   },
   "stage-understand": {
@@ -551,11 +551,31 @@ function drawOrbIcon(ctx: CanvasRenderingContext2D, n: CanvasNode, col: string, 
   ctx.restore();
 }
 
-export interface SynapticFlowHeroProps {
-  routeBase?: string;
+export interface SynapticExternalDispatch {
+  branch: SynapticBranchId;
+  prompt: string;
+  nonce: number;
 }
 
-export function SynapticFlowHero({ routeBase = "" }: SynapticFlowHeroProps) {
+export interface SynapticFlowHeroProps {
+  routeBase?: string;
+  /** Render the 21-orb canopy and studio open on pure black without rectangular box walls */
+  borderless?: boolean;
+  /** Hide the internal prompt bar when HeroWorkbench supplies the top Live Prompt Bar */
+  hideInnerPrompt?: boolean;
+  /** External prompt trigger wired from HeroWorkbench's Live Prompt Bar */
+  externalDispatch?: SynapticExternalDispatch | null;
+  /** Callback when active branch changes inside the 21-orb canopy */
+  onBranchChange?: (branch: SynapticBranchId) => void;
+}
+
+export function SynapticFlowHero({
+  routeBase = "",
+  borderless = false,
+  hideInnerPrompt = false,
+  externalDispatch = null,
+  onBranchChange,
+}: SynapticFlowHeroProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -642,6 +662,23 @@ export function SynapticFlowHero({ routeBase = "" }: SynapticFlowHeroProps) {
   >(() => {});
 
   const triggerCoreHarmonicRef = useRef<(focusId: CoreFocusId, node: CanvasNode) => void>(() => {});
+
+  // Notify parent HeroWorkbench when active branch updates (keeps Quick Chips in sync)
+  useEffect(() => {
+    if (activeBranchId && onBranchChange) {
+      onBranchChange(activeBranchId);
+    }
+  }, [activeBranchId, onBranchChange]);
+
+  // Wire external Live Prompt Bar submissions directly into the 21-orb synaptic physics engine!
+  const lastDispatchNonceRef = useRef(0);
+  useEffect(() => {
+    if (!externalDispatch || externalDispatch.nonce === lastDispatchNonceRef.current) return;
+    lastDispatchNonceRef.current = externalDispatch.nonce;
+    setAutoMode(false);
+    engineRef.current.autoMode = false;
+    dispatchFlowRef.current(externalDispatch.branch, null, externalDispatch.prompt);
+  }, [externalDispatch]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -1895,13 +1932,20 @@ export function SynapticFlowHero({ routeBase = "" }: SynapticFlowHeroProps) {
   };
 
   return (
-    <div className="mt-9 sm:mt-10" aria-label="Gyra Synaptic Neural Flow and Wired Execution Studio">
+    <div
+      className={borderless ? "mt-0" : "mt-9 sm:mt-10"}
+      aria-label="Gyra Synaptic Neural Flow and Wired Execution Studio"
+    >
       {/* 1. UNOBSTRUCTED 21-ORB FLOATING NEURAL CANOPY + DOWNWARD TETHER WIRES */}
       <div
         ref={containerRef}
         data-testid="synaptic-canopy-frame"
         data-phase={flowPhase}
-        className="relative h-[465px] sm:h-[575px] w-full overflow-hidden border border-[#172838] border-b-0 bg-black"
+        className={
+          borderless
+            ? "gyra-mask-canopy relative h-[430px] sm:h-[560px] w-full overflow-hidden bg-black"
+            : "relative h-[465px] sm:h-[575px] w-full overflow-hidden border border-[#172838] border-b-0 bg-black"
+        }
       >
         <canvas
           ref={canvasRef}
@@ -1931,15 +1975,19 @@ export function SynapticFlowHero({ routeBase = "" }: SynapticFlowHeroProps) {
 
       {/* 2. DEDICATED WIRED SAAS EXECUTION & RESULT STUDIO (PHYSICALLY CONNECTED BELOW) */}
       <div
-        className={`relative overflow-hidden border bg-[#04080D] transition-colors duration-300 ${
-          isFailed
-            ? "border-[#F87171]/55"
-            : isDone
-              ? "border-[#34D399]/45"
-              : isRunning
-                ? "border-[#2B5E7D]"
-                : "border-[#172838]"
-        }`}
+        className={
+          borderless
+            ? "relative overflow-hidden border-t border-white/10 bg-black transition-colors duration-300"
+            : `relative overflow-hidden border bg-[#04080D] transition-colors duration-300 ${
+                isFailed
+                  ? "border-[#F87171]/55"
+                  : isDone
+                    ? "border-[#34D399]/45"
+                    : isRunning
+                      ? "border-[#2B5E7D]"
+                      : "border-[#172838]"
+              }`
+        }
       >
         {/* Top Optical Intake Sweep Bar where the 4 downward port anchors connect */}
         <div className="relative h-[2px] w-full overflow-hidden bg-[#101E2B]">
@@ -1959,8 +2007,12 @@ export function SynapticFlowHero({ routeBase = "" }: SynapticFlowHeroProps) {
         </div>
 
         {/* Wired Studio Control Header: Status + Product Tabs + Auto/Idle & Fault Guard */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#12202D] bg-[#03060B] px-4 py-3 sm:px-5">
-          <div className="flex flex-wrap items-center gap-3">
+        <div
+          className={`flex flex-col gap-3 border-b py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between ${
+            borderless ? "border-white/10 bg-black px-0" : "border-[#12202D] bg-[#03060B] px-4 sm:px-5"
+          }`}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2 sm:justify-start sm:gap-3">
             <span
               className={`font-mono-tech inline-flex items-center gap-2 border px-2.5 py-1 text-[10px] tracking-[0.12em] uppercase ${
                 isFailed
@@ -2010,7 +2062,7 @@ export function SynapticFlowHero({ routeBase = "" }: SynapticFlowHeroProps) {
           <div
             role="tablist"
             aria-label="Dispatch Gyra Product Flow"
-            className="flex flex-wrap items-center gap-1 border border-[#162636] bg-[#050B11] p-1"
+            className="grid w-full grid-cols-4 gap-1 border border-[#162636] bg-[#050B11] p-1 sm:inline-flex sm:w-auto sm:items-center"
           >
             {PRODUCTS.map((p) => {
               const selected = activeBranchId === p.id;
@@ -2021,7 +2073,7 @@ export function SynapticFlowHero({ routeBase = "" }: SynapticFlowHeroProps) {
                   role="tab"
                   aria-selected={selected}
                   onClick={() => handleProductTab(p.id)}
-                  className={`font-mono-tech min-h-[30px] px-3 text-[10.5px] tracking-[0.09em] uppercase transition-colors cursor-pointer whitespace-nowrap ${
+                  className={`font-mono-tech min-h-[32px] px-1.5 sm:px-3 text-center text-[9.5px] sm:text-[10.5px] tracking-[0.06em] sm:tracking-[0.09em] uppercase transition-colors cursor-pointer whitespace-nowrap ${
                     selected
                       ? isFailed
                         ? "border border-[#F87171]/60 bg-[#1E0B0E] text-[#FECACA]"
@@ -2039,11 +2091,16 @@ export function SynapticFlowHero({ routeBase = "" }: SynapticFlowHeroProps) {
         </div>
 
         {/* Main 2-Column SaaS Execution & Result Grid */}
-        <div className="grid grid-cols-1 divide-y divide-[#12202D] lg:grid-cols-12 lg:divide-x lg:divide-y-0">
+        <div
+          className={`grid grid-cols-1 divide-y lg:grid-cols-12 lg:divide-x lg:divide-y-0 ${
+            borderless ? "divide-white/10" : "divide-[#12202D]"
+          }`}
+        >
           {/* Left 6 cols: Interactive Prompt Drop Composer + 3-Stage Live Execution Trace */}
-          <div className="flex flex-col justify-between gap-4 p-5 sm:p-6 lg:col-span-6">
+          <div className={`flex flex-col justify-between gap-4 lg:col-span-6 ${borderless ? "py-5 sm:py-6 lg:pr-6" : "p-5 sm:p-6"}`}>
             <div>
-              {/* Interactive Prompt Drop Bar — send a custom prompt and watch it drop into Gyra Core! */}
+              {/* Interactive Prompt Drop Bar — hidden when top Live Prompt Bar owns input */}
+              {!hideInnerPrompt && (
               <form
                 onSubmit={handlePromptSubmit}
                 className="flex items-center gap-2 border border-[#192D3F] bg-[#050C13] px-3 py-2 focus-within:border-[#5B9EC2]"
@@ -2068,6 +2125,7 @@ export function SynapticFlowHero({ routeBase = "" }: SynapticFlowHeroProps) {
                   <span>Drop</span>
                 </button>
               </form>
+              )}
 
               {/* Active Prompt / Core Architecture Inspection Brief */}
               {activeBrief ? (
@@ -2193,8 +2251,12 @@ export function SynapticFlowHero({ routeBase = "" }: SynapticFlowHeroProps) {
           </div>
 
           {/* Right 6 cols: Tailored Visual Result Artifact Studio */}
-          <div className="flex flex-col justify-between gap-4 bg-[#020509] p-5 sm:p-6 lg:col-span-6">
-            <div className="flex flex-1 flex-col">
+          <div
+            className={`flex min-w-0 flex-col justify-between gap-4 lg:col-span-6 ${
+              borderless ? "bg-black py-5 sm:py-6 lg:pl-6" : "bg-[#020509] p-5 sm:p-6"
+            }`}
+          >
+            <div className="flex min-w-0 flex-1 flex-col">
               <div className="flex items-center justify-between gap-3">
                 <span className="font-mono-tech text-[10px] tracking-[0.14em] text-[#5B9EC2] uppercase">
                   {activeProduct
@@ -2219,32 +2281,37 @@ export function SynapticFlowHero({ routeBase = "" }: SynapticFlowHeroProps) {
                     : isDone
                       ? "Delivered"
                       : isRunning
-                        ? "Synthesizing"
+                        ? "Streaming Live"
                         : "Standby"}
                 </span>
               </div>
 
-              {/* Dynamic Visual Result Viewport */}
-              <div className="mt-3 flex flex-1 flex-col justify-center border border-[#132230] bg-[#04090F] p-4">
+              {/* Dynamic Visual Result Viewport — ZERO grey skeleton bars; real artifacts stay live during signal pass! */}
+              <div
+                className={`mt-3 flex flex-1 flex-col justify-center ${
+                  borderless
+                    ? "bg-white/[0.02] p-4"
+                    : "border border-[#132230] bg-[#04090F] p-4"
+                }`}
+              >
+                {activeProduct && isRunning && (
+                  <div className="mb-3 flex items-center justify-between border-b border-white/10 pb-2 font-mono-tech text-[10px] text-[#9CC4DC]">
+                    <span>
+                      {flowPhase === "drop"
+                        ? "Dropping prompt into Gyra Core..."
+                        : `Routing signal through ${activeProduct.name} generators -> optical intake...`}
+                    </span>
+                    <span className="gyra-cursor ml-2" aria-hidden="true" />
+                  </div>
+                )}
                 {!activeProduct ? (
                   <div className="space-y-2">
                     <p className="font-mono-tech text-[11px] text-[#8EC2DF]">
                       12 GENERATOR CHANNELS WIRED · STANDBY
                     </p>
                     <p className="text-[12.5px] leading-[1.55] text-[#8EA2B4]">
-                      Click any floating orb in the tree above, switch to Auto-Flow, or drop a prompt on the left to watch fluid execution deliver verified code, relit imagery, 720p video, or REST JSON here.
+                      Hover or click any of the 21 floating orbs above, switch to Auto-Flow, or drop a prompt above to watch fluid execution deliver verified code, relit imagery, 720p video, or REST JSON here.
                     </p>
-                  </div>
-                ) : isRunning ? (
-                  <div className="space-y-3">
-                    <p className="font-mono-tech text-[11px] text-[#9CC4DC]">
-                      {flowPhase === "drop"
-                        ? `Dropping prompt into Gyra Intelligence Core...`
-                        : `Streaming signal through ${activeProduct.name} generators → optical intake...`}
-                    </p>
-                    <div className="h-2.5 w-[90%] bg-[#0D2132] animate-pulse" />
-                    <div className="h-2.5 w-[74%] bg-[#0B1C2B] animate-pulse" />
-                    <div className="h-2.5 w-[58%] bg-[#091724] animate-pulse" />
                   </div>
                 ) : isFailed ? (
                   <div className="space-y-2.5">
@@ -2259,7 +2326,7 @@ export function SynapticFlowHero({ routeBase = "" }: SynapticFlowHeroProps) {
                     </p>
                   </div>
                 ) : activeProduct.id === "chat" ? (
-                  <div>
+                  <div className="min-w-0">
                     <div className="mb-2 flex items-center justify-between font-mono-tech text-[10px] text-[#6D8599]">
                       <span>webhook-handler.ts · SuperGyra 2.0</span>
                       <button
@@ -2275,7 +2342,7 @@ export function SynapticFlowHero({ routeBase = "" }: SynapticFlowHeroProps) {
                       role="region"
                       aria-label="Gyra Chat verified TypeScript output"
                       tabIndex={0}
-                      className="overflow-x-auto font-mono-tech text-[11px] leading-[1.62] text-[#D4E4F0] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#5B9EC2]"
+                      className="max-w-full overflow-x-auto pb-1 font-mono-tech text-[10.5px] sm:text-[11px] leading-[1.62] text-[#D4E4F0] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#5B9EC2]"
                     >
                       <code>{`export async function POST(req: Request) {
   const valid = timingSafeEqual(sigBuf, expectedBuf);
@@ -2330,7 +2397,7 @@ export function SynapticFlowHero({ routeBase = "" }: SynapticFlowHeroProps) {
                     <div className="relative aspect-[21/9] overflow-hidden border border-[#1E3A50] bg-black">
                       <video
                         src="/products-hero-bg.mp4"
-                        poster="/showcase/video-ref-lagos.jpg"
+                        poster="/video-samples/headset-f001.webp"
                         width={720}
                         height={1280}
                         preload="metadata"

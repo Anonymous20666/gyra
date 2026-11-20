@@ -348,8 +348,8 @@ A background sweeper marks any job stuck in QUEUED > 15m as TIMED_OUT, queries u
 ] as const;
 
 export const IMAGE_EDIT_SHOWCASE = {
-  beforeSrc: "/showcase/edit-before.jpg",
-  afterSrc: "/showcase/edit-after.jpg",
+  beforeSrc: "/showcase/edit-before.webp",
+  afterSrc: "/showcase/edit-after.webp",
   beforeLabel: "Original · Overcast Daylight",
   afterLabel: "Gyra Pro Ultra · Tungsten Dusk",
   prompt:
@@ -360,10 +360,21 @@ export const IMAGE_EDIT_SHOWCASE = {
 
 export const IMAGE_PRESETS: readonly ImagePreset[] = [
   {
+    id: "muse",
+    title: "Editorial Beauty Muse",
+    category: "Editorial",
+    imageSrc: "/showcase/muse-hd.webp",
+    prompt:
+      "Hasselblad 100MP medium-format beauty editorial portrait in tailored obsidian silk, natural luminous skin texture, soft golden-hour window key light with cool slate architectural falloff, 85mm f/2.0.",
+    resolution: "1920 × 1440 HD",
+    modelLabel: "Gyra Pro Ultra",
+    aspect: "4:3",
+  },
+  {
     id: "product",
     title: "Industrial Acoustic Monitor",
     category: "Hardware",
-    imageSrc: "/showcase/hardware-hd.jpg",
+    imageSrc: "/showcase/hardware-hd.webp",
     prompt:
       "Ultra-sharp macro product photography of a precision-milled matte obsidian anodized aluminum audio monitor with chamfered brushed titanium dial resting on honed volcanic basalt, steel-blue rim light.",
     resolution: "1920 × 1440 HD",
@@ -371,12 +382,56 @@ export const IMAGE_PRESETS: readonly ImagePreset[] = [
     aspect: "4:3",
   },
   {
+    id: "fragrance",
+    title: "Smoked Crystal Fragrance",
+    category: "Luxury Macro",
+    imageSrc: "/showcase/fragrance-hd.webp",
+    prompt:
+      "Phase One 100MP macro studio still life of a hand-cut smoked glass fragrance flacon with machined titanium cap on wet volcanic basalt, warm amber caustics and micro water droplets.",
+    resolution: "1920 × 1440 HD",
+    modelLabel: "Gyra Pro Ultra",
+    aspect: "4:3",
+  },
+  {
+    id: "kyoto",
+    title: "Kyoto Rain Pavilion",
+    category: "Architecture",
+    imageSrc: "/showcase/kyoto-hd.webp",
+    prompt:
+      "Leica SL2 35mm architectural photograph of a charred-cedar and glass pavilion mirroring across a black reflecting pool in Kyoto at blue-hour dusk after rain, warm 2700K interior glow.",
+    resolution: "1920 × 1440 HD",
+    modelLabel: "Gyra Pro Ultra",
+    aspect: "4:3",
+  },
+  {
+    id: "alpine",
+    title: "Alpine Titanium Hypercar",
+    category: "Automotive",
+    imageSrc: "/showcase/alpine-hd.webp",
+    prompt:
+      "Editorial twilight automotive study of a sculpted matte liquid-titanium grand tourer on a rain-slicked Swiss alpine pass, mist over granite peaks and crisp wet-asphalt light reflections.",
+    resolution: "1920 × 1440 HD",
+    modelLabel: "Gyra Pro Ultra",
+    aspect: "4:3",
+  },
+  {
     id: "architecture",
     title: "Coastal Concrete Pavilion",
     category: "Architecture",
-    imageSrc: "/showcase/pavilion-hd.jpg",
+    imageSrc: "/showcase/pavilion-hd.webp",
     prompt:
       "Monolithic cantilevered poured-concrete pavilion hovering above still dark ocean water at blue-hour dusk, warm 2700K recessed soffit lighting reflecting softly across calm ripples, 28mm tilt-shift frame.",
+    resolution: "1920 × 1440 HD",
+    modelLabel: "Gyra Flux",
+    aspect: "4:3",
+  },
+  {
+    id: "horology",
+    title: "Titanium Tourbillon Calibre",
+    category: "Horology",
+    imageSrc: "/showcase/horology-hd.webp",
+    prompt:
+      "Open-worked brushed grade-5 titanium mechanical tourbillon wristwatch resting on honed dark slate, exposed sapphire gear train and blued steel screws, cool steel-blue rim highlight.",
     resolution: "1920 × 1440 HD",
     modelLabel: "Gyra Flux",
     aspect: "4:3",
@@ -385,7 +440,7 @@ export const IMAGE_PRESETS: readonly ImagePreset[] = [
     id: "material",
     title: "Optical Glass & Titanium",
     category: "Materials",
-    imageSrc: "/showcase/optics-hd.jpg",
+    imageSrc: "/showcase/optics-hd.webp",
     prompt:
       "Hand-milled smoked borosilicate optical glass prisms beside a brushed dark titanium cylinder on matte honed slate, crisp steel-blue refractions and fine tungsten caustics.",
     resolution: "1920 × 1440 HD",
@@ -396,7 +451,7 @@ export const IMAGE_PRESETS: readonly ImagePreset[] = [
     id: "mobility",
     title: "Obsidian Electric GT",
     category: "Mobility",
-    imageSrc: "/showcase/mobility-hd.jpg",
+    imageSrc: "/showcase/mobility-hd.webp",
     prompt:
       "Sculptural matte obsidian electric grand tourer parked inside a cavernous poured-concrete gallery at twilight, single linear overhead skylight casting crisp reflections across sculpted bodywork.",
     resolution: "1920 × 1440 HD",
@@ -407,20 +462,9 @@ export const IMAGE_PRESETS: readonly ImagePreset[] = [
     id: "portrait",
     title: "Editorial Studio Portrait",
     category: "Portrait",
-    imageSrc: "/showcase/portrait-hd.jpg",
+    imageSrc: "/showcase/portrait-hd.webp",
     prompt:
       "High-contrast editorial studio portrait in tailored dark charcoal wool against a matte slate backdrop, sculpted Rembrandt key light with cool steel-blue rim highlight, Leica 80mm medium format.",
-    resolution: "1920 × 1440 HD",
-    modelLabel: "Gyra Flux",
-    aspect: "4:3",
-  },
-  {
-    id: "horology",
-    title: "Titanium Tourbillon Calibre",
-    category: "Horology",
-    imageSrc: "/showcase/horology-hd.jpg",
-    prompt:
-      "Open-worked brushed grade-5 titanium mechanical tourbillon wristwatch resting on honed dark slate, exposed sapphire gear train and blued steel screws, cool steel-blue rim highlight with fine tungsten bevel reflections.",
     resolution: "1920 × 1440 HD",
     modelLabel: "Gyra Flux",
     aspect: "4:3",
@@ -429,7 +473,7 @@ export const IMAGE_PRESETS: readonly ImagePreset[] = [
     id: "interior",
     title: "Monolithic Concrete Atrium",
     category: "Interior",
-    imageSrc: "/showcase/interior-hd.jpg",
+    imageSrc: "/showcase/interior-hd.webp",
     prompt:
       "Serene brutalist poured-concrete reading library and gallery atrium at twilight, arched skylight casting cool blue-hour shafts onto dark smoked oak tables and warm 2700K recessed bookshelves.",
     resolution: "1920 × 1440 HD",
@@ -440,7 +484,7 @@ export const IMAGE_PRESETS: readonly ImagePreset[] = [
     id: "aerospace",
     title: "Carbon VTOL Wind-Tunnel",
     category: "Aerospace",
-    imageSrc: "/showcase/aero-hd.jpg",
+    imageSrc: "/showcase/aero-hd.webp",
     prompt:
       "Forged carbon-fiber autonomous electric VTOL aircraft wing and ducted titanium rotor inside a dark architectural wind-tunnel hangar, linear overhead light tracing steel-blue highlights across wet-sheen concrete.",
     resolution: "1920 × 1440 HD",
@@ -451,40 +495,88 @@ export const IMAGE_PRESETS: readonly ImagePreset[] = [
 
 export const VIDEO_TEMPLATES: readonly VideoTemplateItem[] = [
   {
-    id: "lagos-aerial",
-    label: "Lagos Twilight Aerial",
+    id: "headset-reveal",
+    label: "Studio Headset Reveal",
     category: "Image-to-Video",
     videoSrc: "/products-hero-bg.mp4",
-    posterSrc: "/showcase/video-ref-lagos.jpg",
-    referenceStillSrc: "/showcase/video-ref-lagos.jpg",
+    posterSrc: "/video-samples/headset-f001.webp",
+    referenceStillSrc: "/video-samples/headset-f001.webp",
     prompt:
-      "Slow cinematic drone glide across the cable-stayed bridge over dark lagoon water at blue-hour twilight, warm traffic light trails moving smoothly across the deck.",
-    durationLabel: "5.0s · 121 frames",
-    specs: "720p · 24 fps · LTX-Video",
+      "Slow macro orbital reveal of matte obsidian over-ear studio headphones with brushed titanium acoustic mesh, sweeping low-key rim light across precision-milled aluminum hardware.",
+    durationLabel: "6.0s · Cinema Loop",
+    specs: "720p · 24 fps · LTX-Video 13B",
   },
   {
-    id: "studio-motion",
-    label: "Abstract System Motion",
+    id: "editorial-muse",
+    label: "Editorial Portrait Muse",
+    category: "Human Cinema",
+    videoSrc: "/video-samples/editorial-muse.mp4",
+    posterSrc: "/video-samples/editorial-muse-f001.webp",
+    referenceStillSrc: "/video-samples/editorial-muse-f001.webp",
+    prompt:
+      "Intimate 85mm cinema close-up of a young woman in a softly lit warm beauty studio, subtle natural eye contact and luminous skin tones framed against warm tungsten bokeh.",
+    durationLabel: "7.0s · 168 frames",
+    specs: "720p · 24 fps · Gyra Cinema HD",
+  },
+  {
+    id: "monitor-orbit",
+    label: "Acoustic Monitor Orbit",
+    category: "Image-to-Video",
+    videoSrc: "/video-samples/monitor-orbit.mp4",
+    posterSrc: "/video-samples/monitor-orbit-f001.webp",
+    referenceStillSrc: "/video-samples/monitor-orbit-f001.webp",
+    prompt:
+      "Smooth 18° macro studio orbital glide around a precision-milled obsidian aluminum acoustic monitor, steel-blue edge rim sweeping across the knurled titanium dial.",
+    durationLabel: "5.0s · 121 frames",
+    specs: "720p · 24 fps · LTX-Video 13B",
+  },
+  {
+    id: "pavilion-relight",
+    label: "Pavilion Dusk Relight",
     category: "Text-to-Video",
-    videoSrc: "/api-hero-bg.mp4",
-    posterSrc: "/api-hero-poster.jpg",
-    referenceStillSrc: "/showcase/material.jpg",
+    videoSrc: "/video-samples/pavilion-relight.mp4",
+    posterSrc: "/video-samples/pavilion-relight-f001.webp",
+    referenceStillSrc: "/video-samples/pavilion-relight-f001.webp",
     prompt:
-      "Controlled macro camera orbit around dark architectural geometry with subtle silver specular reflections and calm depth of field.",
+      "Calm architectural dolly glide across a cantilevered concrete pavilion over still ocean water at blue hour, warm 2700K soffit reflections rippling softly across the surface.",
     durationLabel: "5.0s · 121 frames",
-    specs: "720p · 24 fps · LTX-Video",
+    specs: "720p · 24 fps · LTX-Video 13B",
   },
   {
-    id: "editorial-loop",
-    label: "Seamless Atmosphere Loop",
-    category: "Loop Template",
-    videoSrc: "/docs-hero-bg.mp4",
-    posterSrc: "/docs-hero-poster.jpg",
-    referenceStillSrc: "/showcase/architecture.jpg",
+    id: "aero-windtunnel",
+    label: "Carbon VTOL Wind-Tunnel",
+    category: "Image-to-Video",
+    videoSrc: "/video-samples/aero-windtunnel.mp4",
+    posterSrc: "/video-samples/aero-windtunnel-f001.webp",
+    referenceStillSrc: "/video-samples/aero-windtunnel-f001.webp",
     prompt:
-      "Seamless atmospheric motion study with restrained lighting transitions, fine shadow detail, and stable tripod framing.",
+      "Controlled laminar smoke ribbons sweeping across a forged carbon VTOL rotor cowling inside a dark architectural wind tunnel with cool steel-blue overhead strip lighting.",
     durationLabel: "5.0s · 121 frames",
-    specs: "720p · 24 fps · LTX-Video",
+    specs: "720p · 24 fps · LTX-Video 13B",
+  },
+  {
+    id: "optics-aperture",
+    label: "Optical Prism Caustics",
+    category: "Macro Study",
+    videoSrc: "/video-samples/optics-aperture.mp4",
+    posterSrc: "/video-samples/optics-aperture-f001.webp",
+    referenceStillSrc: "/video-samples/optics-aperture-f001.webp",
+    prompt:
+      "Slow rack-focus optical macro sweep across smoked borosilicate glass prisms and brushed titanium cylinders, shifting crisp steel-blue refractions and warm caustics.",
+    durationLabel: "5.0s · 121 frames",
+    specs: "720p · 24 fps · LTX-Video 13B",
+  },
+  {
+    id: "tourbillon-flare",
+    label: "Titanium Tourbillon Macro",
+    category: "Horology",
+    videoSrc: "/video-samples/tourbillon-flare.mp4",
+    posterSrc: "/video-samples/tourbillon-flare-f001.webp",
+    referenceStillSrc: "/video-samples/tourbillon-flare-f001.webp",
+    prompt:
+      "Seamless horological macro motion study tracking brushed Grade-5 titanium bridges and sapphire reflections under controlled studio rim lighting.",
+    durationLabel: "5.0s · 121 frames",
+    specs: "720p · 24 fps · LTX-Video 13B",
   },
 ] as const;
 

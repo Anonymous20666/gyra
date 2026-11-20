@@ -7,85 +7,93 @@ import {
   useState,
   ReactNode,
 } from "react";
+import {
+  THEME_STORAGE_KEY,
+  parseThemeMode,
+  resolveThemeMode,
+  type ResolvedTheme,
+  type ThemeMode,
+} from "../lib/themePreference";
 
-export type ThemeMode = "light" | "dark" | "system";
+export type { ThemeMode, ResolvedTheme };
 
 type ThemeContextValue = {
   theme: ThemeMode;
-  resolved: "light" | "dark";
+  resolved: ResolvedTheme;
+  mounted: boolean;
   setTheme: (mode: ThemeMode) => void;
   toggle: () => void;
 };
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-const STORAGE_KEY = "gyra:theme";
-
-function getSystemTheme(): "light" | "dark" {
-  if (typeof window === "undefined") return "dark";
-  return window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
+function getSystemPrefersDark(): boolean {
+  if (typeof window === "undefined") return true;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches;
 }
 
-function applyTheme(mode: ThemeMode) {
+function applyResolvedTheme(resolved: ResolvedTheme) {
   if (typeof document === "undefined") return;
-  const resolved = mode === "system" ? getSystemTheme() : mode;
   document.documentElement.classList.toggle("dark", resolved === "dark");
+  document.documentElement.style.colorScheme = resolved;
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<ThemeMode>("system");
-  const [resolved, setResolved] = useState<"light" | "dark">("dark");
+  const [resolved, setResolved] = useState<ResolvedTheme>("dark");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    let initial: ThemeMode = "system";
     try {
-      const stored = localStorage.getItem(STORAGE_KEY) as ThemeMode | null;
-      if (stored === "light" || stored === "dark" || stored === "system") {
-        setThemeState(stored);
-      }
-    } catch {}
+      initial = parseThemeMode(localStorage.getItem(THEME_STORAGE_KEY));
+    } catch {
+      initial = "system";
+    }
+    const nextResolved = resolveThemeMode(initial, getSystemPrefersDark());
+    setThemeState(initial);
+    setResolved(nextResolved);
+    applyResolvedTheme(nextResolved);
     setMounted(true);
   }, []);
 
   useEffect(() => {
     if (!mounted) return;
-    applyTheme(theme);
-    setResolved(theme === "system" ? getSystemTheme() : theme);
+    const nextResolved = resolveThemeMode(theme, getSystemPrefersDark());
+    applyResolvedTheme(nextResolved);
+    setResolved(nextResolved);
   }, [theme, mounted]);
 
   useEffect(() => {
-    if (theme !== "system") return;
+    if (!mounted || theme !== "system") return;
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const handler = () => {
-      applyTheme("system");
-      setResolved(getSystemTheme());
+      const nextResolved = resolveThemeMode("system", mq.matches);
+      applyResolvedTheme(nextResolved);
+      setResolved(nextResolved);
     };
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
-  }, [theme]);
+  }, [theme, mounted]);
 
   const setTheme = (mode: ThemeMode) => {
-    setThemeState(mode);
+    const valid = parseThemeMode(mode);
+    setThemeState(valid);
+    const nextResolved = resolveThemeMode(valid, getSystemPrefersDark());
+    applyResolvedTheme(nextResolved);
+    setResolved(nextResolved);
     try {
-      localStorage.setItem(STORAGE_KEY, mode);
+      localStorage.setItem(THEME_STORAGE_KEY, valid);
     } catch {}
   };
 
   const toggle = () => {
-    setThemeState((prev) => {
-      const current = prev === "system" ? getSystemTheme() : prev;
-      const next = current === "dark" ? "light" : "dark";
-      try {
-        localStorage.setItem(STORAGE_KEY, next);
-      } catch {}
-      return next;
-    });
+    const current = resolveThemeMode(theme, getSystemPrefersDark());
+    setTheme(current === "dark" ? "light" : "dark");
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, resolved, setTheme, toggle }}>
+    <ThemeContext.Provider value={{ theme, resolved, mounted, setTheme, toggle }}>
       {children}
     </ThemeContext.Provider>
   );
@@ -96,7 +104,8 @@ export function useTheme() {
   if (!ctx) {
     return {
       theme: "system" as ThemeMode,
-      resolved: "dark" as const,
+      resolved: "dark" as ResolvedTheme,
+      mounted: false,
       setTheme: () => {},
       toggle: () => {},
     };

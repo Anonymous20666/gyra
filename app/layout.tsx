@@ -5,6 +5,7 @@ import { ThemeProvider } from "./components/ThemeProvider";
 
 const fontDisplay = localFont({
   src: [
+    { path: "./fonts/barlow-semi-condensed-latin-300.woff2", weight: "300", style: "normal" },
     { path: "./fonts/barlow-semi-condensed-latin-600.woff2", weight: "600", style: "normal" },
     { path: "./fonts/barlow-semi-condensed-latin-700.woff2", weight: "700", style: "normal" },
   ],
@@ -106,7 +107,7 @@ const JSON_LD = {
       foundingDate: "2026",
       description:
         "Genvia AI Company builds Gyra, an intelligent, simplified AI assistant.",
-      sameAs: ["https://t.me/Gyra_AiBot", "https://t.me/GenviaNews"],
+      sameAs: ["https://t.me/GyraAi", "https://t.me/GenviaNews"],
     },
     {
       "@type": "Person",
