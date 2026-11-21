@@ -1,113 +1,318 @@
-// ### app/api/coding/route.ts
 import { createOpenAI } from "@ai-sdk/openai";
-import { streamText, tool } from "ai"; 
+import { streamText, tool, type CoreMessage } from "ai";
 import { z } from "zod";
-import { Sandbox } from "@e2b/code-interpreter";
+import {
+  keepAlive,
+  openSandbox,
+  previewUrl,
+  readFileText,
+  resolvePath,
+  workspacePath,
+  writeFileText,
+  SANDBOX_ROOT,
+} from "@/app/lib/coding/sandbox";
+import { modeConfig } from "@/app/lib/coding/modes";
 
 const groq = createOpenAI({
   baseURL: "https://api.groq.com/openai/v1",
   apiKey: process.env.GROQ_API_KEY,
 });
 
-// Force dynamic execution for streaming and E2B
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 300;
+
+const MAX_MESSAGES = 40;
+const MAX_CHARS = 60_000;
+const MAX_STEPS = 12;
+
+function trimMessages(input: unknown): CoreMessage[] {
+  if (!Array.isArray(input)) return [];
+  const cleaned = input
+    .filter(
+      (m): m is { role: string; content: string } =>
+        !!m && typeof m === "object" && typeof (m as any).content === "string"
+    )
+    .map((m) => ({
+      role: m.role === "assistant" ? "assistant" : "user",
+      content: m.content,
+    }))
+    .slice(-MAX_MESSAGES);
+
+  let total = 0;
+  const output: CoreMessage[] = [];
+  for (let i = cleaned.length - 1; i >= 0; i -= 1) {
+    total += cleaned[i].content.length;
+    if (total > MAX_CHARS) break;
+    output.unshift(cleaned[i] as CoreMessage);
+  }
+  return output;
+}
 
 export async function POST(req: Request) {
   try {
-    const { messages, sandboxId } = await req.json();
+    const body = await req.json();
+    const messages = trimMessages(body?.messages);
+    if (messages.length === 0) {
+      return Response.json({ error: "`messages` must contain at least one message." }, { status: 400 });
+    }
 
-    // 1. Initialize or connect to the E2B Sandbox
-    const sandbox = sandboxId 
-      ? await Sandbox.connect(sandboxId) 
-      : await Sandbox.create({
-          timeoutMs: 600000, // 10 minutes
-        });
+    const mode = modeConfig(body?.mode);
+    const sandbox = await openSandbox(body?.sandboxId);
+    await keepAlive(sandbox);
 
-    // 2. Define the Tools (The Execution Layer)
-    const tools = {
-      execute_terminal: tool({
-        description: "Run a shell command inside the project sandbox. Use this to install packages, run tests, start servers, or execute scripts.",
-        parameters: z.object({ command: z.string() }),
-        execute: async ({ command }) => {
-          try {
-            const result = await sandbox.commands.run(command);
-            return `Exit Code: ${result.exitCode}\nStdout: ${result.stdout}\nStderr: ${result.stderr}`;
-          } catch (error: any) {
-            return `Command execution failed: ${error.message}`;
-          }
-        },
-      }),
-      write_file: tool({
-        description: "Create or overwrite a file with full content. Always write the ENTIRE file, never use placeholders like '// rest of code here'.",
-        parameters: z.object({ path: z.string(), content: z.string() }),
-        execute: async ({ path, content }) => {
-          try {
-            await sandbox.files.write(path, content);
-            return `Successfully wrote to ${path}`;
-          } catch (error: any) {
-            return `Failed to write file: ${error.message}`;
-          }
-        },
-      }),
-      read_file: tool({
-        description: "Read the contents of a file to understand the current state or read error logs.",
-        parameters: z.object({ path: z.string() }),
-        execute: async ({ path }) => {
-          try {
-            return await sandbox.files.read(path);
-          } catch (error: any) {
-            return `Failed to read file: ${error.message}`;
-          }
-        },
-      }),
+    const tools: Record<string, any> = {
       list_directory: tool({
-        description: "List all files and folders in a specific directory.",
-        parameters: z.object({ path: z.string().default(".") }),
-        execute: async ({ path }) => {
+        description:
+          "List the project tree. Use this first when you need to understand the workspace layout.",
+        parameters: z.object({
+          path: z.string().default("."),
+          depth: z.number().min(1).max(4).default(2),
+        }),
+        execute: async ({ path, depth }) => {
+          const absolute = resolvePath(path);
+          const result = await sandbox.commands.run(
+            `cd ${JSON.stringify(absolute)} && find . -maxdepth ${depth} -mindepth 1 \\( -name node_modules -o -name .git -o -name .next \\) -prune -o -print | head -n 400`
+          );
+          const listing = (result.stdout || "").trim();
+          return listing || "(empty directory)";
+        },
+      }),
+
+      read_file: tool({
+        description:
+          "Read a file from the workspace. Always read before you edit, and never guess at file contents.",
+        parameters: z.object({
+          path: z.string(),
+          startLine: z.number().min(1).optional(),
+          endLine: z.number().min(1).optional(),
+        }),
+        execute: async ({ path, startLine, endLine }) => {
+          const absolute = resolvePath(path);
+          const content = await readFileText(sandbox, absolute);
+          const lines = content.split("\n");
+          const from = (startLine ?? 1) - 1;
+          const to = endLine ?? Math.min(lines.length, from + 400);
+          const slice = lines.slice(from, to);
+
+          if (slice.length === 0) return "(empty file)";
+          return slice
+            .map((line, index) => `${String(from + index + 1).padStart(4, " ")} | ${line}`)
+            .join("\n");
+        },
+      }),
+
+      search_codebase: tool({
+        description:
+          "Search the codebase for a string or pattern and get matching file paths with line numbers. Use this instead of listing directories one by one.",
+        parameters: z.object({
+          query: z.string(),
+          glob: z.string().optional().describe("Optional glob, e.g. '*.ts' or 'src/**/*.tsx'"),
+        }),
+        execute: async ({ query, glob }) => {
+          const include = glob ? `--include=${JSON.stringify(glob)}` : "";
+          const result = await sandbox.commands.run(
+            `cd ${SANDBOX_ROOT} && grep -rn ${include} --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=.next --binary-files=without-match ${JSON.stringify(
+              query
+            )} . | head -n 60`,
+            { timeoutMs: 60_000 }
+          );
+          const matches = (result.stdout || "").trim();
+          return matches || `No matches for "${query}".`;
+        },
+      }),
+
+      execute_terminal: tool({
+        description:
+          "Run a shell command in the sandbox. Use it to install packages, build, test, or reproduce a bug. Read the real output before deciding what to do next.",
+        parameters: z.object({
+          command: z.string(),
+          cwd: z.string().default("."),
+        }),
+        execute: async ({ command, cwd }) => {
+          const absolute = resolvePath(cwd);
           try {
-            const files = await sandbox.files.list(path);
-            return files.map((f) => `${f.type === "dir" ? "[DIR]" : "[FILE]"} ${f.name}`).join("\n");
-          } catch (error: any) {
-            return `Failed to list directory: ${error.message}`;
+            const result = await sandbox.commands.run(command, {
+              cwd: absolute,
+              timeoutMs: 120_000,
+            });
+            const stdout = (result.stdout || "").slice(-4000);
+            const stderr = (result.stderr || "").slice(-4000);
+            return [
+              `exit code: ${result.exitCode ?? 0}`,
+              stdout ? `stdout:\n${stdout}` : "",
+              stderr ? `stderr:\n${stderr}` : "",
+            ]
+              .filter(Boolean)
+              .join("\n\n");
+          } catch (error) {
+            return `Command failed: ${error instanceof Error ? error.message : "unknown error"}`;
           }
         },
       }),
     };
 
-    // 3. The Core Intelligence: System Prompt
-    const systemPrompt = `You are Forge, the core coding agent inside the Gyra Workspace. You are an autonomous developer.
-      
-CRITICAL RULES:
-1. You have access to a real Linux terminal and file system via E2B.
-2. If you need to build something, use 'write_file' to create the files. ALWAYS provide full, unabridged code. NEVER use placeholders.
-3. Use 'execute_terminal' to run tests, install packages, or check your work.
-4. If a command fails, READ the error (use 'read_file' if needed), fix the code, and try again.
-5. Keep working until the task is complete. Do not stop halfway.
-6. When creating a new project, first use 'execute_terminal' to initialize it (e.g., 'npx create-next-app' or 'npm init -y').
+    if (mode.writes) {
+      tools.write_file = tool({
+        description:
+          "Create or replace a whole file. The content must be the complete, unabridged file with no placeholders and no truncation.",
+        parameters: z.object({
+          path: z.string(),
+          content: z.string().describe("The complete file content."),
+        }),
+        execute: async ({ path, content }) => {
+          const absolute = resolvePath(path);
+          const parent = absolute.slice(0, absolute.lastIndexOf("/")) || SANDBOX_ROOT;
+          await sandbox.files.makeDir(parent).catch(() => {});
+          await writeFileText(sandbox, absolute, content);
+          const lineCount = content.split("\n").length;
+          return `Wrote ${workspacePath(absolute)} (${lineCount} lines).`;
+        },
+      });
 
-AGENT MODES:
-- If asked to PLAN: Do not write code. Analyze the project, list the files needed, and explain the architecture.
-- If asked to DEBUG: Run the code, read the error, patch the file, and re-run until it passes.
-- If asked to BUILD: Execute the full plan autonomously.`;
+      tools.edit_file = tool({
+        description:
+          "Make a surgical edit: replace one exact block of text in an existing file. Prefer this over rewriting a file. `find` must match character for character and must appear exactly once.",
+        parameters: z.object({
+          path: z.string(),
+          find: z.string().describe("The exact existing text to replace."),
+          replace: z.string().describe("The new text."),
+        }),
+        execute: async ({ path, find, replace }) => {
+          const absolute = resolvePath(path);
+          const original = await readFileText(sandbox, absolute);
 
-    // 4. Stream the Response
+          const occurrences = original.split(find).length - 1;
+          if (occurrences === 0) {
+            return `Edit rejected: that exact text was not found in ${workspacePath(
+              absolute
+            )}. Read the file again and copy the block precisely.`;
+          }
+          if (occurrences > 1) {
+            return `Edit rejected: that text appears ${occurrences} times in ${workspacePath(
+              absolute
+            )}. Include more surrounding lines so it is unique.`;
+          }
+
+          const updated = original.replace(find, replace);
+          await writeFileText(sandbox, absolute, updated);
+          return `Edited ${workspacePath(absolute)}.`;
+        },
+      });
+
+      tools.delete_path = tool({
+        description: "Delete a file or directory inside the workspace.",
+        parameters: z.object({ path: z.string() }),
+        execute: async ({ path }) => {
+          const absolute = resolvePath(path);
+          if (absolute === SANDBOX_ROOT) return "Refused: cannot delete the workspace root.";
+          await sandbox.commands.run(`rm -rf ${JSON.stringify(absolute)}`);
+          return `Deleted ${workspacePath(absolute)}.`;
+        },
+      });
+
+      tools.git = tool({
+        description:
+          "Run a git operation: status, diff, log, stage, commit or branch. Never force-push and never rewrite published history.",
+        parameters: z.object({
+          action: z.enum(["status", "diff", "log", "stage", "commit", "branch"]),
+          message: z.string().optional(),
+          name: z.string().optional(),
+        }),
+        execute: async ({ action, message, name }) => {
+          const map: Record<string, string> = {
+            status: "git status --short --branch",
+            diff: "git diff --stat && git diff | head -n 400",
+            log: "git log --oneline -20",
+            stage: "git add -A && git status --short",
+            commit: `git add -A && git -c user.name="Gyra Agent" -c user.email="agent@gyra.ng" commit -m ${JSON.stringify(
+              message || "chore: agent update"
+            )}`,
+            branch: `git branch ${JSON.stringify(name || "")} 2>&1 || git branch --show-current`,
+          };
+          const result = await sandbox.commands.run(map[action], {
+            cwd: SANDBOX_ROOT,
+            timeoutMs: 60_000,
+          });
+          return (
+            [(result.stdout || "").trim(), (result.stderr || "").trim()]
+              .filter(Boolean)
+              .join("\n") || `git ${action}: no output`
+          );
+        },
+      });
+
+      tools.request_preview = tool({
+        description:
+          "Get the public URL for a port inside the sandbox so the user can see the running app. Start the dev server first.",
+        parameters: z.object({ port: z.number().min(1).max(65535).default(3000) }),
+        execute: async ({ port }) => `Preview available at ${previewUrl(sandbox, port)}`,
+      });
+    }
+
+    tools.propose_plan = tool({
+      description:
+        "Record an implementation plan for the human to approve. Call this exactly once in Plan mode, after you have inspected the code.",
+      parameters: z.object({
+        goal: z.string(),
+        steps: z
+          .array(
+            z.object({
+              title: z.string(),
+              detail: z.string().optional(),
+              files: z.array(z.string()).optional(),
+            })
+          )
+          .min(1)
+          .max(12),
+        verification: z.array(z.string()).min(1).max(6),
+      }),
+      execute: async ({ goal, steps, verification }) =>
+        JSON.stringify({ goal, steps, verification }),
+    });
+
+    const toolPolicy = [
+      mode.writes
+        ? "Write tools are enabled. Use edit_file for targeted changes and write_file only for new or fully rewritten files."
+        : "Write tools are DISABLED in this mode. You may only read, search, and (if allowed) run non-mutating commands.",
+      mode.terminal
+        ? "You may run shell commands."
+        : "Do not run shell commands in this mode.",
+    ].join("\n");
+
+    const systemPrompt = `You are Forge, the coding agent inside Gyra Workspace, built by Victory Lord at Genvia AI.
+
+You are a real agent with a real Linux sandbox and a real filesystem. Your workspace root is ${SANDBOX_ROOT}. Paths you pass to tools are resolved relative to that root — "src/app.tsx" means ${SANDBOX_ROOT}/src/app.tsx.
+
+${mode.prompt}
+
+${toolPolicy}
+
+NON-NEGOTIABLE RULES
+1. Read before you write. Never invent a file's contents.
+2. Every file you write is complete and unabridged. Never emit placeholders like "rest of code here", "..." or "unchanged".
+3. Never claim something works. Run it, read the output, and report what actually happened.
+4. If a command fails, treat the real error text as your next instruction. Fix it and re-run. You have ${MAX_STEPS} steps to converge.
+5. Do not install a package if an existing dependency already does the job.
+6. Keep the user's existing stack and conventions: Next.js App Router, React, Tailwind, Supabase.
+7. When you finish, state precisely what changed, which files were touched, and what you verified.`;
+
     const result = await streamText({
       model: groq("openai/gpt-oss-120b"),
       system: systemPrompt,
       messages,
       tools,
-      maxSteps: 10, // Allowing the agent to self-heal up to 10 times
+      maxSteps: MAX_STEPS,
+      temperature: 0.2,
     });
 
-    // Return the data stream and pass the sandboxId so the frontend can reuse it
     const response = result.toDataStreamResponse();
     response.headers.set("X-Sandbox-Id", sandbox.sandboxId);
-    
     return response;
-
-  } catch (error: any) {
-    console.error("Coding Agent Error:", error);
-    return Response.json({ error: error.message }, { status: 500 });
+  } catch (error) {
+    console.error("coding agent error:", error);
+    return Response.json(
+      { error: error instanceof Error ? error.message : "The coding agent failed." },
+      { status: 500 }
+    );
   }
 }

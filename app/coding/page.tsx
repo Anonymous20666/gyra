@@ -1,355 +1,867 @@
-// ### app/coding/page.tsx
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { 
-  FolderTree, 
-  Terminal, 
-  Bot, 
-  Play, 
-  Share2, 
-  Settings, 
-  GitBranch,
-  ChevronRight,
-  Code2,
+import {
   AlertCircle,
-  FileCode2,
-  FolderOpen
+  Bot,
+  CircleDot,
+  ExternalLink,
+  LayoutPanelLeft,
+  ListChecks,
+  Loader2,
+  Play,
+  RefreshCw,
+  Save,
+  SquareTerminal,
+  X,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import FileExplorer from "./components/FileExplorer";
+import AgentPanel from "./components/AgentPanel";
+import TerminalPane from "./components/TerminalPane";
+import { modeConfig } from "@/app/lib/coding/modes";
+import { parseStreamLine, resultToText } from "@/app/lib/coding/stream";
+import type {
+  AgentMode,
+  ChatMessageView,
+  FileNode,
+  ImplementationPlan,
+  PanelTab,
+  SandboxInfo,
+  TerminalLine,
+} from "@/app/lib/coding/types";
 
-// Dynamically import Monaco Editor to avoid SSR issues
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
 
-type Tab = "agent" | "terminal" | "problems" | "output";
-
-interface Message {
-  role: "user" | "assistant";
+interface OpenFile {
+  path: string;
   content: string;
-  toolCalls?: any[];
-  toolResults?: any[];
+  dirty: boolean;
+}
+
+const STORAGE_KEY = "gyra.coding.sandbox";
+
+function languageFor(path: string): string {
+  const extension = path.split(".").pop()?.toLowerCase() ?? "";
+  const map: Record<string, string> = {
+    ts: "typescript",
+    tsx: "typescript",
+    js: "javascript",
+    jsx: "javascript",
+    json: "json",
+    css: "css",
+    scss: "scss",
+    html: "html",
+    md: "markdown",
+    py: "python",
+    rs: "rust",
+    go: "go",
+    sh: "shell",
+    yml: "yaml",
+    yaml: "yaml",
+    sql: "sql",
+    env: "ini",
+  };
+  return map[extension] ?? "plaintext";
 }
 
 export default function CodingWorkspace() {
-  const [activeTab, setActiveTab] = useState<Tab>("agent");
-  const [activeFile, setActiveFile] = useState("index.js");
-  const [code, setCode] = useState("// Gyra Coding Agent Workspace\n// Waiting for instructions...\n");
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
+  const [session, setSession] = useState<SandboxInfo | null>(null);
+  const [sessionError, setSessionError] = useState<string | null>(null);
+  const [tree, setTree] = useState<FileNode[]>([]);
+  const [openFiles, setOpenFiles] = useState<OpenFile[]>([]);
+  const [activePath, setActivePath] = useState<string | null>(null);
+  const [panelTab, setPanelTab] = useState<PanelTab>("agent");
+  const [mode, setMode] = useState<AgentMode>("build");
+  const [messages, setMessages] = useState<ChatMessageView[]>([]);
   const [loading, setLoading] = useState(false);
-  const [sandboxId, setSandboxId] = useState<string | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [terminalLines, setTerminalLines] = useState<TerminalLine[]>([]);
+  const [terminalRunning, setTerminalRunning] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState("");
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [activePlan, setActivePlan] = useState<ImplementationPlan | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
-  // Auto-scroll chat to bottom
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading]);
+  const abortRef = useRef<AbortController | null>(null);
+  const terminalAbortRef = useRef<AbortController | null>(null);
+  const sandboxIdRef = useRef<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || loading) return;
+  const activeFile = openFiles.find((file) => file.path === activePath) ?? null;
 
-    const userMsg: Message = { role: "user", content: input };
-    setMessages((prev) => [...prev, userMsg, { role: "assistant", content: "", toolCalls: [] }]);
-    setInput("");
-    setLoading(true);
+  const flash = useCallback((message: string) => {
+    setNotice(message);
+    window.setTimeout(() => setNotice(null), 2600);
+  }, []);
 
+  const loadTree = useCallback(async (sandboxId: string) => {
     try {
-      const res = await fetch("/api/coding", {
+      const res = await fetch(`/api/coding/files?sandboxId=${encodeURIComponent(sandboxId)}`);
+      const data = await res.json();
+      if (data?.tree) setTree(data.tree as FileNode[]);
+    } catch {
+      // Tree refresh is best-effort.
+    }
+  }, []);
+
+  const boot = useCallback(async () => {
+    setSessionError(null);
+    const stored = window.localStorage.getItem(STORAGE_KEY);
+    try {
+      const res = await fetch("/api/coding/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: [...messages, userMsg], sandboxId }),
+        body: JSON.stringify({ sandboxId: stored }),
       });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error ?? "Could not start the sandbox.");
 
-      // Capture the Sandbox ID to maintain session
-      const newSandboxId = res.headers.get("X-Sandbox-Id");
-      if (newSandboxId && !sandboxId) setSandboxId(newSandboxId);
-
-      if (!res.body) throw new Error("No body");
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let fullReply = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value);
-        const lines = chunk.split("\n");
-        
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          const dataStr = line.slice(6).trim();
-          if (dataStr === "[DONE]") continue;
-          
-          try {
-            const parsed = JSON.parse(dataStr);
-            
-            if (parsed.type === "text-delta") {
-              fullReply += parsed.textDelta;
-              setMessages((prev) => {
-                const next = [...prev];
-                next[next.length - 1].content = fullReply;
-                return next;
-              });
-            }
-
-            if (parsed.type === "tool-call") {
-              setMessages((prev) => {
-                const next = [...prev];
-                next[next.length - 1].toolCalls = [
-                  ...(next[next.length - 1].toolCalls || []),
-                  { name: parsed.toolName, args: parsed.args }
-                ];
-                return next;
-              });
-            }
-
-            if (parsed.type === "tool-result") {
-              setMessages((prev) => {
-                const next = [...prev];
-                next[next.length - 1].toolResults = [
-                  ...(next[next.length - 1].toolResults || []),
-                  { name: parsed.toolName, result: parsed.result }
-                ];
-                return next;
-              });
-              // If it's a terminal command, switch to terminal tab to show output
-              if (parsed.toolName === "execute_terminal") {
-                setActiveTab("terminal");
-              }
-            }
-          } catch (err) {}
-        }
-      }
-    } catch (err) {
-      console.error(err);
+      sandboxIdRef.current = data.sandboxId;
+      window.localStorage.setItem(STORAGE_KEY, data.sandboxId);
+      setSession({
+        sandboxId: data.sandboxId,
+        previewUrl: data.previewUrl ?? "",
+        root: data.root ?? "/home/user",
+      });
+      if (data.previewUrl) setPreviewUrl(data.previewUrl);
+      setTree(data.tree ?? []);
+    } catch (error) {
+      setSessionError(error instanceof Error ? error.message : "Could not start the sandbox.");
     }
-    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    void boot();
+  }, [boot]);
+
+  const openFile = useCallback(
+    async (path: string) => {
+      setActivePath(path);
+      if (openFiles.some((file) => file.path === path)) return;
+      if (!sandboxIdRef.current) return;
+
+      try {
+        const res = await fetch(
+          `/api/coding/files?sandboxId=${encodeURIComponent(sandboxIdRef.current)}&path=${encodeURIComponent(path)}`
+        );
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error ?? "Could not open the file.");
+        setOpenFiles((prev) => [...prev, { path, content: data.content ?? "", dirty: false }]);
+      } catch (error) {
+        flash(error instanceof Error ? error.message : "Could not open the file.");
+        setActivePath(null);
+      }
+    },
+    [openFiles, flash]
+  );
+
+  const updateActiveContent = useCallback(
+    (content: string) => {
+      if (!activePath) return;
+      setOpenFiles((prev) =>
+        prev.map((file) => (file.path === activePath ? { ...file, content, dirty: true } : file))
+      );
+    },
+    [activePath]
+  );
+
+  const saveActiveFile = useCallback(async () => {
+    if (!activeFile || !sandboxIdRef.current) return;
+    try {
+      const res = await fetch(`/api/coding/files?sandboxId=${encodeURIComponent(sandboxIdRef.current)}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: activeFile.path, content: activeFile.content }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error ?? "Could not save.");
+      setOpenFiles((prev) =>
+        prev.map((file) => (file.path === activeFile.path ? { ...file, dirty: false } : file))
+      );
+      flash(`Saved ${activeFile.path}`);
+    } catch (error) {
+      flash(error instanceof Error ? error.message : "Could not save.");
+    }
+  }, [activeFile, flash]);
+
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "s") {
+        event.preventDefault();
+        void saveActiveFile();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [saveActiveFile]);
+
+  const createFile = useCallback(async () => {
+    const path = window.prompt("New file path (e.g. src/components/Button.tsx)");
+    if (!path || !sandboxIdRef.current) return;
+    try {
+      const res = await fetch(`/api/coding/files?sandboxId=${encodeURIComponent(sandboxIdRef.current)}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path, content: "" }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error ?? "Could not create the file.");
+      await loadTree(sandboxIdRef.current);
+      await openFile(path);
+    } catch (error) {
+      flash(error instanceof Error ? error.message : "Could not create the file.");
+    }
+  }, [loadTree, openFile, flash]);
+
+  const createFolder = useCallback(async () => {
+    const path = window.prompt("New folder path (e.g. src/lib)");
+    if (!path || !sandboxIdRef.current) return;
+    try {
+      const res = await fetch(`/api/coding/files?sandboxId=${encodeURIComponent(sandboxIdRef.current)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path }),
+      });
+      if (!res.ok) throw new Error((await res.json())?.error ?? "Could not create the folder.");
+      await loadTree(sandboxIdRef.current);
+    } catch (error) {
+      flash(error instanceof Error ? error.message : "Could not create the folder.");
+    }
+  }, [loadTree, flash]);
+
+  const deletePath = useCallback(
+    async (path: string) => {
+      if (!sandboxIdRef.current) return;
+      if (!window.confirm(`Delete ${path}? This cannot be undone.`)) return;
+      try {
+        const res = await fetch(
+          `/api/coding/files?sandboxId=${encodeURIComponent(sandboxIdRef.current)}&path=${encodeURIComponent(path)}`,
+          { method: "DELETE" }
+        );
+        if (!res.ok) throw new Error((await res.json())?.error ?? "Could not delete.");
+        setOpenFiles((prev) => prev.filter((file) => !file.path.startsWith(path)));
+        if (activePath?.startsWith(path)) setActivePath(null);
+        await loadTree(sandboxIdRef.current);
+      } catch (error) {
+        flash(error instanceof Error ? error.message : "Could not delete.");
+      }
+    },
+    [activePath, loadTree, flash]
+  );
+
+  const updateAssistant = useCallback(
+    (id: string, updater: (message: ChatMessageView) => ChatMessageView) => {
+      setMessages((prev) => prev.map((message) => (message.id === id ? updater(message) : message)));
+    },
+    []
+  );
+
+  const send = useCallback(
+    async (text: string, overrideMode?: AgentMode) => {
+      if (!sandboxIdRef.current) return;
+
+      const userMessage: ChatMessageView = {
+        id: `u-${Date.now()}`,
+        role: "user",
+        content: text,
+        tools: [],
+      };
+      const assistantId = `a-${Date.now()}`;
+      const assistantMessage: ChatMessageView = {
+        id: assistantId,
+        role: "assistant",
+        content: "",
+        tools: [],
+        plan: null,
+      };
+
+      const history = [...messages, userMessage].map((message) => ({
+        role: message.role,
+        content: message.content,
+      }));
+
+      setMessages((prev) => [...prev, userMessage, assistantMessage]);
+      setLoading(true);
+      setPanelTab("agent");
+
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      try {
+        const res = await fetch("/api/coding", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messages: history,
+            sandboxId: sandboxIdRef.current,
+            mode: overrideMode ?? mode,
+          }),
+          signal: controller.signal,
+        });
+
+        if (!res.ok || !res.body) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data?.error ?? "The agent could not start.");
+        }
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        const handleLine = (line: string) => {
+          const event = parseStreamLine(line);
+          if (!event) return;
+
+          if (event.type === "text") {
+            updateAssistant(assistantId, (message) => ({
+              ...message,
+              content: message.content + event.value,
+            }));
+            return;
+          }
+
+          if (event.type === "reasoning") {
+            updateAssistant(assistantId, (message) => ({
+              ...message,
+              reasoning: (message.reasoning ?? "") + event.value,
+            }));
+            return;
+          }
+
+          if (event.type === "tool-call") {
+            updateAssistant(assistantId, (message) => ({
+              ...message,
+              tools: [
+                ...message.tools,
+                {
+                  id: event.id,
+                  name: event.name,
+                  args: event.args,
+                  state: "running",
+                  startedAt: Date.now(),
+                },
+              ],
+            }));
+            return;
+          }
+
+          if (event.type === "tool-result") {
+            const text = resultToText(event.result);
+            updateAssistant(assistantId, (message) => {
+              const tools = message.tools.map((tool) =>
+                tool.id === event.id
+                  ? {
+                      ...tool,
+                      state: text.toLowerCase().includes("failed") ? "error" : "done",
+                      result: text,
+                      endedAt: Date.now(),
+                    }
+                  : tool
+              );
+
+              let plan = message.plan ?? null;
+              if (event.name === "propose_plan") {
+                try {
+                  plan = JSON.parse(text) as ImplementationPlan;
+                  setActivePlan(plan);
+                  setPanelTab("plan");
+                } catch {
+                  // Ignore an unparsable plan payload.
+                }
+              }
+
+              return { ...message, tools, plan } as ChatMessageView;
+            });
+            return;
+          }
+
+          if (event.type === "error") {
+            updateAssistant(assistantId, (message) => ({ ...message, error: event.value }));
+          }
+        };
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() ?? "";
+          lines.forEach(handleLine);
+        }
+        if (buffer.trim()) handleLine(buffer);
+      } catch (error) {
+        const aborted = error instanceof DOMException && error.name === "AbortError";
+        updateAssistant(assistantId, (message) => ({
+          ...message,
+          error: aborted
+            ? "Stopped."
+            : error instanceof Error
+            ? error.message
+            : "The agent stream failed.",
+        }));
+      } finally {
+        setLoading(false);
+        abortRef.current = null;
+        if (sandboxIdRef.current) void loadTree(sandboxIdRef.current);
+      }
+    },
+    [messages, mode, updateAssistant, loadTree]
+  );
+
+  const proceed = useCallback(
+    (plan: ImplementationPlan) => {
+      const brief = [
+        "The plan is approved. Execute it now in Build mode.",
+        `Goal: ${plan.goal}`,
+        "Steps:",
+        ...plan.steps.map((step, index) => `${index + 1}. ${step.title}`),
+        "Verification:",
+        ...plan.verification.map((item) => `- ${item}`),
+        "Write the real files and run the verification. Do not re-plan.",
+      ].join("\n");
+      void send(brief, "build");
+    },
+    [send]
+  );
+
+  const runCommand = useCallback(
+    async (command: string) => {
+      if (!sandboxIdRef.current) return;
+      const stamp = Date.now();
+      setTerminalLines((prev) => [
+        ...prev,
+        { id: `c-${stamp}`, kind: "command", text: command },
+      ]);
+      setTerminalRunning(true);
+
+      const controller = new AbortController();
+      terminalAbortRef.current = controller;
+
+      try {
+        const res = await fetch("/api/coding/terminal", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ command, sandboxId: sandboxIdRef.current }),
+          signal: controller.signal,
+        });
+        if (!res.ok || !res.body) throw new Error("The terminal could not start.");
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        const handleLine = (line: string) => {
+          if (!line.trim()) return;
+          try {
+            const event = JSON.parse(line) as {
+              type: string;
+              data?: string;
+              code?: number;
+              sandboxId?: string;
+            };
+            if (event.type === "stdout" && event.data) {
+              setTerminalLines((prev) => [
+                ...prev,
+                { id: `o-${Date.now()}-${Math.random()}`, kind: "stdout", text: event.data as string },
+              ]);
+            } else if (event.type === "stderr" && event.data) {
+              setTerminalLines((prev) => [
+                ...prev,
+                { id: `e-${Date.now()}-${Math.random()}`, kind: "stderr", text: event.data as string },
+              ]);
+            } else if (event.type === "exit") {
+              setTerminalLines((prev) => [
+                ...prev,
+                { id: `x-${Date.now()}-${Math.random()}`, kind: "exit", text: String(event.code ?? 0) },
+              ]);
+            }
+          } catch {
+            // Skip malformed chunks.
+          }
+        };
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() ?? "";
+          lines.forEach(handleLine);
+        }
+        if (buffer.trim()) handleLine(buffer);
+
+        if (sandboxIdRef.current) void loadTree(sandboxIdRef.current);
+      } catch (error) {
+        const aborted = error instanceof DOMException && error.name === "AbortError";
+        if (!aborted) {
+          setTerminalLines((prev) => [
+            ...prev,
+            {
+              id: `err-${Date.now()}`,
+              kind: "stderr",
+              text: error instanceof Error ? error.message : "Command failed.",
+            },
+          ]);
+        }
+      } finally {
+        setTerminalRunning(false);
+        terminalAbortRef.current = null;
+      }
+    },
+    [loadTree]
+  );
+
+  const startPreview = useCallback(async () => {
+    if (!sandboxIdRef.current) return;
+    setPreviewLoading(true);
+    setPreviewError(null);
+    try {
+      const res = await fetch("/api/coding/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sandboxId: sandboxIdRef.current }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error ?? "Could not start the preview.");
+      setPreviewUrl(`${data.url}?t=${Date.now()}`);
+      if (!data.ready) setPreviewError("The server is still booting. Give it a few seconds and refresh.");
+      setPanelTab("preview");
+    } catch (error) {
+      setPreviewError(error instanceof Error ? error.message : "Could not start the preview.");
+      setPanelTab("preview");
+    } finally {
+      setPreviewLoading(false);
+    }
+  }, []);
+
+  const closeTab = (path: string) => {
+    setOpenFiles((prev) => prev.filter((file) => file.path !== path));
+    if (activePath === path) {
+      const remaining = openFiles.filter((file) => file.path !== path);
+      setActivePath(remaining.length > 0 ? remaining[remaining.length - 1].path : null);
+    }
   };
 
-  // Mock file tree for UI purposes (This will eventually be populated by E2B list_directory)
-  const files = [
-    { name: "src", type: "folder", children: ["app.js", "bot.js", "commands.js", "database.js"] },
-    { name: "package.json", type: "file" },
-    { name: "README.md", type: "file" },
+  const tabs: { id: PanelTab; label: string; icon: React.ReactNode }[] = [
+    { id: "agent", label: "Agent", icon: <Bot size={12} /> },
+    { id: "plan", label: "Plan", icon: <ListChecks size={12} /> },
+    { id: "terminal", label: "Terminal", icon: <SquareTerminal size={12} /> },
+    { id: "preview", label: "Preview", icon: <LayoutPanelLeft size={12} /> },
   ];
 
   return (
-    <div className="flex flex-col h-screen bg-[#0a0a0a] text-white font-sans overflow-hidden">
-      
-      {/* HEADER */}
-      <header className="flex items-center justify-between px-4 py-2 bg-[#111111] border-b border-gray-800 z-10">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 text-indigo-400 font-bold tracking-wider">
-            <Bot size={20} /> GYRA CODE
+    <div className="flex h-screen flex-col overflow-hidden bg-[#08080a] font-sans text-white">
+      <header className="z-10 flex items-center justify-between border-b border-white/5 bg-[#0d0d0f] px-3 py-2">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 text-[13px] font-semibold tracking-wide text-indigo-400">
+            <Bot size={16} /> GYRA CODE
           </div>
-          <div className="h-4 w-px bg-gray-700" />
-          <div className="text-sm font-medium text-gray-300 flex items-center gap-2">
-            gyra-workspace <GitBranch size={14} className="text-gray-500" /> main
+          <div className="h-4 w-px bg-white/10" />
+          <div className="flex items-center gap-1.5 text-[12px] text-gray-300">
+            gyra-workspace
+            <CircleDot size={10} className="text-emerald-500" />
+            <span className="text-gray-500">main</span>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <div className={`px-3 py-1 text-[10px] font-mono rounded-full border ${sandboxId ? "bg-green-500/10 border-green-500/20 text-green-400" : "bg-yellow-500/10 border-yellow-500/20 text-yellow-400"}`}>
-            {sandboxId ? "E2B Sandbox Active" : "Connecting..."}
+
+        <div className="flex items-center gap-2">
+          {notice && (
+            <span className="hidden text-[11px] text-indigo-300 sm:block">{notice}</span>
+          )}
+          <div
+            className={`rounded-full border px-2.5 py-1 font-mono text-[10px] ${
+              session
+                ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
+                : sessionError
+                ? "border-red-500/20 bg-red-500/10 text-red-400"
+                : "border-amber-500/20 bg-amber-500/10 text-amber-400"
+            }`}
+          >
+            {session
+              ? `E2B ${session.sandboxId.slice(0, 8)}`
+              : sessionError
+              ? "sandbox error"
+              : "connecting…"}
           </div>
-          <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20 rounded-md hover:bg-green-500/20 transition">
-            <Play size={14} /> Run
+          <button
+            onClick={() => activeFile && void saveActiveFile()}
+            disabled={!activeFile?.dirty}
+            className="flex items-center gap-1.5 rounded-md border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-[11px] text-gray-300 hover:bg-white/[0.07] disabled:opacity-40"
+          >
+            <Save size={12} /> Save
+          </button>
+          <button
+            onClick={() => void startPreview()}
+            className="flex items-center gap-1.5 rounded-md border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1.5 text-[11px] font-medium text-emerald-400 hover:bg-emerald-500/20"
+          >
+            {previewLoading ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />}
+            Run
           </button>
         </div>
       </header>
 
-      {/* MAIN SPLIT VIEW */}
       <div className="flex flex-1 overflow-hidden">
-        
-        {/* LEFT: File Explorer */}
-        <aside className="w-60 bg-[#0f0f0f] border-r border-gray-800 flex flex-col">
-          <div className="p-3 text-xs font-semibold text-gray-500 uppercase tracking-wider flex justify-between items-center">
-            Explorer
-            <FolderTree size={14} />
-          </div>
-          <div className="flex-1 overflow-y-auto px-2 py-1">
-            {files.map((folder) => (
-              <div key={folder.name} className="mb-1">
-                <div className="flex items-center gap-2 px-2 py-1.5 text-sm text-gray-300 hover:bg-gray-800/50 rounded cursor-pointer">
-                  <ChevronRight size={14} className="text-gray-500" />
-                  {folder.name}
-                </div>
-                {folder.children && (
-                  <div className="ml-4 border-l border-gray-800 pl-2">
-                    {folder.children.map((file) => (
-                      <div 
-                        key={file} 
-                        onClick={() => setActiveFile(file)}
-                        className={`flex items-center gap-2 px-2 py-1.5 text-sm rounded cursor-pointer ${activeFile === file ? 'bg-indigo-500/20 text-indigo-300' : 'text-gray-400 hover:bg-gray-800/50'}`}
-                      >
-                        <FileCode2 size={14} className={activeFile === file ? 'text-indigo-400' : 'text-gray-500'} />
-                        {file}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </aside>
+        <FileExplorer
+          tree={tree}
+          activePath={activePath}
+          onOpen={(path) => void openFile(path)}
+          onRefresh={() => sandboxIdRef.current && void loadTree(sandboxIdRef.current)}
+          onCreateFile={() => void createFile()}
+          onCreateFolder={() => void createFolder()}
+          onDelete={(path) => void deletePath(path)}
+        />
 
-        {/* CENTER: Code Editor */}
-        <main className="flex-1 flex flex-col min-w-0 bg-[#1e1e1e]">
-          <div className="flex items-center bg-[#0f0f0f] border-b border-gray-800 text-sm">
-            <div className="flex items-center gap-2 px-4 py-2 bg-[#1e1e1e] text-gray-200 border-r border-gray-800 border-t-2 border-t-indigo-500">
-              <FileCode2 size={14} className="text-indigo-400" />
-              {activeFile}
-            </div>
+        <main className="flex min-w-0 flex-1 flex-col bg-[#111113]">
+          <div className="flex items-center overflow-x-auto border-b border-white/5 bg-[#0d0d0f]">
+            {openFiles.length === 0 ? (
+              <div className="px-3 py-2 text-[11px] text-gray-600">No file open</div>
+            ) : (
+              openFiles.map((file) => (
+                <div
+                  key={file.path}
+                  onClick={() => setActivePath(file.path)}
+                  className={`group flex shrink-0 cursor-pointer items-center gap-1.5 border-r border-white/5 px-3 py-2 text-[11px] ${
+                    activePath === file.path
+                      ? "border-t-2 border-t-indigo-500 bg-[#111113] text-gray-100"
+                      : "text-gray-500 hover:bg-white/[0.03]"
+                  }`}
+                >
+                  <span className="max-w-[180px] truncate">{file.path.split("/").pop()}</span>
+                  {file.dirty && <span className="h-1.5 w-1.5 rounded-full bg-indigo-400" />}
+                  <button
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      closeTab(file.path);
+                    }}
+                    className="opacity-0 group-hover:opacity-100 hover:text-red-400"
+                  >
+                    <X size={11} />
+                  </button>
+                </div>
+              ))
+            )}
+            {activeFile?.dirty && (
+              <span className="ml-auto px-3 text-[10px] text-gray-600">unsaved</span>
+            )}
           </div>
-          <div className="flex-1 relative">
-            <MonacoEditor
-              height="100%"
-              language={activeFile.endsWith('.js') ? 'javascript' : 'json'}
-              theme="vs-dark"
-              value={code}
-              onChange={(value) => setCode(value || "")}
-              options={{
-                minimap: { enabled: false },
-                fontSize: 14,
-                wordWrap: "on",
-                padding: { top: 16 },
-                fontFamily: "'Fira Code', 'JetBrains Mono', monospace",
-                scrollBeyondLastLine: false,
-              }}
-            />
+
+          <div className="relative flex-1">
+            {!session && !sessionError && (
+              <div className="flex h-full items-center justify-center gap-2 text-[12px] text-gray-500">
+                <Loader2 size={14} className="animate-spin" /> Starting your sandbox…
+              </div>
+            )}
+
+            {sessionError && (
+              <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
+                <AlertCircle size={22} className="text-red-400" />
+                <p className="max-w-sm text-[12px] text-gray-400">{sessionError}</p>
+                <button
+                  onClick={() => void boot()}
+                  className="flex items-center gap-1.5 rounded-md border border-white/10 px-3 py-1.5 text-[11px] text-gray-300 hover:bg-white/5"
+                >
+                  <RefreshCw size={12} /> Retry
+                </button>
+              </div>
+            )}
+
+            {session && !activeFile && (
+              <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
+                <Bot size={28} className="text-indigo-400/30" />
+                <p className="text-[12px] text-gray-500">Pick a file on the left, or ask Forge to build one.</p>
+                <p className="font-mono text-[10px] text-gray-700">{session.root}</p>
+              </div>
+            )}
+
+            {session && activeFile && (
+              <MonacoEditor
+                height="100%"
+                path={activeFile.path}
+                language={languageFor(activeFile.path)}
+                theme="vs-dark"
+                value={activeFile.content}
+                onChange={(value) => updateActiveContent(value ?? "")}
+                options={{
+                  minimap: { enabled: false },
+                  fontSize: 13,
+                  wordWrap: "on",
+                  padding: { top: 12 },
+                  fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+                  scrollBeyondLastLine: false,
+                  smoothScrolling: true,
+                  tabSize: 2,
+                }}
+              />
+            )}
           </div>
         </main>
 
-        {/* RIGHT: Agent & Terminal Panel */}
-        <aside className="w-[450px] bg-[#0a0a0a] border-l border-gray-800 flex flex-col">
-          
-          {/* Panel Tabs */}
-          <div className="flex border-b border-gray-800 bg-[#0f0f0f]">
-            {(["agent", "terminal", "problems", "output"] as Tab[]).map((tab) => (
+        <aside className="flex w-[440px] shrink-0 flex-col border-l border-white/5 bg-[#0a0a0c]">
+          <div className="flex border-b border-white/5 bg-[#0d0d0f]">
+            {tabs.map((tab) => (
               <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`flex-1 py-2 text-xs font-medium uppercase tracking-wider transition-colors ${activeTab === tab ? 'text-indigo-400 border-b-2 border-indigo-500 bg-indigo-500/5' : 'text-gray-500 hover:text-gray-300'}`}
+                key={tab.id}
+                onClick={() => setPanelTab(tab.id)}
+                className={`flex flex-1 items-center justify-center gap-1.5 py-2 text-[10px] font-medium uppercase tracking-[0.12em] transition ${
+                  panelTab === tab.id
+                    ? "border-b-2 border-indigo-500 bg-indigo-500/[0.06] text-indigo-300"
+                    : "text-gray-500 hover:text-gray-300"
+                }`}
               >
-                {tab}
+                {tab.icon}
+                {tab.label}
               </button>
             ))}
           </div>
 
-          {/* Panel Content */}
-          <div className="flex-1 overflow-y-auto p-4">
-            <AnimatePresence mode="wait">
-              
-              {/* AGENT TAB */}
-              {activeTab === "agent" && (
-                <motion.div 
-                  key="agent"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="flex flex-col h-full space-y-4 pb-4"
-                >
-                  {messages.length === 0 && (
-                    <div className="text-center text-gray-500 mt-10">
-                      <Bot size={48} className="mx-auto mb-4 opacity-20" />
-                      <p className="text-sm">I am Forge, your Gyra Coding Agent.</p>
-                      <p className="text-xs mt-2 text-gray-600">I can read files, write code, and execute terminal commands in a secure E2B sandbox.</p>
+          <div className="flex-1 overflow-hidden">
+            {panelTab === "agent" && (
+              <AgentPanel
+                messages={messages}
+                loading={loading}
+                mode={mode}
+                onModeChange={setMode}
+                onSubmit={(text) => void send(text)}
+                onStop={() => abortRef.current?.abort()}
+                onProceed={proceed}
+                onOpenPlan={() => setPanelTab("plan")}
+              />
+            )}
+
+            {panelTab === "plan" && (
+              <div className="h-full overflow-y-auto px-3 py-3">
+                {!activePlan ? (
+                  <div className="mt-10 text-center">
+                    <ListChecks size={26} className="mx-auto mb-2 text-indigo-400/30" />
+                    <p className="text-[12px] text-gray-500">No plan yet.</p>
+                    <p className="mt-1 text-[11px] text-gray-600">
+                      Switch the agent to Plan mode and describe the feature.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-[10px] uppercase tracking-[0.14em] text-gray-600">goal</p>
+                      <p className="mt-1 text-[12.5px] text-gray-200">{activePlan.goal}</p>
                     </div>
-                  )}
-                  
-                  {messages.map((m, i) => (
-                    <div key={i} className={`flex flex-col gap-1 ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
-                      <span className="text-[10px] text-gray-500 uppercase tracking-wider">{m.role}</span>
-                      
-                      <div className={`px-3 py-2 rounded-lg text-sm max-w-[95%] whitespace-pre-wrap ${
-                        m.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-[#1a1a1a] text-gray-200 border border-gray-800'
-                      }`}>
-                        {m.content || (m.role === 'assistant' && loading && i === messages.length - 1 && (
-                          <span className="animate-pulse text-indigo-400">Forge is thinking...</span>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-[0.14em] text-gray-600">steps</p>
+                      <ol className="mt-1 space-y-2">
+                        {activePlan.steps.map((step, index) => (
+                          <li key={index} className="rounded-lg border border-white/5 bg-white/[0.02] px-2.5 py-2">
+                            <p className="text-[12px] text-gray-200">
+                              <span className="mr-1 text-indigo-400">{index + 1}.</span>
+                              {step.title}
+                            </p>
+                            {step.detail && (
+                              <p className="mt-0.5 text-[11px] text-gray-500">{step.detail}</p>
+                            )}
+                            {step.files?.length ? (
+                              <p className="mt-1 font-mono text-[10px] text-gray-600">
+                                {step.files.join(" · ")}
+                              </p>
+                            ) : null}
+                          </li>
                         ))}
-                      </div>
-
-                      {/* Tool Calls */}
-                      {m.toolCalls?.map((tc, idx) => (
-                        <div key={idx} className="mt-2 bg-[#121212] border border-gray-800 rounded-lg p-3 font-mono text-xs w-full max-w-[95%]">
-                          <p className="text-blue-400 mb-1 flex items-center gap-2"><Settings size={12} /> Executing: {tc.name}</p>
-                          <p className="text-gray-500 break-all">{JSON.stringify(tc.args)}</p>
-                        </div>
-                      ))}
+                      </ol>
                     </div>
-                  ))}
-                  <div ref={messagesEndRef} />
-                </motion.div>
-              )}
-
-              {/* TERMINAL TAB */}
-              {activeTab === "terminal" && (
-                <motion.div 
-                  key="terminal"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="h-full font-mono text-sm text-gray-300"
-                >
-                  <div className="mb-2 text-gray-500">$ bash (E2B Sandbox)</div>
-                  {messages.flatMap((m) => m.toolResults || []).filter((tr) => tr.name === "execute_terminal").map((tr, i) => (
-                    <div key={i} className="mb-4">
-                       <div className="text-blue-400">$ {tr.result?.command || "command"}</div>
-                       <pre className="text-gray-300 whitespace-pre-wrap">{tr.result?.stdout || tr.result}</pre>
-                       {tr.result?.stderr && <pre className="text-red-400 whitespace-pre-wrap">{tr.result?.stderr}</pre>}
+                    <div>
+                      <p className="text-[10px] uppercase tracking-[0.14em] text-gray-600">verification</p>
+                      <ul className="mt-1 space-y-1">
+                        {activePlan.verification.map((item, index) => (
+                          <li key={index} className="text-[11.5px] text-gray-400">
+                            · {item}
+                          </li>
+                        ))}
+                      </ul>
                     </div>
-                  ))}
-                  <div className="mt-4 flex items-center gap-2">
-                    <span className="text-green-500">➜</span>
-                    <span className="text-blue-400">~/workspace</span>
-                    <span className="w-2 h-4 bg-gray-500 animate-pulse" />
+                    <button
+                      onClick={() => proceed(activePlan)}
+                      disabled={loading}
+                      className="w-full rounded-lg bg-indigo-600 px-3 py-2 text-[12px] font-medium text-white hover:bg-indigo-500 disabled:opacity-40"
+                    >
+                      Proceed with build
+                    </button>
                   </div>
-                </motion.div>
-              )}
+                )}
+              </div>
+            )}
 
-              {/* PROBLEMS TAB */}
-              {activeTab === "problems" && (
-                <motion.div 
-                  key="problems"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="text-sm text-gray-400"
-                >
-                  <div className="flex items-center gap-2 text-gray-500 mb-4">
-                    <AlertCircle size={16} /> No problems detected.
+            {panelTab === "terminal" && (
+              <TerminalPane
+                lines={terminalLines}
+                running={terminalRunning}
+                onRun={(command) => void runCommand(command)}
+                onStop={() => terminalAbortRef.current?.abort()}
+              />
+            )}
+
+            {panelTab === "preview" && (
+              <div className="flex h-full flex-col">
+                <div className="flex items-center gap-2 border-b border-white/5 px-3 py-2">
+                  <span className="flex-1 truncate font-mono text-[10px] text-gray-500">
+                    {previewUrl || "no server running"}
+                  </span>
+                  {previewUrl && (
+                    <button
+                      onClick={() => setPreviewUrl((url) => `${url.split("?")[0]}?t=${Date.now()}`)}
+                      className="text-gray-500 hover:text-indigo-300"
+                      title="Reload"
+                    >
+                      <RefreshCw size={12} />
+                    </button>
+                  )}
+                  {previewUrl && (
+                    <a
+                      href={previewUrl.split("?")[0]}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-gray-500 hover:text-indigo-300"
+                      title="Open in a new tab"
+                    >
+                      <ExternalLink size={12} />
+                    </a>
+                  )}
+                </div>
+
+                {previewError && (
+                  <p className="border-b border-white/5 px-3 py-2 text-[11px] text-amber-400">
+                    {previewError}
+                  </p>
+                )}
+
+                {previewUrl ? (
+                  <iframe
+                    src={previewUrl}
+                    title="Sandbox preview"
+                    className="flex-1 bg-white"
+                    sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                  />
+                ) : (
+                  <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center">
+                    <Play size={22} className="text-gray-700" />
+                    <p className="text-[11px] text-gray-600">
+                      Press Run to detect the framework and start the dev server.
+                    </p>
                   </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                )}
+              </div>
+            )}
           </div>
-
-          {/* Agent Input Area */}
-          {activeTab === "agent" && (
-            <div className="p-4 border-t border-gray-800 bg-[#0f0f0f]">
-              <form onSubmit={handleSubmit} className="relative flex gap-2">
-                <input
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  placeholder="Ask Forge to build or fix something..."
-                  className="flex-1 bg-[#1a1a1a] border border-gray-700 rounded-lg py-3 pl-4 pr-12 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
-                  disabled={loading}
-                />
-                <button 
-                  type="submit" 
-                  disabled={loading || !input.trim()}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-indigo-600 text-white rounded-md hover:bg-indigo-500 disabled:opacity-50 transition"
-                >
-                  <ChevronRight size={16} />
-                </button>
-              </form>
-            </div>
-          )}
         </aside>
       </div>
+
+      <footer className="flex items-center justify-between border-t border-white/5 bg-[#0d0d0f] px-3 py-1 text-[10px] text-gray-600">
+        <div className="flex items-center gap-3">
+          <span>{modeConfig(mode).label} mode</span>
+          <span>{tree.length} entries</span>
+          <span>{openFiles.length} open</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="font-mono">{session?.sandboxId.slice(0, 12) ?? "—"}</span>
+          <span>Ctrl/Cmd + S to save</span>
+        </div>
+      </footer>
     </div>
   );
 }
