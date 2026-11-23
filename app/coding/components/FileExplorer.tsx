@@ -1,169 +1,231 @@
 "use client";
+// app/coding/components/FileExplorer.tsx
+// Real tree from /api/coding/files, with a right-click context menu.
 
-import React, { useMemo, useState } from "react";
-import {
-  ChevronDown,
-  ChevronRight,
-  FileCode2,
-  Folder,
-  FolderOpen,
-  FilePlus2,
-  FolderPlus,
-  RefreshCw,
-  Search,
-  Trash2,
-} from "lucide-react";
-import type { FileNode } from "@/app/lib/coding/types";
+import { useEffect, useState } from "react";
+import type { MouseEvent as ReactMouseEvent } from "react";
+import { useWorkspace } from "../../lib/coding/store";
+import type { TreeNode } from "../../lib/coding/store";
 
-interface Props {
-  tree: FileNode[];
-  activePath: string | null;
-  onOpen: (path: string) => void;
-  onRefresh: () => void;
-  onCreateFile: () => void;
-  onCreateFolder: () => void;
-  onDelete: (path: string) => void;
+interface MenuState {
+  x: number;
+  y: number;
+  node: TreeNode;
 }
 
-function matches(node: FileNode, query: string): boolean {
-  if (!query) return true;
-  const needle = query.toLowerCase();
-  if (node.name.toLowerCase().includes(needle)) return true;
-  return (node.children ?? []).some((child) => matches(child, query));
-}
+export default function FileExplorer() {
+  const tree = useWorkspace((state) => state.tree);
+  const loading = useWorkspace((state) => state.treeLoading);
+  const error = useWorkspace((state) => state.treeError);
+  const loadTree = useWorkspace((state) => state.loadTree);
+  const openFile = useWorkspace((state) => state.openFile);
+  const openFiles = useWorkspace((state) => state.openFiles);
+  const activePath = useWorkspace((state) => state.activePath);
+  const pushActivity = useWorkspace((state) => state.pushActivity);
 
-export default function FileExplorer({
-  tree,
-  activePath,
-  onOpen,
-  onRefresh,
-  onCreateFile,
-  onCreateFolder,
-  onDelete,
-}: Props) {
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const [query, setQuery] = useState("");
+  const [expanded, setExpanded] = useState<Set<string>>(new Set(["", ".", "app"]));
+  const [menu, setMenu] = useState<MenuState | null>(null);
+  const [newFileDir, setNewFileDir] = useState<string | null>(null);
+  const [newFileName, setNewFileName] = useState("");
 
-  const visible = useMemo(() => {
-    const filter = (nodes: FileNode[]): FileNode[] =>
-      nodes.filter((node) => matches(node, query)).map((node) => ({
-        ...node,
-        children: node.children ? filter(node.children) : undefined,
-      }));
-    return query ? filter(tree) : tree;
-  }, [tree, query]);
+  useEffect(() => {
+    if (!tree) void loadTree();
+  }, [tree, loadTree]);
 
-  const toggle = (path: string) =>
-    setExpanded((prev) => ({ ...prev, [path]: !prev[path] }));
+  useEffect(() => {
+    if (!menu) return;
+    function close() {
+      setMenu(null);
+    }
+    window.addEventListener("click", close);
+    window.addEventListener("scroll", close, true);
+    return () => {
+      window.removeEventListener("click", close);
+      window.removeEventListener("scroll", close, true);
+    };
+  }, [menu]);
 
-  const renderNodes = (nodes: FileNode[], depth = 0): React.ReactNode =>
-    nodes.map((node) => {
-      const isOpen = query ? true : expanded[node.path] ?? depth === 0;
-      const isActive = activePath === node.path;
-
-      if (node.type === "dir") {
-        return (
-          <div key={node.path}>
-            <div
-              className="group flex items-center gap-1.5 rounded px-1.5 py-1 text-[13px] text-gray-300 hover:bg-white/5 cursor-pointer"
-              style={{ paddingLeft: 6 + depth * 12 }}
-              onClick={() => toggle(node.path)}
-            >
-              {isOpen ? (
-                <ChevronDown size={13} className="text-gray-500 shrink-0" />
-              ) : (
-                <ChevronRight size={13} className="text-gray-500 shrink-0" />
-              )}
-              {isOpen ? (
-                <FolderOpen size={13} className="text-indigo-400 shrink-0" />
-              ) : (
-                <Folder size={13} className="text-indigo-400/70 shrink-0" />
-              )}
-              <span className="truncate">{node.name}</span>
-              <button
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onDelete(node.path);
-                }}
-                className="ml-auto opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400"
-                title="Delete"
-              >
-                <Trash2 size={12} />
-              </button>
-            </div>
-            {isOpen && node.children ? renderNodes(node.children, depth + 1) : null}
-          </div>
-        );
-      }
-
-      return (
-        <div
-          key={node.path}
-          onClick={() => onOpen(node.path)}
-          className={`group flex items-center gap-1.5 rounded px-1.5 py-1 text-[13px] cursor-pointer ${
-            isActive
-              ? "bg-indigo-500/15 text-indigo-200"
-              : "text-gray-400 hover:bg-white/5 hover:text-gray-200"
-          }`}
-          style={{ paddingLeft: 6 + depth * 12 }}
-        >
-          <FileCode2
-            size={13}
-            className={isActive ? "text-indigo-400 shrink-0" : "text-gray-500 shrink-0"}
-          />
-          <span className="truncate">{node.name}</span>
-          <button
-            onClick={(event) => {
-              event.stopPropagation();
-              onDelete(node.path);
-            }}
-            className="ml-auto opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400"
-            title="Delete"
-          >
-            <Trash2 size={12} />
-          </button>
-        </div>
-      );
+  function toggle(path: string) {
+    setExpanded((current) => {
+      const next = new Set(current);
+      if (next.has(path)) next.delete(path);
+      else next.add(path);
+      return next;
     });
+  }
+
+  async function writeFile(path: string) {
+    try {
+      const response = await fetch("/api/coding/files", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ path, content: "", action: "write" }),
+      });
+      if (!response.ok) {
+        pushActivity("error", "Create failed", `${path} → ${response.status}`);
+        return;
+      }
+      pushActivity("success", "File created", path);
+      await loadTree();
+      await openFile(path);
+    } catch (caught) {
+      pushActivity("error", "Create failed", caught instanceof Error ? caught.message : "unknown");
+    }
+  }
+
+  async function remove(path: string) {
+    try {
+      const response = await fetch("/api/coding/files", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ path, action: "delete" }),
+      });
+      if (!response.ok) {
+        pushActivity("error", "Delete failed", `${path} → ${response.status}`);
+        return;
+      }
+      pushActivity("warning", "Deleted", path);
+      await loadTree();
+    } catch (caught) {
+      pushActivity("error", "Delete failed", caught instanceof Error ? caught.message : "unknown");
+    }
+  }
+
+  function onContextMenu(event: ReactMouseEvent, node: TreeNode) {
+    event.preventDefault();
+    setMenu({ x: event.clientX, y: event.clientY, node });
+  }
+
+  function renderNode(node: TreeNode, depth: number) {
+    const isDir = node.type === "directory";
+    const isOpen = expanded.has(node.path);
+    const isActive = node.path === activePath;
+    const isOpenFile = openFiles.some((file) => file.path === node.path);
+
+    return (
+      <li key={node.path || node.name}>
+        <button
+          type="button"
+          onClick={() => (isDir ? toggle(node.path) : void openFile(node.path))}
+          onContextMenu={(event) => onContextMenu(event, node)}
+          className={`flex w-full items-center gap-1 rounded px-1 py-[3px] text-left font-mono text-[11px] ${
+            isActive
+              ? "bg-indigo-400/15 text-indigo-100"
+              : isOpenFile
+                ? "text-white/80"
+                : "text-white/45 hover:bg-white/[0.04] hover:text-white/80"
+          }`}
+          style={{ paddingLeft: `${depth * 10 + 4}px` }}
+        >
+          <span className="w-3 shrink-0 text-white/25">
+            {isDir ? (isOpen ? "▾" : "▸") : "·"}
+          </span>
+          <span className="truncate">{node.name}</span>
+        </button>
+
+        {isDir && isOpen && node.children && node.children.length > 0 ? (
+          <ul>{node.children.map((child) => renderNode(child, depth + 1))}</ul>
+        ) : null}
+      </li>
+    );
+  }
 
   return (
-    <aside className="flex w-60 shrink-0 flex-col border-r border-white/5 bg-[#0d0d0f]">
-      <div className="flex items-center justify-between px-3 py-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-500">
-        Explorer
-        <div className="flex items-center gap-2">
-          <button onClick={onCreateFile} title="New file" className="hover:text-indigo-300">
-            <FilePlus2 size={13} />
-          </button>
-          <button onClick={onCreateFolder} title="New folder" className="hover:text-indigo-300">
-            <FolderPlus size={13} />
-          </button>
-          <button onClick={onRefresh} title="Refresh" className="hover:text-indigo-300">
-            <RefreshCw size={13} />
-          </button>
-        </div>
+    <aside className="relative hidden w-60 shrink-0 flex-col border-r border-white/10 bg-[#070a10] md:flex">
+      <div className="flex h-9 items-center justify-between border-b border-white/10 px-3">
+        <span className="font-mono text-[9.5px] uppercase tracking-[0.18em] text-white/30">
+          explorer
+        </span>
+        <button
+          type="button"
+          onClick={() => void loadTree()}
+          className="font-mono text-[9.5px] text-white/25 hover:text-white/80"
+        >
+          {loading ? "…" : "refresh"}
+        </button>
       </div>
 
-      <div className="px-2 pb-2">
-        <div className="flex items-center gap-1.5 rounded-md border border-white/5 bg-white/[0.03] px-2 py-1.5">
-          <Search size={12} className="text-gray-500" />
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Find file"
-            className="w-full bg-transparent text-[12px] text-gray-200 placeholder-gray-600 outline-none"
-          />
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-y-auto px-1 pb-4">
-        {visible.length === 0 ? (
-          <p className="px-3 py-6 text-center text-[12px] text-gray-600">
-            {tree.length === 0 ? "Sandbox is empty." : "No matching files."}
+      <div className="min-h-0 flex-1 overflow-auto py-1">
+        {error ? (
+          <p className="px-3 py-2 font-mono text-[10px] text-rose-300">{error}</p>
+        ) : !tree ? (
+          <p className="px-3 py-2 font-mono text-[10px] text-white/25">
+            {loading ? "reading tree…" : "no tree yet"}
           </p>
         ) : (
-          renderNodes(visible)
+          <ul>{renderNode(tree, 0)}</ul>
         )}
       </div>
+
+      {newFileDir !== null ? (
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            const name = newFileName.trim();
+            if (!name) return;
+            const path = newFileDir ? `${newFileDir}/${name}` : name;
+            setNewFileDir(null);
+            setNewFileName("");
+            void writeFile(path);
+          }}
+          className="border-t border-white/10 p-2"
+        >
+          <input
+            autoFocus
+            value={newFileName}
+            onChange={(event) => setNewFileName(event.target.value)}
+            placeholder="file name"
+            spellCheck={false}
+            className="w-full rounded border border-white/10 bg-white/[0.03] px-2 py-1 font-mono text-[11px] text-white/80 outline-none"
+          />
+        </form>
+      ) : null}
+
+      {menu ? (
+        <div
+          className="fixed z-50 w-44 overflow-hidden rounded-md border border-white/10 bg-[#0b0f16] py-1 shadow-xl"
+          style={{ left: menu.x, top: menu.y }}
+        >
+          {menu.node.type === "file" ? (
+            <button
+              type="button"
+              onClick={() => void openFile(menu.node.path)}
+              className="block w-full px-3 py-1.5 text-left font-mono text-[10.5px] text-white/70 hover:bg-white/[0.05]"
+            >
+              Open
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => {
+              const dir = menu.node.type === "directory" ? menu.node.path : menu.node.path.split("/").slice(0, -1).join("/");
+              setNewFileDir(dir);
+            }}
+            className="block w-full px-3 py-1.5 text-left font-mono text-[10.5px] text-white/70 hover:bg-white/[0.05]"
+          >
+            New file here
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (typeof navigator !== "undefined" && navigator.clipboard) {
+                void navigator.clipboard.writeText(menu.node.path);
+                pushActivity("info", "Copied path", menu.node.path);
+              }
+            }}
+            className="block w-full px-3 py-1.5 text-left font-mono text-[10.5px] text-white/70 hover:bg-white/[0.05]"
+          >
+            Copy path
+          </button>
+          <button
+            type="button"
+            onClick={() => void remove(menu.node.path)}
+            className="block w-full px-3 py-1.5 text-left font-mono text-[10.5px] text-rose-300 hover:bg-rose-400/10"
+          >
+            Delete
+          </button>
+        </div>
+      ) : null}
     </aside>
   );
 }
