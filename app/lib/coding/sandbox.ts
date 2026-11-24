@@ -1,6 +1,7 @@
 /* app/lib/coding/sandbox.ts
  * Dependency-free E2B sandbox client built on plain `fetch`.
- * No `e2b` SDK, no node-only imports, nothing for Turbopack to resolve.
+ * Exposes both the REST-style helpers and the SDK-style `sandbox.commands` /
+ * `sandbox.files` surface, so existing routes keep working unchanged.
  */
 
 export const SANDBOX_ROOT = "/home/user/gyra";
@@ -16,6 +17,10 @@ const DEFAULT_TEMPLATE = "gyra";
 const PROTOCOL_VERSION = "1";
 const DEFAULT_EXEC_TIMEOUT_MS = 120000;
 
+/* ------------------------------------------------------------------ */
+/* types                                                               */
+/* ------------------------------------------------------------------ */
+
 export type Sandbox = {
   sandboxId: string;
   sandboxID: string;
@@ -27,7 +32,12 @@ export type Sandbox = {
   createdAt: string;
   timeout: number;
   port: number;
+  commands: SandboxCommands;
+  files: SandboxFiles;
+  getHost: (port?: number) => string;
 };
+
+type SandboxCore = Omit<Sandbox, "commands" | "files" | "getHost">;
 
 export type SandboxRef = Sandbox | string;
 export type SandboxInput = SandboxRef | null | undefined;
@@ -47,6 +57,28 @@ export type ExecOptions = {
   timeoutMs?: number;
 };
 
+export type CommandOutput = {
+  stdout: string;
+  stderr: string;
+  output: string;
+  exitCode: number;
+  error: string | null;
+  ok: boolean;
+  durationMs: number;
+};
+
+export type SandboxRunOptions = ExecOptions & {
+  onStdout?: (data: string) => void;
+  onStderr?: (data: string) => void;
+  background?: boolean;
+  user?: string;
+};
+
+export type SandboxCommands = {
+  run: (command: string, options?: SandboxRunOptions) => Promise<CommandOutput>;
+  kill: () => Promise<void>;
+};
+
 export type DirEntry = {
   name: string;
   path: string;
@@ -59,6 +91,20 @@ export type PathStat = {
   exists: boolean;
   type: "file" | "dir" | "symlink" | "unknown";
   size: number;
+};
+
+export type SandboxFiles = {
+  read: (path: string) => Promise<string>;
+  write: (
+    pathOrEntries: string | Array<{ path: string; data: string }>,
+    data?: string,
+  ) => Promise<void>;
+  list: (path?: string) => Promise<DirEntry[]>;
+  makeDir: (path: string) => Promise<void>;
+  remove: (path: string) => Promise<void>;
+  exists: (path: string) => Promise<boolean>;
+  rename: (from: string, to: string) => Promise<void>;
+  getInfo: (path: string) => Promise<PathStat>;
 };
 
 export class SandboxError extends Error {
@@ -226,7 +272,7 @@ type ProcessStreamPayload = {
 /* ------------------------------------------------------------------ */
 
 async function envdFetch(
-  sandbox: Sandbox,
+  sandbox: SandboxCore,
   path: string,
   init: RequestInit & { port?: number } = {},
 ): Promise<Response> {
@@ -250,6 +296,89 @@ async function envdFetch(
     );
   }
   return response;
+}
+
+/* ------------------------------------------------------------------ */
+/* sandbox factory                                                     */
+/* ------------------------------------------------------------------ */
+
+function makeSandbox(core: SandboxCore): Sandbox {
+  let self: Sandbox | null = null;
+
+  const target = (): SandboxInput => self ?? core.sandboxId;
+
+  const sandbox: Sandbox = {
+    ...core,
+
+    getHost: (port: number = WORKSPACE_PORT): string =>
+      `${port}-${core.sandboxId}.${core.domain || sandboxDomain()}`,
+
+    commands: {
+      run: async (
+        command: string,
+        options: SandboxRunOptions = {},
+      ): Promise<CommandOutput> => {
+        const result = await execCommand(target(), command, {
+          cwd: options.cwd,
+          envs: options.envs,
+          timeoutMs: options.timeoutMs,
+        });
+
+        if (options.onStdout && result.stdout) options.onStdout(result.stdout);
+        if (options.onStderr && result.stderr) options.onStderr(result.stderr);
+
+        return {
+          stdout: result.stdout,
+          stderr: result.stderr,
+          output: result.output,
+          exitCode: result.exitCode,
+          error: result.ok
+            ? null
+            : result.stderr || `Command exited with code ${result.exitCode}`,
+          ok: result.ok,
+          durationMs: result.durationMs,
+        };
+      },
+      kill: async (): Promise<void> => {
+        /* single-shot commands finish on their own; nothing to kill */
+      },
+    },
+
+    files: {
+      read: async (path: string): Promise<string> => readFileText(target(), path),
+      write: async (
+        pathOrEntries: string | Array<{ path: string; data: string }>,
+        data?: string,
+      ): Promise<void> => {
+        if (Array.isArray(pathOrEntries)) {
+          for (const entry of pathOrEntries) {
+            await writeFileText(target(), entry.path, entry.data);
+          }
+          return;
+        }
+        await writeFileText(target(), pathOrEntries, data ?? "");
+      },
+      list: async (path: string = "."): Promise<DirEntry[]> => listDir(target(), path),
+      makeDir: async (path: string): Promise<void> => {
+        await makeDir(target(), path);
+      },
+      remove: async (path: string): Promise<void> => {
+        await deletePath(target(), path);
+      },
+      exists: async (path: string): Promise<boolean> => fileExists(target(), path),
+      rename: async (from: string, to: string): Promise<void> => {
+        await execCommand(
+          target(),
+          `mv -- ${shellQuote(workspacePath(from))} ${shellQuote(workspacePath(to))}`,
+          { timeoutMs: 30000 },
+        );
+      },
+      getInfo: async (path: string): Promise<PathStat> => statPath(target(), path),
+    },
+  };
+
+  self = sandbox;
+  return sandbox;
 }
 
 /* ------------------------------------------------------------------ */
@@ -301,7 +430,7 @@ export async function openSandbox(
     payload.envdAccessToken ?? payload.accessToken ?? "",
   ).trim();
 
-  const sandbox: Sandbox = {
+  const sandbox = makeSandbox({
     sandboxId: id,
     sandboxID: id,
     templateId: String(payload.templateID ?? template),
@@ -312,7 +441,7 @@ export async function openSandbox(
     createdAt: new Date().toISOString(),
     timeout,
     port: DEFAULT_SANDBOX_PORT,
-  };
+  });
 
   cacheSandbox(sandbox);
   return sandbox;
@@ -346,7 +475,7 @@ export async function connectSandbox(sandboxId: string): Promise<Sandbox> {
       const token = String(
         payload.envdAccessToken ?? payload.accessToken ?? "",
       ).trim();
-      const sandbox: Sandbox = {
+      const sandbox = makeSandbox({
         sandboxId: id,
         sandboxID: id,
         templateId: String(payload.templateID ?? ""),
@@ -357,7 +486,7 @@ export async function connectSandbox(sandboxId: string): Promise<Sandbox> {
         createdAt: String(payload.startedAt ?? new Date().toISOString()),
         timeout: Number(payload.endAt ? 0 : DEFAULT_TIMEOUT_SECONDS),
         port: DEFAULT_SANDBOX_PORT,
-      };
+      });
       cacheSandbox(sandbox);
       return sandbox;
     } catch {
@@ -365,7 +494,7 @@ export async function connectSandbox(sandboxId: string): Promise<Sandbox> {
     }
   }
 
-  const fallback: Sandbox = {
+  const fallback = makeSandbox({
     sandboxId: id,
     sandboxID: id,
     templateId: "",
@@ -376,7 +505,7 @@ export async function connectSandbox(sandboxId: string): Promise<Sandbox> {
     createdAt: new Date().toISOString(),
     timeout: DEFAULT_TIMEOUT_SECONDS,
     port: DEFAULT_SANDBOX_PORT,
-  };
+  });
   cacheSandbox(fallback);
   return fallback;
 }
