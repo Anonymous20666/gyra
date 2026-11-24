@@ -42,6 +42,11 @@ type SandboxCore = Omit<Sandbox, "commands" | "files" | "getHost">;
 export type SandboxRef = Sandbox | string;
 export type SandboxInput = SandboxRef | null | undefined;
 
+export type SandboxOptions = {
+  template?: string | null;
+  timeoutSeconds?: number;
+};
+
 export type ExecResult = {
   stdout: string;
   stderr: string;
@@ -169,6 +174,14 @@ function clampTimeout(seconds?: number): number {
   const raw = Number(seconds);
   if (!Number.isFinite(raw) || raw <= 0) return DEFAULT_TIMEOUT_SECONDS;
   return Math.min(Math.max(Math.round(raw), 60), 86400);
+}
+
+function normalizeSandboxOptions(
+  options?: string | null | SandboxOptions,
+): SandboxOptions {
+  if (!options) return {};
+  if (typeof options === "string") return { template: options };
+  return options;
 }
 
 /* ------------------------------------------------------------------ */
@@ -386,10 +399,11 @@ function makeSandbox(core: SandboxCore): Sandbox {
 /* ------------------------------------------------------------------ */
 
 export async function openSandbox(
-  options: { template?: string; timeoutSeconds?: number } = {},
+  options: string | null | SandboxOptions = {},
 ): Promise<Sandbox> {
-  const timeout = clampTimeout(options.timeoutSeconds);
-  const template = (options.template || "").trim() || templateId();
+  const normalized = normalizeSandboxOptions(options);
+  const timeout = clampTimeout(normalized.timeoutSeconds);
+  const template = (normalized.template ?? "").trim() || templateId();
 
   let response: Response;
   try {
@@ -447,10 +461,9 @@ export async function openSandbox(
   return sandbox;
 }
 
-export async function createSandbox(options?: {
-  template?: string;
-  timeoutSeconds?: number;
-}): Promise<Sandbox> {
+export async function createSandbox(
+  options?: string | null | SandboxOptions,
+): Promise<Sandbox> {
   return openSandbox(options);
 }
 
