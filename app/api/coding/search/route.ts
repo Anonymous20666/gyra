@@ -1,76 +1,79 @@
-// app/api/coding/search/route.ts
-//   POST /api/coding/search { sandboxId?, query, limit? }
-// Hybrid project search: filenames, content, symbols and imports.
+/* app/api/coding/search/route.ts */
 
 import { NextResponse } from "next/server";
-import { searchProject, searchResultToText } from "@/app/lib/coding/search";
-import { errorMessage, getSandbox } from "@/app/lib/coding/handle";
+import { searchProject, type SearchResult } from "@/app/lib/coding/search";
 
 export const runtime = "nodejs";
-export const maxDuration = 120;
+export const dynamic = "force-dynamic";
 
-export async function GET(request: Request): Promise<Response> {
-  const url = new URL(request.url);
-  const query = url.searchParams.get("q") ?? "";
-  const sandboxId = url.searchParams.get("sandboxId");
+function message(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return "Search failed.";
+}
 
-  if (!query.trim()) {
-    return NextResponse.json(
-      { ok: false, error: "A search query is required." },
-      { status: 400 },
-    );
-  }
+function serialize(result: SearchResult) {
+  return {
+    ok: result.error === null,
+    query: result.query,
+    results: result.results,
+    hits: result.hits,
+    matches: result.matches,
+    total: result.total,
+    truncated: result.truncated,
+    error: result.error,
+  };
+}
 
+export async function GET(request: Request) {
   try {
-    const sandbox = await getSandbox(sandboxId);
-    const results = await searchProject(sandbox, query.trim());
+    const url = new URL(request.url);
+    const query = url.searchParams.get("q") ?? url.searchParams.get("query") ?? "";
+    const sandboxId = url.searchParams.get("sandboxId") ?? undefined;
+    const include = url.searchParams.get("include") ?? undefined;
+    const caseSensitive = url.searchParams.get("case") === "1";
+    const regex = url.searchParams.get("regex") === "1";
+    const maxResults = Number(url.searchParams.get("limit") ?? "") || 500;
 
-    return NextResponse.json({
-      ok: true,
-      sandboxId: sandbox.sandboxId,
-      query,
-      results,
-      prompt: searchResultToText(results),
+    const result = await searchProject(sandboxId, query, {
+      include,
+      caseSensitive,
+      regex,
+      maxResults,
     });
-  } catch (error: unknown) {
-    return NextResponse.json(
-      { ok: false, error: errorMessage(error) },
-      { status: 500 },
-    );
+
+    return NextResponse.json(serialize(result));
+  } catch (error) {
+    return NextResponse.json({ error: message(error) }, { status: 500 });
   }
 }
 
-export async function POST(request: Request): Promise<Response> {
-  let body: { sandboxId?: string; query?: string } = {};
+export async function POST(request: Request) {
   try {
-    body = (await request.json()) as { sandboxId?: string; query?: string };
-  } catch {
-    body = {};
-  }
+    let body: {
+      query?: string;
+      q?: string;
+      sandboxId?: string;
+      include?: string;
+      caseSensitive?: boolean;
+      regex?: boolean;
+      maxResults?: number;
+    } = {};
 
-  const query = (body.query ?? "").trim();
-  if (!query) {
-    return NextResponse.json(
-      { ok: false, error: "A search query is required." },
-      { status: 400 },
-    );
-  }
+    try {
+      body = (await request.json()) as typeof body;
+    } catch {
+      body = {};
+    }
 
-  try {
-    const sandbox = await getSandbox(body.sandboxId);
-    const results = await searchProject(sandbox, query);
-
-    return NextResponse.json({
-      ok: true,
-      sandboxId: sandbox.sandboxId,
-      query,
-      results,
-      prompt: searchResultToText(results),
+    const result = await searchProject(body.sandboxId ?? null, body.query ?? body.q ?? "", {
+      include: body.include,
+      caseSensitive: body.caseSensitive,
+      regex: body.regex,
+      maxResults: body.maxResults,
     });
-  } catch (error: unknown) {
-    return NextResponse.json(
-      { ok: false, error: errorMessage(error) },
-      { status: 500 },
-    );
+
+    return NextResponse.json(serialize(result));
+  } catch (error) {
+    return NextResponse.json({ error: message(error) }, { status: 500 });
   }
 }

@@ -1,58 +1,74 @@
-// app/api/coding/diagnostics/route.ts
-// Problems panel backend: TypeScript, ESLint and build output, parsed into
-// a single shape. Reports honestly when no checker is configured.
+/* app/api/coding/diagnostics/route.ts */
 
 import { NextResponse } from "next/server";
-import { runDiagnostics, diagnosticsToPrompt } from "@/app/lib/coding/diagnostics";
-import { errorMessage, getSandbox } from "@/app/lib/coding/handle";
+import { runDiagnostics } from "@/app/lib/coding/diagnostics";
 
 export const runtime = "nodejs";
-export const maxDuration = 300;
+export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
-export async function GET(request: Request): Promise<Response> {
+function message(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return "Diagnostics failed.";
+}
+
+async function readOptions(request: Request) {
   const url = new URL(request.url);
-  const sandboxId = url.searchParams.get("sandboxId");
+  const sandboxId = url.searchParams.get("sandboxId") ?? undefined;
+  const lint = url.searchParams.get("eslint");
+  return {
+    sandboxId,
+    includeEslint: lint !== "0" && lint !== "false",
+  };
+}
 
+export async function GET(request: Request) {
   try {
-    const sandbox = await getSandbox(sandboxId);
-    const report = await runDiagnostics(sandbox);
-
+    const { sandboxId, includeEslint } = await readOptions(request);
+    const report = await runDiagnostics(sandboxId, { includeEslint });
     return NextResponse.json({
-      ok: true,
-      sandboxId: sandbox.sandboxId,
-      report,
-      prompt: diagnosticsToPrompt(report),
+      ok: report.ok,
+      total: report.total,
+      errors: report.errors,
+      warnings: report.warnings,
+      ranTsc: report.ranTsc,
+      ranEslint: report.ranEslint,
+      diagnostics: report.diagnostics,
+      items: report.diagnostics,
+      error: report.error,
+      scannedAt: report.scannedAt,
     });
-  } catch (error: unknown) {
-    return NextResponse.json(
-      { ok: false, error: errorMessage(error) },
-      { status: 500 },
-    );
+  } catch (error) {
+    return NextResponse.json({ error: message(error) }, { status: 500 });
   }
 }
 
-export async function POST(request: Request): Promise<Response> {
-  let body: { sandboxId?: string } = {};
+export async function POST(request: Request) {
   try {
-    body = (await request.json()) as { sandboxId?: string };
-  } catch {
-    body = {};
-  }
+    let body: { sandboxId?: string; includeEslint?: boolean } = {};
+    try {
+      body = (await request.json()) as { sandboxId?: string; includeEslint?: boolean };
+    } catch {
+      body = {};
+    }
 
-  try {
-    const sandbox = await getSandbox(body.sandboxId);
-    const report = await runDiagnostics(sandbox);
+    const report = await runDiagnostics(body.sandboxId ?? null, {
+      includeEslint: body.includeEslint !== false,
+    });
 
     return NextResponse.json({
-      ok: true,
-      sandboxId: sandbox.sandboxId,
-      report,
-      prompt: diagnosticsToPrompt(report),
+      ok: report.ok,
+      total: report.total,
+      errors: report.errors,
+      warnings: report.warnings,
+      ranTsc: report.ranTsc,
+      ranEslint: report.ranEslint,
+      diagnostics: report.diagnostics,
+      items: report.diagnostics,
+      error: report.error,
+      scannedAt: report.scannedAt,
     });
-  } catch (error: unknown) {
-    return NextResponse.json(
-      { ok: false, error: errorMessage(error) },
-      { status: 500 },
-    );
+  } catch (error) {
+    return NextResponse.json({ error: message(error) }, { status: 500 });
   }
 }

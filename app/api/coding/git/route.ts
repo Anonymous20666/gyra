@@ -1,200 +1,115 @@
-// app/api/coding/git/route.ts
-// Git Center backend. Read actions are free; every write action is explicit
-// and returns the fresh panel state so the UI never drifts.
+/* app/api/coding/git/route.ts */
 
 import { NextResponse } from "next/server";
 import {
-  checkoutBranch,
-  commit,
-  commitDetails,
-  createBranch,
-  deleteBranch,
-  diffForPath,
-  discardPaths,
+  gitCheckout,
+  gitCommit,
+  gitCreateBranch,
+  gitDiff,
+  gitDiscard,
+  gitStage,
+  gitUnstage,
   readGitPanel,
-  stagePaths,
-  unstagePaths,
+  type GitPanel,
 } from "@/app/lib/coding/git";
-import { errorMessage, getSandbox } from "@/app/lib/coding/handle";
 
 export const runtime = "nodejs";
-export const maxDuration = 180;
+export const dynamic = "force-dynamic";
 
 type GitAction =
   | "stage"
   | "unstage"
   | "discard"
   | "commit"
-  | "branch-create"
-  | "branch-checkout"
-  | "branch-delete"
-  | "diff"
-  | "commit-details";
+  | "checkout"
+  | "branch"
+  | "diff";
 
-interface GitBody {
-  sandboxId?: string;
+type GitBody = {
   action?: GitAction;
+  sandboxId?: string;
+  cwd?: string;
   paths?: string[];
+  path?: string;
   message?: string;
-  name?: string;
-  hash?: string;
+  branch?: string;
+};
+
+function message(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return "Git operation failed.";
 }
 
-export async function GET(request: Request): Promise<Response> {
-  const url = new URL(request.url);
-  const sandboxId = url.searchParams.get("sandboxId");
+function serialize(panel: GitPanel) {
+  return {
+    ok: true,
+    ...panel,
+    branch: panel.branch,
+    branches: panel.branches,
+    files: panel.files,
+    commits: panel.commits,
+    clean: panel.clean,
+    isRepo: panel.isRepo,
+  };
+}
 
+export async function GET(request: Request) {
   try {
-    const sandbox = await getSandbox(sandboxId);
-    const panel = await readGitPanel(sandbox);
+    const url = new URL(request.url);
+    const sandboxId = url.searchParams.get("sandboxId") ?? undefined;
+    const cwd = url.searchParams.get("cwd") ?? undefined;
+    const limit = Number(url.searchParams.get("limit") ?? "") || 20;
 
-    return NextResponse.json({
-      ok: true,
-      sandboxId: sandbox.sandboxId,
-      panel,
-    });
-  } catch (error: unknown) {
-    return NextResponse.json(
-      { ok: false, error: errorMessage(error) },
-      { status: 500 },
-    );
+    const panel = await readGitPanel(sandboxId, { cwd, commitLimit: limit });
+    return NextResponse.json(serialize(panel));
+  } catch (error) {
+    return NextResponse.json({ error: message(error) }, { status: 500 });
   }
 }
 
-export async function POST(request: Request): Promise<Response> {
-  let body: GitBody = {};
+export async function POST(request: Request) {
   try {
-    body = (await request.json()) as GitBody;
-  } catch {
-    body = {};
-  }
+    const body = (await request.json()) as GitBody;
+    const sandboxId = body.sandboxId;
+    const paths = Array.isArray(body.paths) ? body.paths : [];
 
-  if (!body.action) {
-    return NextResponse.json(
-      { ok: false, error: "An action is required." },
-      { status: 400 },
-    );
-  }
-
-  const paths = (body.paths ?? []).filter((path) => typeof path === "string" && path.trim());
-  const needsPaths = ["stage", "unstage", "discard"].includes(body.action);
-
-  if (needsPaths && !paths.length) {
-    return NextResponse.json(
-      { ok: false, error: `The ${body.action} action needs at least one path.` },
-      { status: 400 },
-    );
-  }
-
-  try {
-    const sandbox = await getSandbox(body.sandboxId);
-    let result: unknown = null;
+    let result: { ok: boolean; error: string | null } = {
+      ok: false,
+      error: "Unsupported git action.",
+    };
 
     switch (body.action) {
       case "stage":
-        result = await stagePaths(sandbox, paths);
+        result = await gitStage(sandboxId ?? null, paths);
         break;
-
       case "unstage":
-        result = await unstagePaths(sandbox, paths);
+        result = await gitUnstage(sandboxId ?? null, paths);
         break;
-
       case "discard":
-        result = await discardPaths(sandbox, paths);
+        result = await gitDiscard(sandboxId ?? null, paths);
         break;
-
-      case "commit": {
-        const message = (body.message ?? "").trim();
-        if (!message) {
-          return NextResponse.json(
-            { ok: false, error: "A commit message is required." },
-            { status: 400 },
-          );
-        }
-        result = await commit(sandbox, message);
+      case "commit":
+        result = await gitCommit(sandboxId ?? null, body.message ?? "");
         break;
-      }
-
-      case "branch-create": {
-        const name = (body.name ?? "").trim();
-        if (!name) {
-          return NextResponse.json(
-            { ok: false, error: "A branch name is required." },
-            { status: 400 },
-          );
-        }
-        result = await createBranch(sandbox, name);
+      case "checkout":
+        result = await gitCheckout(sandboxId ?? null, body.branch ?? "");
         break;
-      }
-
-      case "branch-checkout": {
-        const name = (body.name ?? "").trim();
-        if (!name) {
-          return NextResponse.json(
-            { ok: false, error: "A branch name is required." },
-            { status: 400 },
-          );
-        }
-        result = await checkoutBranch(sandbox, name);
+      case "branch":
+        result = await gitCreateBranch(sandboxId ?? null, body.branch ?? "");
         break;
-      }
-
-      case "branch-delete": {
-        const name = (body.name ?? "").trim();
-        if (!name) {
-          return NextResponse.json(
-            { ok: false, error: "A branch name is required." },
-            { status: 400 },
-          );
-        }
-        result = await deleteBranch(sandbox, name);
-        break;
-      }
-
       case "diff": {
-        const path = paths[0] ?? (body.name ?? "").trim();
-        if (!path) {
-          return NextResponse.json(
-            { ok: false, error: "A path is required to diff." },
-            { status: 400 },
-          );
-        }
-        result = await diffForPath(sandbox, path);
-        break;
+        const diff = await gitDiff(sandboxId ?? null, body.path);
+        result = { ok: true, error: null };
+        const panel = await readGitPanel(sandboxId ?? null, { cwd: body.cwd });
+        return NextResponse.json({ ...serialize(panel), diff, ...result });
       }
-
-      case "commit-details": {
-        const hash = (body.hash ?? "").trim();
-        if (!hash) {
-          return NextResponse.json(
-            { ok: false, error: "A commit hash is required." },
-            { status: 400 },
-          );
-        }
-        result = await commitDetails(sandbox, hash);
-        break;
-      }
-
       default:
-        return NextResponse.json(
-          { ok: false, error: `Unknown git action: ${String(body.action)}` },
-          { status: 400 },
-        );
+        break;
     }
 
-    const panel = await readGitPanel(sandbox);
-
-    return NextResponse.json({
-      ok: true,
-      sandboxId: sandbox.sandboxId,
-      action: body.action,
-      result,
-      panel,
-    });
-  } catch (error: unknown) {
-    return NextResponse.json(
-      { ok: false, error: errorMessage(error) },
-      { status: 500 },
-    );
+    const panel = await readGitPanel(sandboxId ?? null, { cwd: body.cwd });
+    return NextResponse.json({ ...serialize(panel), ...result });
+  } catch (error) {
+    return NextResponse.json({ error: message(error) }, { status: 500 });
   }
 }
