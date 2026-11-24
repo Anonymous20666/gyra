@@ -1,324 +1,274 @@
-// app/lib/coding/codeindex.ts
-// Function / class / symbol / import indexing for the whole project.
-// Uses one batched grep pass per pattern set instead of reading every file,
-// so indexing a 5,000-file repo stays cheap.
+/* app/lib/coding/codeindex.ts
+ * Lightweight symbol index of the sandbox workspace. Dependency-free.
+ */
 
-import type { Sandbox } from "@e2b/code-interpreter";
-import { exec, hashContent, isBinaryPath } from "./sandbox";
-import type { CodeIndex, ImportEdge, SymbolEntry, SymbolKind } from "./types";
+import {
+  SANDBOX_ROOT,
+  execCommand,
+  getSandbox,
+  readFileText,
+  type SandboxInput,
+} from "./sandbox";
 
-const CODE_GLOBS = [
-  "--include=*.ts",
-  "--include=*.tsx",
-  "--include=*.js",
-  "--include=*.jsx",
-  "--include=*.mjs",
-  "--include=*.cjs",
-  "--include=*.py",
-  "--include=*.go",
-  "--include=*.rs",
-];
+export type CodeSymbolKind =
+  | "function"
+  | "class"
+  | "interface"
+  | "type"
+  | "const"
+  | "enum"
+  | "component"
+  | "route"
+  | "export";
 
-const EXCLUDES = [
-  "--exclude-dir=node_modules",
-  "--exclude-dir=.git",
-  "--exclude-dir=.next",
-  "--exclude-dir=dist",
-  "--exclude-dir=build",
-  "--exclude-dir=coverage",
-  "--exclude-dir=.turbo",
-  "--exclude-dir=__pycache__",
-  "--exclude-dir=.venv",
-].join(" ");
+export type CodeSymbol = {
+  name: string;
+  kind: CodeSymbolKind;
+  path: string;
+  line: number;
+  exported: boolean;
+  signature: string;
+};
 
-const SYMBOL_PATTERN = [
-  // function declarations
-  "^[[:space:]]*(export[[:space:]]+)?(default[[:space:]]+)?(async[[:space:]]+)?function\\*?[[:space:]]+[A-Za-z_$][A-Za-z0-9_$]*",
-  // classes
-  "^[[:space:]]*(export[[:space:]]+)?(default[[:space:]]+)?(abstract[[:space:]]+)?class[[:space:]]+[A-Za-z_$][A-Za-z0-9_$]*",
-  // interfaces and types
-  "^[[:space:]]*(export[[:space:]]+)?(declare[[:space:]]+)?interface[[:space:]]+[A-Za-z_$][A-Za-z0-9_$]*",
-  "^[[:space:]]*(export[[:space:]]+)?type[[:space:]]+[A-Za-z_$][A-Za-z0-9_$]*[[:space:]]*=",
-  // enums
-  "^[[:space:]]*(export[[:space:]]+)?(const[[:space:]]+)?enum[[:space:]]+[A-Za-z_$][A-Za-z0-9_$]*",
-  // const / let / var (covers arrow components, hooks, singletons)
-  "^[[:space:]]*(export[[:space:]]+)?(const|let|var)[[:space:]]+[A-Za-z_$][A-Za-z0-9_$]*[[:space:]]*[:=]",
-  // python def / class
-  "^[[:space:]]*(async[[:space:]]+)?def[[:space:]]+[A-Za-z_][A-Za-z0-9_]*",
-  // go func / type
-  "^[[:space:]]*func[[:space:]]+(\\([^)]*\\)[[:space:]]*)?[A-Za-z_][A-Za-z0-9_]*",
-  // rust fn / struct / enum / trait
-  "^[[:space:]]*(pub[[:space:]]+)?(async[[:space:]]+)?(fn|struct|enum|trait)[[:space:]]+[A-Za-z_][A-Za-z0-9_]*",
-].join("|");
+export type IndexedFile = {
+  path: string;
+  language: string;
+  lines: number;
+  symbols: CodeSymbol[];
+};
 
-const IMPORT_PATTERN = [
-  "^[[:space:]]*import[[:space:]]+.*from[[:space:]]+['\"]",
-  "^[[:space:]]*import[[:space:]]+['\"]",
-  "^[[:space:]]*const[[:space:]]+.*=[[:space:]]*require\\(['\"]",
-  "^[[:space:]]*from[[:space:]]+[A-Za-z_.]+[[:space:]]+import[[:space:]]+",
-  "^[[:space:]]*use[[:space:]]+[A-Za-z_]+",
-].join("|");
+export type CodeIndex = {
+  sandboxId: string;
+  root: string;
+  files: IndexedFile[];
+  symbols: CodeSymbol[];
+  byName: Record<string, CodeSymbol[]>;
+  fileCount: number;
+  symbolCount: number;
+  builtAt: string;
+};
 
-function parseGrepLines(output: string): { file: string; line: number; text: string }[] {
-  const results: { file: string; line: number; text: string }[] = [];
-  for (const raw of output.split("\n")) {
-    if (!raw.trim()) continue;
-    const match = raw.match(/^(.*?):(\d+):(.*)$/);
-    if (!match) continue;
-    const [, file, line, text] = match;
-    results.push({ file: file.replace(/^\.\//, ""), line: Number(line), text });
-  }
-  return results;
+const INDEXABLE = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"];
+const MAX_FILES = 500;
+const MAX_BYTES = 400000;
+const CONCURRENCY = 8;
+
+const cache = new Map<string, CodeIndex>();
+
+function languageFor(path: string): string {
+  const lower = path.toLowerCase();
+  if (lower.endsWith(".tsx")) return "tsx";
+  if (lower.endsWith(".ts")) return "ts";
+  if (lower.endsWith(".jsx")) return "jsx";
+  if (lower.endsWith(".js") || lower.endsWith(".mjs") || lower.endsWith(".cjs")) return "js";
+  return "text";
 }
 
-function symbolKindOf(text: string): SymbolKind | null {
-  if (/\bclass\b/.test(text)) return "class";
-  if (/\binterface\b/.test(text)) return "interface";
-  if (/\btype\s+[A-Za-z_$]/.test(text)) return "type";
-  if (/\benum\b/.test(text)) return "enum";
-  if (/\bfunction\b/.test(text) || /\bdef\s/.test(text) || /\bfunc\s/.test(text) || /\bfn\s/.test(text)) {
-    return "function";
-  }
-  if (/\b(const|let|var)\b/.test(text)) return "const";
-  return "variable";
-}
+export function extractSymbols(path: string, content: string): CodeSymbol[] {
+  const symbols: CodeSymbol[] = [];
+  const lines = content.split("\n");
+  const isComponent = languageFor(path) !== "ts" && languageFor(path) !== "js";
 
-function refineKind(name: string, kind: SymbolKind): SymbolKind {
-  if (kind !== "const" && kind !== "variable") return kind;
-  if (/^use[A-Z]/.test(name)) return "hook";
-  if (/^[A-Z]/.test(name)) return "component";
-  return "const";
-}
+  for (let index = 0; index < lines.length; index += 1) {
+    const raw = lines[index] ?? "";
+    const line = raw.trim();
+    if (!line || line.startsWith("//") || line.startsWith("*") || line.startsWith("/*")) {
+      continue;
+    }
 
-function nameFromText(text: string): string | null {
-  const patterns = [
-    /\bfunction\*?\s+([A-Za-z_$][A-Za-z0-9_$]*)/,
-    /\bclass\s+([A-Za-z_$][A-Za-z0-9_$]*)/,
-    /\binterface\s+([A-Za-z_$][A-Za-z0-9_$]*)/,
-    /\btype\s+([A-Za-z_$][A-Za-z0-9_$]*)/,
-    /\benum\s+([A-Za-z_$][A-Za-z0-9_$]*)/,
-    /\b(const|let|var)\s+([A-Za-z_$][A-Za-z0-9_$]*)/,
-    /\bdef\s+([A-Za-z_][A-Za-z0-9_]*)/,
-    /\bfunc\s+(?:\([^)]*\)\s*)?([A-Za-z_][A-Za-z0-9_]*)/,
-    /\bfn\s+([A-Za-z_][A-Za-z0-9_]*)/,
-    /\b(struct|trait)\s+([A-Za-z_][A-Za-z0-9_]*)/,
-  ];
-  for (const pattern of patterns) {
-    const match = text.match(pattern);
-    if (!match) continue;
-    const candidate = match[2] && /^(const|let|var|struct|trait)$/.test(match[1]) ? match[2] : match[1];
-    if (candidate && /^[A-Za-z_$]/.test(candidate)) return candidate;
-  }
-  return null;
-}
+    const exported = /\bexport\b/.test(line);
+    const at = (name: string, kind: CodeSymbolKind): void => {
+      symbols.push({
+        name,
+        kind,
+        path,
+        line: index + 1,
+        exported,
+        signature: line.slice(0, 200),
+      });
+    };
 
-function columnOf(text: string, name: string): number {
-  const index = text.indexOf(name);
-  return index === -1 ? 0 : index + 1;
-}
+    const fn = /^(?:export\s+)?(?:default\s+)?(?:async\s+)?function\s+([A-Za-z0-9_$]+)/.exec(line);
+    if (fn?.[1]) {
+      const name = fn[1];
+      at(name, isComponent && /^[A-Z]/.test(name) ? "component" : "function");
+      continue;
+    }
 
-function resolveSpecifier(fromFile: string, specifier: string, allFiles: Set<string>): string | undefined {
-  if (!specifier.startsWith(".")) return undefined;
-  const baseSegments = fromFile.split("/").slice(0, -1);
-  const parts = specifier.split("/");
-  const stack = [...baseSegments];
-  for (const part of parts) {
-    if (part === "." || part === "") continue;
-    if (part === "..") stack.pop();
-    else stack.push(part);
-  }
-  const base = stack.join("/");
-  const candidates = [
-    base,
-    `${base}.ts`,
-    `${base}.tsx`,
-    `${base}.js`,
-    `${base}.jsx`,
-    `${base}.mjs`,
-    `${base}.cjs`,
-    `${base}/index.ts`,
-    `${base}/index.tsx`,
-    `${base}/index.js`,
-    `${base}/index.jsx`,
-  ];
-  return candidates.find((candidate) => allFiles.has(candidate));
-}
+    const arrow =
+      /^(?:export\s+)?(?:default\s+)?(?:const|let|var)\s+([A-Za-z0-9_$]+)\s*(?::[^=]+)?=\s*(?:async\s*)?(?:\([^)]*\)|[A-Za-z0-9_$]+)\s*=>/.exec(
+        line,
+      );
+    if (arrow?.[1]) {
+      const name = arrow[1];
+      at(name, isComponent && /^[A-Z]/.test(name) ? "component" : "const");
+      continue;
+    }
 
-function importedNames(text: string): string[] | undefined {
-  const named = text.match(/\{([^}]+)\}/);
-  if (!named) return undefined;
-  return named[1]
-    .split(",")
-    .map((part) => part.trim().split(/\s+as\s+/)[0].trim())
-    .filter((name) => Boolean(name) && /^[A-Za-z_$][\w$]*$/.test(name));
-}
+    const cls = /^(?:export\s+)?(?:default\s+)?(?:abstract\s+)?class\s+([A-Za-z0-9_$]+)/.exec(line);
+    if (cls?.[1]) {
+      at(cls[1], "class");
+      continue;
+    }
 
-export async function buildCodeIndex(sandbox: Sandbox): Promise<CodeIndex> {
-  const [filesResult, symbolResult, importResult] = await Promise.all([
-    exec(
-      sandbox,
-      `find . -type f \\( -name '*.ts' -o -name '*.tsx' -o -name '*.js' -o -name '*.jsx' -o -name '*.mjs' -o -name '*.cjs' -o -name '*.py' -o -name '*.go' -o -name '*.rs' \\) ` +
-        `-not -path './node_modules/*' -not -path './.git/*' -not -path './.next/*' -not -path './dist/*' -not -path './build/*' ` +
-        `-not -path './coverage/*' | head -n 8000`,
-      { timeoutMs: 45_000 },
-    ),
-    exec(
-      sandbox,
-      `grep -rnE ${JSON.stringify(SYMBOL_PATTERN)} ${EXCLUDES} ${CODE_GLOBS.join(" ")} . 2>/dev/null | head -n 12000`,
-      { timeoutMs: 90_000 },
-    ),
-    exec(
-      sandbox,
-      `grep -rnE ${JSON.stringify(IMPORT_PATTERN)} ${EXCLUDES} ${CODE_GLOBS.join(" ")} . 2>/dev/null | head -n 12000`,
-      { timeoutMs: 90_000 },
-    ),
-  ]);
+    const iface = /^(?:export\s+)?interface\s+([A-Za-z0-9_$]+)/.exec(line);
+    if (iface?.[1]) {
+      at(iface[1], "interface");
+      continue;
+    }
 
-  const allFiles = new Set(
-    filesResult.stdout
-      .split("\n")
-      .map((line) => line.replace(/^\.\//, "").trim())
-      .filter((line) => line && !isBinaryPath(line)),
-  );
+    const typeAlias = /^(?:export\s+)?type\s+([A-Za-z0-9_$]+)\s*[=<]/.exec(line);
+    if (typeAlias?.[1]) {
+      at(typeAlias[1], "type");
+      continue;
+    }
 
-  const symbols: SymbolEntry[] = [];
-  const seen = new Set<string>();
+    const enumDecl = /^(?:export\s+)?(?:const\s+)?enum\s+([A-Za-z0-9_$]+)/.exec(line);
+    if (enumDecl?.[1]) {
+      at(enumDecl[1], "enum");
+      continue;
+    }
 
-  for (const entry of parseGrepLines(symbolResult.stdout)) {
-    if (!allFiles.has(entry.file)) continue;
-    const name = nameFromText(entry.text);
-    if (!name) continue;
-    const rawKind = symbolKindOf(entry.text);
-    if (!rawKind) continue;
+    const route =
+      /^export\s+(?:async\s+)?function\s+(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\b/.exec(line);
+    if (route?.[1]) {
+      at(`${route[1]} ${path}`, "route");
+      continue;
+    }
 
-    const key = `${entry.file}:${entry.line}:${name}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-
-    const kind = refineKind(name, rawKind);
-    const exported = /\bexport\b/.test(entry.text);
-
-    symbols.push({
-      id: key,
-      name,
-      kind,
-      file: entry.file,
-      line: entry.line,
-      column: columnOf(entry.text, name),
-      exported,
-      signature: entry.text.trim().slice(0, 240),
-    });
-
-    if (symbols.length >= 8000) break;
+    const reexport = /^export\s+\{([^}]+)\}/.exec(line);
+    if (reexport?.[1]) {
+      for (const piece of reexport[1].split(",")) {
+        const name = piece.replace(/\btype\b/, "").split(/\s+as\s+/).pop()?.trim();
+        if (name) at(name, "export");
+      }
+    }
   }
 
-  const imports: ImportEdge[] = [];
-  const importSeen = new Set<string>();
+  return symbols;
+}
 
-  for (const entry of parseGrepLines(importResult.stdout)) {
-    if (!allFiles.has(entry.file)) continue;
-
-    const specifierMatch =
-      entry.text.match(/from\s+['"]([^'"]+)['"]/) ??
-      entry.text.match(/require\(\s*['"]([^'"]+)['"]\s*\)/) ??
-      entry.text.match(/^import\s+['"]([^'"]+)['"]/) ??
-      entry.text.match(/^from\s+([A-Za-z_.]+)\s+import/) ??
-      entry.text.match(/^use\s+([A-Za-z_]+)/);
-    if (!specifierMatch) continue;
-
-    const specifier = specifierMatch[1];
-    const key = `${entry.file}:${entry.line}:${specifier}`;
-    if (importSeen.has(key)) continue;
-    importSeen.add(key);
-
-    const external =
-      !specifier.startsWith(".") &&
-      !specifier.startsWith("/") &&
-      !specifier.startsWith("@/") &&
-      !specifier.startsWith("~/");
-
-    imports.push({
-      from: entry.file,
-      specifier,
-      resolved: external ? undefined : resolveSpecifier(entry.file, specifier, allFiles),
-      external,
-      names: importedNames(entry.text),
-      line: entry.line,
-    });
-
-    if (imports.length >= 10000) break;
+function buildByName(symbols: CodeSymbol[]): Record<string, CodeSymbol[]> {
+  const map: Record<string, CodeSymbol[]> = {};
+  for (const symbol of symbols) {
+    const key = symbol.name;
+    const list = map[key];
+    if (list) list.push(symbol);
+    else map[key] = [symbol];
   }
+  return map;
+}
 
-  const fileHashes: Record<string, string> = {};
-  for (const file of allFiles) {
-    fileHashes[file] = hashContent(`${file}:${Date.now()}`);
-  }
+async function readMany(
+  target: SandboxInput,
+  paths: string[],
+): Promise<IndexedFile[]> {
+  const indexed: IndexedFile[] = [];
+  let cursor = 0;
 
-  return {
-    symbols,
-    imports,
-    fileHashes,
-    builtAt: Date.now(),
+  const worker = async (): Promise<void> => {
+    for (;;) {
+      const index = cursor;
+      cursor += 1;
+      const path = paths[index];
+      if (!path) return;
+
+      const content = await readFileText(target, path).catch(() => "");
+      if (!content) continue;
+      if (content.length > MAX_BYTES) continue;
+
+      indexed.push({
+        path,
+        language: languageFor(path),
+        lines: content.split("\n").length,
+        symbols: extractSymbols(path, content),
+      });
+    }
   };
+
+  const workers = Array.from({ length: Math.min(CONCURRENCY, paths.length) }, () =>
+    worker(),
+  );
+  await Promise.all(workers);
+
+  return indexed.sort((a, b) => a.path.localeCompare(b.path));
 }
 
-/* ------------------------------------------------------------------ */
-/* Queries                                                            */
-/* ------------------------------------------------------------------ */
+export async function buildIndex(
+  target?: SandboxInput,
+  options: { force?: boolean } = {},
+): Promise<CodeIndex> {
+  const sandbox = await getSandbox(target);
+  const cached = cache.get(sandbox.sandboxId);
+  if (cached && !options.force) return cached;
 
-export function findSymbols(
-  index: CodeIndex,
+  const command = [
+    `cd ${SANDBOX_ROOT} 2>/dev/null || exit 1`,
+    `find . -maxdepth 6 -type f \\( -name '*.ts' -o -name '*.tsx' -o -name '*.js' -o -name '*.jsx' -o -name '*.mjs' -o -name '*.cjs' \\) -not -path '*/node_modules/*' -not -path '*/.git/*' -not -path '*/.next/*' -not -path '*/dist/*' -not -path '*/build/*' -print 2>/dev/null`,
+  ].join(" && ");
+
+  const run = await execCommand(sandbox, command, {
+    cwd: SANDBOX_ROOT,
+    timeoutMs: 60000,
+  }).catch(() => null);
+
+  const paths: string[] = [];
+  if (run && run.exitCode === 0) {
+    for (const rawLine of run.stdout.split("\n")) {
+      const line = rawLine.replace(/\r$/, "").trim();
+      if (!line.startsWith("./")) continue;
+      const path = line.slice(2);
+      if (!INDEXABLE.some((ext) => path.toLowerCase().endsWith(ext))) continue;
+      paths.push(path);
+      if (paths.length >= MAX_FILES) break;
+    }
+  }
+
+  const files = await readMany(sandbox, paths);
+  const symbols = files.flatMap((file) => file.symbols);
+
+  const index: CodeIndex = {
+    sandboxId: sandbox.sandboxId,
+    root: SANDBOX_ROOT,
+    files,
+    symbols,
+    byName: buildByName(symbols),
+    fileCount: files.length,
+    symbolCount: symbols.length,
+    builtAt: new Date().toISOString(),
+  };
+
+  cache.set(sandbox.sandboxId, index);
+  return index;
+}
+
+export const getIndex = buildIndex;
+export const indexProject = buildIndex;
+
+export function invalidateIndex(sandboxId?: string): void {
+  if (sandboxId) cache.delete(sandboxId);
+  else cache.clear();
+}
+
+export async function findSymbol(
+  name: string,
+  target?: SandboxInput,
+): Promise<CodeSymbol[]> {
+  const index = await buildIndex(target);
+  return index.byName[name] ?? [];
+}
+
+export async function searchSymbols(
   query: string,
-  limit = 40,
-): SymbolEntry[] {
-  const needle = query.toLowerCase();
-  const scored = index.symbols
-    .map((symbol) => {
-      const name = symbol.name.toLowerCase();
-      let score = 0;
-      if (name === needle) score = 100;
-      else if (name.startsWith(needle)) score = 80;
-      else if (name.includes(needle)) score = 60;
-      else if (symbol.file.toLowerCase().includes(needle)) score = 25;
-      if (symbol.exported) score += 5;
-      return { symbol, score };
-    })
-    .filter((entry) => entry.score > 0)
-    .sort((a, b) => b.score - a.score);
+  target?: SandboxInput,
+  limit: number = 50,
+): Promise<CodeSymbol[]> {
+  const index = await buildIndex(target);
+  const needle = query.trim().toLowerCase();
+  if (!needle) return [];
 
-  return scored.slice(0, limit).map((entry) => entry.symbol);
-}
-
-export function symbolsInFile(index: CodeIndex, file: string): SymbolEntry[] {
-  return index.symbols.filter((symbol) => symbol.file === file).sort((a, b) => a.line - b.line);
-}
-
-export function importersOf(index: CodeIndex, file: string): string[] {
-  const importers = new Set<string>();
-  for (const edge of index.imports) {
-    if (edge.resolved === file) importers.add(edge.from);
-  }
-  return [...importers];
-}
-
-export function dependenciesOf(index: CodeIndex, file: string): string[] {
-  const dependencies = new Set<string>();
-  for (const edge of index.imports) {
-    if (edge.from === file && edge.resolved) dependencies.add(edge.resolved);
-  }
-  return [...dependencies];
-}
-
-export function exportedSymbolNames(index: CodeIndex, file: string): string[] {
+  const bounded = Math.min(Math.max(Math.round(limit) || 50, 1), 500);
   return index.symbols
-    .filter((symbol) => symbol.file === file && symbol.exported)
-    .map((symbol) => symbol.name);
-}
-
-export function symbolOutline(index: CodeIndex, file: string): string {
-  const symbols = symbolsInFile(index, file);
-  if (symbols.length === 0) return "";
-  return symbols
-    .map((symbol) => `${symbol.line}: ${symbol.kind} ${symbol.name}${symbol.exported ? " (exported)" : ""}`)
-    .join("\n");
+    .filter((symbol) => symbol.name.toLowerCase().includes(needle))
+    .slice(0, bounded);
 }

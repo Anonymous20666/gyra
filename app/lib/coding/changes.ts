@@ -1,246 +1,259 @@
-// app/lib/coding/changes.ts
-// Change-set tracking: every agent edit becomes an inspectable record with a
-// before/after snapshot, per-file accept/reject and one-click revert.
+/* app/lib/coding/changes.ts
+ * Proposed change sets: build, apply and revert edits inside the sandbox.
+ */
 
-import type { Sandbox } from "@e2b/code-interpreter";
-import { randomUUID } from "node:crypto";
 import {
-  createSnapshot,
+  deletePath,
+  ensureSandbox,
   fileExists,
   readFileText,
-  removePath,
-  restoreSnapshot,
   writeFileText,
+  type SandboxInput,
 } from "./sandbox";
-import { buildHunks, countChanges } from "./diff";
-import type { ChangeSet, ChangeSetStatus, ChangeKind, FileChange } from "./types";
 
-interface ChangeSetStore {
-  sets: Map<string, ChangeSet>;
+export type ChangeKind = "create" | "update" | "delete" | "rename";
+
+export type FileChange = {
+  id: string;
+  path: string;
+  previousPath: string | null;
+  kind: ChangeKind;
+  before: string | null;
+  after: string | null;
+  additions: number;
+  deletions: number;
+  applied: boolean;
+  createdAt: string;
+};
+
+export type ChangeSet = {
+  id: string;
+  sandboxId: string;
+  title: string;
+  summary: string;
+  changes: FileChange[];
+  files: number;
+  additions: number;
+  deletions: number;
+  createdAt: string;
+  appliedAt: string | null;
+};
+
+export type ProposedChange = {
+  path: string;
+  content?: string | null;
+  previousPath?: string | null;
+  kind?: ChangeKind;
+};
+
+const sets = new Map<string, ChangeSet>();
+
+function makeId(prefix: string): string {
+  const random = Math.random().toString(36).slice(2, 10);
+  return `${prefix}_${Date.now().toString(36)}${random}`;
 }
 
-/**
- * Change sets are held in module memory per warm serverless instance and
- * mirrored to Supabase by the changes route for durability. The in-memory copy
- * keeps the agent loop fast and synchronous.
- */
-const store: ChangeSetStore = { sets: new Map() };
+export function countLineDelta(
+  before: string | null,
+  after: string | null,
+): { additions: number; deletions: number } {
+  const oldLines = before ? before.split("\n") : [];
+  const newLines = after ? after.split("\n") : [];
+  const oldSet = new Map<string, number>();
+  for (const line of oldLines) {
+    oldSet.set(line, (oldSet.get(line) ?? 0) + 1);
+  }
 
-export function createChangeSet(taskId: string, title: string, snapshotId?: string): ChangeSet {
-  const now = Date.now();
-  const changeSet: ChangeSet = {
-    id: randomUUID(),
-    taskId,
-    title,
+  let additions = 0;
+  for (const line of newLines) {
+    const remaining = oldSet.get(line) ?? 0;
+    if (remaining > 0) oldSet.set(line, remaining - 1);
+    else additions += 1;
+  }
+
+  let deletions = 0;
+  for (const count of oldSet.values()) deletions += count;
+
+  return { additions, deletions };
+}
+
+export function getChangeSet(id: string): ChangeSet | null {
+  return sets.get(id) ?? null;
+}
+
+export function listChangeSets(sandboxId?: string): ChangeSet[] {
+  const all = Array.from(sets.values());
+  const filtered = sandboxId
+    ? all.filter((set) => set.sandboxId === sandboxId)
+    : all;
+  return filtered.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+export function beginChangeSet(input: {
+  sandboxId: string;
+  title?: string;
+  summary?: string;
+}): ChangeSet {
+  const set: ChangeSet = {
+    id: makeId("cs"),
+    sandboxId: input.sandboxId,
+    title: input.title?.trim() || "Workspace changes",
+    summary: input.summary?.trim() || "",
     changes: [],
-    status: "open",
-    createdAt: now,
-    updatedAt: now,
-    snapshotId,
+    files: 0,
+    additions: 0,
+    deletions: 0,
+    createdAt: new Date().toISOString(),
+    appliedAt: null,
   };
-  store.sets.set(changeSet.id, changeSet);
-  return changeSet;
+  sets.set(set.id, set);
+  return set;
 }
 
-export function getChangeSet(id: string): ChangeSet | undefined {
-  return store.sets.get(id);
+function recompute(set: ChangeSet): ChangeSet {
+  set.files = set.changes.length;
+  set.additions = set.changes.reduce((total, change) => total + change.additions, 0);
+  set.deletions = set.changes.reduce((total, change) => total + change.deletions, 0);
+  sets.set(set.id, set);
+  return set;
 }
 
-export function listChangeSets(): ChangeSet[] {
-  return [...store.sets.values()].sort((a, b) => b.createdAt - a.createdAt);
+export function recordChange(
+  setId: string,
+  change: ProposedChange,
+  before: string | null = null,
+): ChangeSet {
+  const set = sets.get(setId);
+  if (!set) throw new Error(`Unknown change set: ${setId}`);
+
+  const kind: ChangeKind =
+    change.kind ?? (before === null ? "create" : "update");
+  const after = change.content ?? null;
+  const delta = countLineDelta(kind === "create" ? null : before, after);
+
+  set.changes.push({
+    id: makeId("ch"),
+    path: change.path,
+    previousPath: change.previousPath ?? null,
+    kind,
+    before: kind === "create" ? null : before,
+    after,
+    additions: delta.additions,
+    deletions: delta.deletions,
+    applied: false,
+    createdAt: new Date().toISOString(),
+  });
+
+  return recompute(set);
 }
 
-export function hydrateChangeSet(changeSet: ChangeSet): void {
-  store.sets.set(changeSet.id, changeSet);
-}
+export async function buildChangeSet(
+  target: SandboxInput,
+  input: { title?: string; summary?: string; changes: ProposedChange[] },
+): Promise<ChangeSet> {
+  const sandbox = await ensureSandbox(target);
+  const set = beginChangeSet({
+    sandboxId: sandbox.sandboxId,
+    title: input.title,
+    summary: input.summary,
+  });
 
-export async function recordChange(
-  sandbox: Sandbox,
-  changeSet: ChangeSet,
-  input: {
-    path: string;
-    kind: ChangeKind;
-    before: string;
-    after: string;
-    source?: FileChange["source"];
-    toolCallId?: string;
-    fromPath?: string;
-  },
-): Promise<FileChange> {
-  const counts = countChanges(input.before, input.after);
-  const change: FileChange = {
-    path: input.path,
-    fromPath: input.fromPath,
-    kind: input.kind,
-    before: input.before,
-    after: input.after,
-    hunks: buildHunks(input.before, input.after),
-    additions: counts.additions,
-    deletions: counts.deletions,
-    status: "pending",
-    source: input.source ?? "agent",
-    toolCallId: input.toolCallId,
-  };
-
-  const existing = changeSet.changes.find((entry) => entry.path === input.path);
-  if (existing) {
-    existing.before = input.before;
-    existing.after = input.after;
-    existing.hunks = change.hunks;
-    existing.additions = change.additions;
-    existing.deletions = change.deletions;
-    existing.kind = input.kind;
-    existing.status = "pending";
-  } else {
-    changeSet.changes.push(change);
+  for (const change of input.changes) {
+    const exists = await fileExists(sandbox, change.path);
+    const before = exists ? await readFileText(sandbox, change.path).catch(() => null) : null;
+    recordChange(set.id, change, before);
   }
 
-  changeSet.updatedAt = Date.now();
-  changeSet.status = recomputeStatus(changeSet);
-  store.sets.set(changeSet.id, changeSet);
-  void sandbox;
-  return existing ?? change;
+  return recompute(set);
 }
 
-function recomputeStatus(changeSet: ChangeSet): ChangeSetStatus {
-  if (changeSet.changes.length === 0) return "open";
-  const accepted = changeSet.changes.filter((change) => change.status === "accepted").length;
-  const rejected = changeSet.changes.filter((change) => change.status === "rejected").length;
-  if (accepted === changeSet.changes.length) return "accepted";
-  if (rejected === changeSet.changes.length) return "rejected";
-  if (accepted + rejected === 0) return "open";
-  return "partially_applied";
-}
-
-export interface ApplyResult {
-  applied: string[];
-  failed: { path: string; error: string }[];
-}
-
-export async function applyChanges(
-  sandbox: Sandbox,
-  changeSet: ChangeSet,
-  paths?: string[],
-): Promise<ApplyResult> {
-  const targets = changeSet.changes.filter(
-    (change) => (!paths || paths.includes(change.path)) && change.status !== "rejected",
-  );
-
-  const result: ApplyResult = { applied: [], failed: [] };
-
-  for (const change of targets) {
-    try {
-      if (change.kind === "deleted") {
-        await removePath(sandbox, change.path);
-      } else {
-        await writeFileText(sandbox, change.path, change.after ?? "");
-      }
-      change.status = "accepted";
-      result.applied.push(change.path);
-    } catch (error) {
-      result.failed.push({
-        path: change.path,
-        error: error instanceof Error ? error.message : String(error),
-      });
-    }
-  }
-
-  changeSet.updatedAt = Date.now();
-  changeSet.status = recomputeStatus(changeSet);
-  return result;
-}
-
-export async function revertChanges(
-  sandbox: Sandbox,
-  changeSet: ChangeSet,
-  paths?: string[],
-): Promise<ApplyResult> {
-  const targets = changeSet.changes.filter(
-    (change) => !paths || paths.includes(change.path),
-  );
-  const result: ApplyResult = { applied: [], failed: [] };
-
-  for (const change of targets) {
-    try {
-      if (change.kind === "added") {
-        if (await fileExists(sandbox, change.path)) await removePath(sandbox, change.path);
-      } else {
-        await writeFileText(sandbox, change.path, change.before ?? "");
-      }
-      change.status = "rejected";
-      result.applied.push(change.path);
-    } catch (error) {
-      result.failed.push({
-        path: change.path,
-        error: error instanceof Error ? error.message : String(error),
-      });
-    }
-  }
-
-  changeSet.updatedAt = Date.now();
-  changeSet.status = recomputeStatus(changeSet);
-  return result;
-}
-
-export async function revertWholeSet(
-  sandbox: Sandbox,
-  changeSet: ChangeSet,
-): Promise<{ reverted: boolean; message: string }> {
-  if (changeSet.snapshotId) {
-    const snapshot = await restoreSnapshot(sandbox, changeSet.snapshotId);
-    if (snapshot.restored) {
-      changeSet.status = "reverted";
-      changeSet.updatedAt = Date.now();
-      for (const change of changeSet.changes) change.status = "rejected";
-      return { reverted: true, message: "Workspace restored to the pre-task snapshot." };
-    }
-    return { reverted: false, message: snapshot.message };
-  }
-  const result = await revertChanges(sandbox, changeSet);
-  return {
-    reverted: result.failed.length === 0,
-    message:
-      result.failed.length === 0
-        ? "Reverted every change in this set."
-        : `Could not revert: ${result.failed.map((entry) => entry.path).join(", ")}`,
-  };
-}
-
-export function changeSetSummary(changeSet: ChangeSet): string {
-  const modified = changeSet.changes.filter((change) => change.kind === "modified");
-  const added = changeSet.changes.filter((change) => change.kind === "added");
-  const deleted = changeSet.changes.filter((change) => change.kind === "deleted");
-  const lines = [`${changeSet.title} — ${changeSet.changes.length} file(s) changed`];
-
-  if (modified.length > 0) lines.push(`Modified: ${modified.map((change) => change.path).join(", ")}`);
-  if (added.length > 0) lines.push(`Added: ${added.map((change) => change.path).join(", ")}`);
-  if (deleted.length > 0) lines.push(`Deleted: ${deleted.map((change) => change.path).join(", ")}`);
-
-  const additions = changeSet.changes.reduce((total, change) => total + change.additions, 0);
-  const deletions = changeSet.changes.reduce((total, change) => total + change.deletions, 0);
-  lines.push(`+${additions} / -${deletions}`);
-  return lines.join("\n");
-}
-
-/** Snapshot the workspace before a write-heavy task begins. */
-export async function snapshotBeforeTask(
-  sandbox: Sandbox,
-  taskTitle: string,
-): Promise<string | undefined> {
+export async function applyChange(
+  target: SandboxInput,
+  change: FileChange,
+): Promise<{ ok: boolean; error: string | null }> {
   try {
-    const snapshot = await createSnapshot(sandbox, taskTitle);
-    return snapshot.tarPath;
-  } catch {
-    return undefined;
+    const sandbox = await ensureSandbox(target);
+    if (change.kind === "delete") {
+      await deletePath(sandbox, change.path);
+      return { ok: true, error: null };
+    }
+    if (typeof change.after === "string") {
+      await writeFileText(sandbox, change.path, change.after);
+      change.applied = true;
+      return { ok: true, error: null };
+    }
+    return { ok: false, error: "This change has no content to apply." };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "Could not apply change",
+    };
   }
 }
 
-/** Used by the files route when the user edits and saves directly. */
-export async function recordManualChange(
-  sandbox: Sandbox,
-  path: string,
-  before: string,
-): Promise<{ before: string; after: string }> {
-  const after = await readFileText(sandbox, path);
-  return { before, after };
+export async function applyChangeSet(
+  target: SandboxInput,
+  setId: string,
+): Promise<{ ok: boolean; applied: number; error: string | null }> {
+  const set = sets.get(setId);
+  if (!set) return { ok: false, applied: 0, error: `Unknown change set: ${setId}` };
+
+  let applied = 0;
+  for (const change of set.changes) {
+    const result = await applyChange(target, change);
+    if (!result.ok) {
+      return { ok: false, applied, error: result.error };
+    }
+    applied += 1;
+  }
+
+  set.appliedAt = new Date().toISOString();
+  sets.set(set.id, set);
+  return { ok: true, applied, error: null };
 }
+
+export async function revertChangeSet(
+  target: SandboxInput,
+  setId: string,
+): Promise<{ ok: boolean; reverted: number; error: string | null }> {
+  const set = sets.get(setId);
+  if (!set) return { ok: false, reverted: 0, error: `Unknown change set: ${setId}` };
+
+  const sandbox = await ensureSandbox(target);
+  let reverted = 0;
+
+  for (const change of [...set.changes].reverse()) {
+    try {
+      if (change.kind === "create") {
+        await deletePath(sandbox, change.path);
+      } else if (typeof change.before === "string") {
+        await writeFileText(sandbox, change.path, change.before);
+      }
+      change.applied = false;
+      reverted += 1;
+    } catch (error) {
+      return {
+        ok: false,
+        reverted,
+        error: error instanceof Error ? error.message : "Could not revert change",
+      };
+    }
+  }
+
+  set.appliedAt = null;
+  sets.set(set.id, set);
+  return { ok: true, reverted, error: null };
+}
+
+export function summarizeChangeSet(set: ChangeSet): string {
+  if (set.changes.length === 0) return "No changes proposed.";
+  const parts = set.changes.map((change) => {
+    const sign = change.kind === "delete" ? "-" : "+";
+    return `${sign}${change.path} (+${change.additions}/-${change.deletions})`;
+  });
+  return `${set.files} file(s): ${parts.join(", ")}`;
+}
+
+export const proposeChange = recordChange;
+export const applyChanges = applyChangeSet;
+export const revertChanges = revertChangeSet;

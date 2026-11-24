@@ -1,247 +1,199 @@
-// app/lib/coding/diagnostics.ts
-// Problems panel backend: runs the project's real type checker, linter and build,
-// then normalises everything into a single Problem[] list.
+/* app/lib/coding/diagnostics.ts
+ * TypeScript + ESLint diagnostics read from the sandbox. Dependency-free.
+ */
 
-import type { Sandbox } from "@e2b/code-interpreter";
-import { exec, fileExists } from "./sandbox";
-import type { DiagnosticsReport, Problem, ProblemSource } from "./types";
+import {
+  SANDBOX_ROOT,
+  execCommand,
+  getSandbox,
+  type SandboxInput,
+} from "./sandbox";
 
-const MAX_PROBLEMS = 500;
+export type DiagnosticSeverity = "error" | "warning" | "info";
 
-interface TscMatch {
+export type Diagnostic = {
   file: string;
   line: number;
   column: number;
-  severity: "error" | "warning";
-  code: string;
+  severity: DiagnosticSeverity;
   message: string;
+  code: string | null;
+  source: "typescript" | "eslint";
+};
+
+export type DiagnosticReport = {
+  ok: boolean;
+  total: number;
+  errors: number;
+  warnings: number;
+  ranTsc: boolean;
+  ranEslint: boolean;
+  diagnostics: Diagnostic[];
+  raw: string;
+  error: string | null;
+  scannedAt: string;
+};
+
+const TSC_MISSING = "__NO_TSC__";
+const ESLINT_MISSING = "__NO_ESLINT__";
+const TSC_PATTERN = /^(.+?)\((\d+),(\d+)\):\s+(error|warning)\s+(TS\d+)?:?\s*(.*)$/;
+const ESLINT_PATTERN = /^(.+?):(\d+):(\d+):\s+(error|warning)\s+(.*?)(?:\s+\(([^)]+)\))?$/;
+
+function normalizePath(path: string): string {
+  const clean = path.replace(/\\/g, "/").trim();
+  if (clean.startsWith(SANDBOX_ROOT)) {
+    return clean.slice(SANDBOX_ROOT.length).replace(/^\/+/, "");
+  }
+  return clean.replace(/^\.?\//, "");
 }
 
-function parseTsc(output: string): TscMatch[] {
-  const matches: TscMatch[] = [];
-  const regex = /^(.+?)\((\d+),(\d+)\):\s+(error|warning)\s+(TS\d+):\s+(.+)$/gm;
-  let match: RegExpExecArray | null;
-  while ((match = regex.exec(output)) !== null) {
-    matches.push({
-      file: match[1],
-      line: Number(match[2]),
-      column: Number(match[3]),
-      severity: match[4] === "error" ? "error" : "warning",
-      code: match[5],
-      message: match[6].trim(),
+function clampLimit(limit?: number): number {
+  const raw = Number(limit);
+  if (!Number.isFinite(raw) || raw <= 0) return 500;
+  return Math.min(Math.round(raw), 5000);
+}
+
+function parseTsc(output: string): Diagnostic[] {
+  const diagnostics: Diagnostic[] = [];
+  for (const rawLine of output.split("\n")) {
+    const line = rawLine.replace(/\r$/, "").trim();
+    if (!line) continue;
+    const match = TSC_PATTERN.exec(line);
+    if (!match) continue;
+    const file = match[1] ?? "";
+    const severity = match[4] === "warning" ? "warning" : "error";
+    diagnostics.push({
+      file: normalizePath(file),
+      line: Number(match[2]) || 1,
+      column: Number(match[3]) || 1,
+      severity,
+      code: match[5] ?? null,
+      message: (match[6] ?? "").trim() || "TypeScript error",
+      source: "typescript",
     });
   }
-  return matches;
+  return diagnostics;
 }
 
-interface EslintMessage {
-  line?: number;
-  column?: number;
-  severity?: number;
-  message?: string;
-  ruleId?: string | null;
-}
-
-interface EslintFile {
-  filePath?: string;
-  messages?: EslintMessage[];
-}
-
-function parseEslint(output: string): Problem[] {
+function parseEslint(output: string): Diagnostic[] {
+  const diagnostics: Diagnostic[] = [];
   const start = output.indexOf("[");
-  if (start === -1) return [];
-  let parsed: EslintFile[];
-  try {
-    parsed = JSON.parse(output.slice(start)) as EslintFile[];
-  } catch {
-    return [];
-  }
+  const end = output.lastIndexOf("]");
+  if (start === -1 || end === -1 || end <= start) return diagnostics;
 
-  const problems: Problem[] = [];
-  for (const file of parsed) {
-    const path = (file.filePath ?? "").replace(/^.*\/home\/user\//, "");
-    for (const message of file.messages ?? []) {
-      if (!message.message) continue;
-      const rule = message.ruleId ?? undefined;
-      const security = Boolean(rule && /security|no-eval|no-implied-eval|no-unsafe/i.test(rule));
-      problems.push({
-        id: `eslint:${path}:${message.line ?? 0}:${rule ?? "rule"}`,
-        severity: message.severity === 2 ? "error" : "warning",
-        source: security ? "security" : "eslint",
-        message: message.message,
-        file: path,
-        line: message.line,
-        column: message.column,
-        code: rule,
-        fixable: true,
-        origin: "npx eslint . --format json",
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(output.slice(start, end + 1));
+  } catch {
+    return diagnostics;
+  }
+  if (!Array.isArray(parsed)) return diagnostics;
+
+  for (const entry of parsed) {
+    if (!entry || typeof entry !== "object") continue;
+    const record = entry as { filePath?: unknown; messages?: unknown };
+    const file = typeof record.filePath === "string" ? record.filePath : "";
+    if (!file || !Array.isArray(record.messages)) continue;
+
+    for (const message of record.messages) {
+      if (!message || typeof message !== "object") continue;
+      const item = message as {
+        line?: unknown;
+        column?: unknown;
+        severity?: unknown;
+        message?: unknown;
+        ruleId?: unknown;
+      };
+      diagnostics.push({
+        file: normalizePath(file),
+        line: typeof item.line === "number" ? item.line : 1,
+        column: typeof item.column === "number" ? item.column : 1,
+        severity: item.severity === 1 ? "warning" : "error",
+        code: typeof item.ruleId === "string" ? item.ruleId : null,
+        message:
+          typeof item.message === "string" && item.message.trim()
+            ? item.message.trim()
+            : "Lint problem",
+        source: "eslint",
       });
     }
   }
-  return problems;
-}
-
-function parseBuild(output: string): Problem[] {
-  const problems: Problem[] = [];
-  const seen = new Set<string>();
-  const regex = /^(?:\.\/)?([\w./-]+\.(?:ts|tsx|js|jsx|css))[:(](\d+)[,:](\d+)?\)?\s*[-:]?\s*(.+)$/gm;
-  let match: RegExpExecArray | null;
-  while ((match = regex.exec(output)) !== null) {
-    const key = `${match[1]}:${match[2]}:${match[4].slice(0, 60)}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    problems.push({
-      id: `build:${key}`,
-      severity: /error|failed|cannot|unable/i.test(match[4]) ? "error" : "warning",
-      source: "build",
-      message: match[4].trim(),
-      file: match[1],
-      line: Number(match[2]),
-      column: match[3] ? Number(match[3]) : undefined,
-      origin: "npm run build",
-    });
-  }
-  return problems;
-}
-
-async function hasBinary(sandbox: Sandbox, relative: string): Promise<boolean> {
-  return fileExists(sandbox, relative);
-}
-
-export interface DiagnosticsOptions {
-  /** Also run the production build. Slow (30–120s); off by default. */
-  build?: boolean;
-  /** Restrict linting to one path. */
-  lintPath?: string;
+  return diagnostics;
 }
 
 export async function runDiagnostics(
-  sandbox: Sandbox,
-  options: DiagnosticsOptions = {},
-): Promise<DiagnosticsReport> {
-  const problems: Problem[] = [];
-  const executed: ProblemSource[] = [];
-  const skipped: { source: ProblemSource; reason: string }[] = [];
+  target?: SandboxInput,
+  options: { includeEslint?: boolean; limit?: number } = {},
+): Promise<DiagnosticReport> {
+  const sandbox = await getSandbox(target);
+  const limit = clampLimit(options.limit);
+  const includeEslint = options.includeEslint !== false;
 
-  /* TypeScript ------------------------------------------------------ */
-  const hasTsconfig = await hasBinary(sandbox, "tsconfig.json");
-  const hasLocalTsc = await hasBinary(sandbox, "node_modules/.bin/tsc");
+  const tscCommand = [
+    `cd ${SANDBOX_ROOT} 2>/dev/null || exit 1`,
+    `if [ -x node_modules/.bin/tsc ]; then node_modules/.bin/tsc --noEmit --pretty false; elif [ -f tsconfig.json ]; then echo ${TSC_MISSING}; else echo ${TSC_MISSING}; fi`,
+  ].join("; ");
 
-  if (!hasTsconfig) {
-    skipped.push({ source: "typescript", reason: "No tsconfig.json in this project." });
-  } else if (!hasLocalTsc) {
-    skipped.push({
-      source: "typescript",
-      reason: "TypeScript is not installed yet (run npm install).",
-    });
-  } else {
-    const result = await exec(sandbox, "node_modules/.bin/tsc --noEmit --pretty false", {
-      timeoutMs: 180_000,
-    });
-    executed.push("typescript");
-    const matches = parseTsc(`${result.stdout}\n${result.stderr}`);
-    for (const match of matches) {
-      const isImport = match.code === "TS2307" || match.code === "TS7016";
-      problems.push({
-        id: `tsc:${match.file}:${match.line}:${match.code}`,
-        severity: match.severity,
-        source: isImport ? "import" : "typescript",
-        message: match.message,
-        file: match.file,
-        line: match.line,
-        column: match.column,
-        code: match.code,
-        fixable: false,
-        origin: "tsc --noEmit",
-      });
-    }
-    if (matches.length === 0 && result.exitCode !== 0 && result.stdout.trim()) {
-      problems.push({
-        id: "tsc:unknown",
-        severity: "error",
-        source: "typescript",
-        message: result.stdout.trim().slice(0, 400),
-        origin: "tsc --noEmit",
-      });
-    }
+  const tscRun = await execCommand(sandbox, tscCommand, {
+    cwd: SANDBOX_ROOT,
+    timeoutMs: 240000,
+  }).catch(() => null);
+
+  const raw = tscRun ? `${tscRun.stdout}${tscRun.stderr}` : "";
+  const ranTsc = Boolean(tscRun) && !raw.includes(TSC_MISSING);
+  const diagnostics: Diagnostic[] = ranTsc
+    ? parseTsc(raw)
+    : [];
+
+  let ranEslint = false;
+  let eslintRaw = "";
+
+  if (includeEslint) {
+    const eslintCommand = [
+      `cd ${SANDBOX_ROOT} 2>/dev/null || exit 1`,
+      `if [ -x node_modules/.bin/eslint ]; then node_modules/.bin/eslint . --format json --no-error-on-unmatched-pattern 2>/dev/null; else echo ${ESLINT_MISSING}; fi`,
+    ].join("; ");
+
+    const eslintRun = await execCommand(sandbox, eslintCommand, {
+      cwd: SANDBOX_ROOT,
+      timeoutMs: 240000,
+    }).catch(() => null);
+
+    eslintRaw = eslintRun ? `${eslintRun.stdout}${eslintRun.stderr}` : "";
+    ranEslint = Boolean(eslintRun) && !eslintRaw.includes(ESLINT_MISSING);
+    if (ranEslint) diagnostics.push(...parseEslint(eslintRaw));
   }
 
-  /* ESLint ---------------------------------------------------------- */
-  const hasEslint = await hasBinary(sandbox, "node_modules/.bin/eslint");
-  if (!hasEslint) {
-    skipped.push({ source: "eslint", reason: "ESLint is not installed in this project." });
-  } else {
-    const target = options.lintPath ? `'${options.lintPath}'` : ".";
-    const result = await exec(
-      sandbox,
-      `node_modules/.bin/eslint ${target} --format json --max-warnings=-1 2>/dev/null`,
-      { timeoutMs: 180_000 },
-    );
-    executed.push("eslint");
-    problems.push(...parseEslint(`${result.stdout}\n${result.stderr}`));
-  }
-
-  /* Build ----------------------------------------------------------- */
-  if (options.build) {
-    const result = await exec(sandbox, "npm run build 2>&1 | tail -n 200", {
-      timeoutMs: 300_000,
-    });
-    executed.push("build");
-    const buildProblems = parseBuild(result.stdout);
-    if (result.exitCode !== 0 && buildProblems.length === 0) {
-      buildProblems.push({
-        id: "build:failed",
-        severity: "error",
-        source: "build",
-        message: result.stdout.trim().split("\n").slice(-6).join("\n") || "Build failed.",
-        origin: "npm run build",
-      });
-    }
-    problems.push(...buildProblems);
-  }
-
-  const deduped = new Map<string, Problem>();
-  for (const problem of problems) deduped.set(problem.id, problem);
-  const list = [...deduped.values()].slice(0, MAX_PROBLEMS);
+  const trimmed = diagnostics.slice(0, limit);
+  const errors = trimmed.filter((item) => item.severity === "error").length;
+  const warnings = trimmed.filter((item) => item.severity === "warning").length;
 
   return {
-    problems: list,
-    errors: list.filter((problem) => problem.severity === "error").length,
-    warnings: list.filter((problem) => problem.severity === "warning").length,
-    ranAt: Date.now(),
-    executed,
-    skipped,
+    ok: errors === 0,
+    total: trimmed.length,
+    errors,
+    warnings,
+    ranTsc,
+    ranEslint,
+    diagnostics: trimmed,
+    raw: raw.slice(0, 20000),
+    error:
+      !ranTsc && !ranEslint
+        ? "No TypeScript or ESLint installation was found in the workspace yet."
+        : null,
+    scannedAt: new Date().toISOString(),
   };
 }
 
-export function diagnosticsToPrompt(report: DiagnosticsReport, limit = 25): string {
-  if (report.problems.length === 0) {
-    return `No problems found. Checks run: ${report.executed.join(", ") || "none"}.`;
-  }
-  const lines = [
-    `${report.errors} error(s), ${report.warnings} warning(s). Checks run: ${report.executed.join(", ")}.`,
-  ];
-  for (const problem of report.problems.slice(0, limit)) {
-    const location = problem.file ? `${problem.file}${problem.line ? `:${problem.line}` : ""}` : "(project)";
-    lines.push(`- [${problem.severity}] ${location} ${problem.code ?? ""} ${problem.message}`);
-  }
-  if (report.problems.length > limit) lines.push(`… ${report.problems.length - limit} more.`);
-  return lines.join("\n");
-}
+export const diagnosticsReport = runDiagnostics;
+export const getDiagnostics = runDiagnostics;
+export const analyzeProject = runDiagnostics;
 
-/** Explain a single problem using the surrounding code, for the "Explain error" action. */
-export async function problemContext(
-  sandbox: Sandbox,
-  problem: Problem,
-  radius = 6,
-): Promise<string> {
-  if (!problem.file) return "";
-  const result = await exec(
-    sandbox,
-    `sed -n '${
-      Math.max(1, (problem.line ?? 1) - radius)
-    },${(problem.line ?? 1) + radius}p' '${problem.file}'`,
-    { timeoutMs: 15_000 },
-  );
-  return result.stdout;
+export async function diagnoseFile(
+  target: SandboxInput,
+  path: string,
+): Promise<Diagnostic[]> {
+  const report = await runDiagnostics(target, { includeEslint: false });
+  const wanted = normalizePath(path);
+  return report.diagnostics.filter((item) => item.file === wanted);
 }

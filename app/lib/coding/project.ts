@@ -1,501 +1,325 @@
-// app/lib/coding/project.ts
-// Automatic project scanning and analysis.
-// Produces ProjectIntel from real filesystem evidence — never invented numbers.
+/* app/lib/coding/project.ts
+ * Real workspace scan (files, framework, scripts, routes). Dependency-free.
+ */
 
-import type { Sandbox } from "@e2b/code-interpreter";
 import {
-  exec,
-  extOf,
-  findEntries,
-  isBinaryPath,
+  SANDBOX_ROOT,
+  execCommand,
+  getSandbox,
   readFileText,
-  relativePath,
-  type FindEntry,
+  writeFileText,
+  type SandboxInput,
 } from "./sandbox";
-import type {
-  ApiRouteInfo,
-  ArchitectureLayer,
-  DependencyInfo,
-  GitSummary,
-  LanguageStat,
-  ProjectIntel,
-} from "./types";
 
-const MANIFESTS = [
-  "package.json",
-  "tsconfig.json",
-  "next.config.ts",
-  "next.config.js",
-  "next.config.mjs",
-  "vite.config.ts",
-  "vite.config.js",
-  "astro.config.mjs",
-  "nuxt.config.ts",
-  "pyproject.toml",
-  "requirements.txt",
-  "go.mod",
-  "Cargo.toml",
-  "composer.json",
-  "Gemfile",
-];
+export type ProjectEntry = {
+  path: string;
+  name: string;
+  type: "file" | "directory";
+  depth: number;
+};
 
-const ENTRY_CANDIDATES = [
-  "app/page.tsx",
-  "app/page.ts",
-  "app/layout.tsx",
-  "pages/index.tsx",
-  "pages/index.js",
-  "src/index.ts",
-  "src/index.tsx",
-  "src/main.tsx",
-  "src/main.ts",
-  "src/App.tsx",
-  "index.js",
-  "index.ts",
-  "server.js",
-  "server.ts",
-  "src/server.ts",
-  "main.py",
-  "app.py",
-  "manage.py",
-  "main.go",
-  "cmd/main.go",
-  "src/main.rs",
-];
+export type ProjectSnapshot = {
+  root: string;
+  name: string;
+  framework: string;
+  packageManager: string;
+  language: string;
+  files: string[];
+  directories: string[];
+  dependencies: Record<string, string>;
+  devDependencies: Record<string, string>;
+  scripts: Record<string, string>;
+  languages: Record<string, number>;
+  hasGit: boolean;
+  gitBranch: string | null;
+  apiRoutes: string[];
+  testFiles: string[];
+  entries: ProjectEntry[];
+  scannedAt: string;
+};
 
-const LAYER_RULES: { name: string; match: RegExp; description: string }[] = [
-  { name: "Routes / API", match: /^(app\/(api|.*\/route\.(ts|js))|pages\/api\/|src\/pages\/api\/)/, description: "HTTP endpoints and request handlers." },
-  { name: "Screens / Pages", match: /^(app\/|pages\/|src\/pages\/|src\/app\/)/, description: "User-facing pages and layouts." },
-  { name: "Components", match: /(^|\/)(components|ui)\//, description: "Reusable view components." },
-  { name: "Lib / Domain", match: /(^|\/)(lib|utils|helpers|services|core|domain|server)\//, description: "Business logic and shared utilities." },
-  { name: "State / Store", match: /(^|\/)(store|stores|state|context|hooks)\//, description: "Client state, hooks and providers." },
-  { name: "Data / DB", match: /(^|\/)(db|database|prisma|migrations|schema|models)\//, description: "Persistence layer and schemas." },
-  { name: "Tests", match: /(^|\/)(__tests__|tests?|spec)\/|\.(test|spec)\./, description: "Automated tests." },
-  { name: "Config", match: /(^|\/)(config|configs|\.github|scripts)\//, description: "Build, CI and tooling configuration." },
-  { name: "Static assets", match: /^(public|static|assets)\//, description: "Served static files." },
-];
-
-const TEXT_EXT_FOR_STATS = new Set([
-  "ts", "tsx", "js", "jsx", "mjs", "cjs", "css", "scss", "html", "md", "mdx",
-  "py", "go", "rs", "java", "rb", "php", "sql", "yml", "yaml", "toml", "sh", "json",
-]);
-
-export interface ReadJsonResult<T> {
-  ok: boolean;
-  value?: T;
-  error?: string;
-}
-
-export async function readJson<T>(sandbox: Sandbox, path: string): Promise<ReadJsonResult<T>> {
-  try {
-    const raw = await readFileText(sandbox, path);
-    return { ok: true, value: JSON.parse(raw) as T };
-  } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : String(error) };
-  }
-}
-
-export async function readText(sandbox: Sandbox, path: string): Promise<string | undefined> {
-  try {
-    return await readFileText(sandbox, path);
-  } catch {
-    return undefined;
-  }
-}
-
-interface PackageJson {
+export type PackageJson = {
   name?: string;
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
   scripts?: Record<string, string>;
-  packageManager?: string;
-  engines?: Record<string, string>;
-  type?: string;
-  main?: string;
+};
+
+const IGNORED = [
+  "node_modules",
+  ".git",
+  ".next",
+  "dist",
+  "build",
+  "out",
+  ".turbo",
+  ".vercel",
+  "coverage",
+  ".cache",
+];
+
+const CODE_EXTENSIONS = [
+  ".ts",
+  ".tsx",
+  ".js",
+  ".jsx",
+  ".mjs",
+  ".cjs",
+  ".json",
+  ".sql",
+  ".css",
+  ".scss",
+  ".md",
+  ".py",
+  ".go",
+  ".rs",
+];
+
+function languageFor(path: string): string {
+  const lower = path.toLowerCase();
+  if (lower.endsWith(".tsx")) return "tsx";
+  if (lower.endsWith(".ts")) return "ts";
+  if (lower.endsWith(".jsx")) return "jsx";
+  if (lower.endsWith(".js") || lower.endsWith(".mjs") || lower.endsWith(".cjs")) return "js";
+  if (lower.endsWith(".json")) return "json";
+  if (lower.endsWith(".sql")) return "sql";
+  if (lower.endsWith(".css")) return "css";
+  if (lower.endsWith(".scss")) return "scss";
+  if (lower.endsWith(".md")) return "md";
+  if (lower.endsWith(".py")) return "py";
+  if (lower.endsWith(".go")) return "go";
+  if (lower.endsWith(".rs")) return "rs";
+  return "text";
 }
 
-function toDependencies(pkg: PackageJson | undefined): DependencyInfo[] {
-  if (!pkg) return [];
-  const deps: DependencyInfo[] = [];
-  for (const [name, version] of Object.entries(pkg.dependencies ?? {})) {
-    deps.push({ name, version, dev: false });
+function detectFramework(pkg: PackageJson): string {
+  const deps = { ...(pkg.dependencies ?? {}), ...(pkg.devDependencies ?? {}) };
+  const has = (name: string): boolean => Object.prototype.hasOwnProperty.call(deps, name);
+
+  if (has("next")) return "Next.js";
+  if (has("nuxt")) return "Nuxt";
+  if (has("@sveltejs/kit")) return "SvelteKit";
+  if (has("svelte")) return "Svelte";
+  if (has("@remix-run/react")) return "Remix";
+  if (has("astro")) return "Astro";
+  if (has("vite")) return "Vite";
+  if (has("@angular/core")) return "Angular";
+  if (has("vue")) return "Vue";
+  if (has("react")) return "React";
+  if (has("express")) return "Express";
+  if (has("fastify")) return "Fastify";
+  return "Unknown";
+}
+
+function detectLanguage(pkg: PackageJson, files: string[]): string {
+  const deps = { ...(pkg.dependencies ?? {}), ...(pkg.devDependencies ?? {}) };
+  if (Object.prototype.hasOwnProperty.call(deps, "typescript")) return "TypeScript";
+  if (files.some((file) => file.endsWith(".ts") || file.endsWith(".tsx"))) {
+    return "TypeScript";
   }
-  for (const [name, version] of Object.entries(pkg.devDependencies ?? {})) {
-    deps.push({ name, version, dev: true });
+  if (files.some((file) => file.endsWith(".js") || file.endsWith(".jsx"))) {
+    return "JavaScript";
   }
-  return deps.sort((a, b) => a.name.localeCompare(b.name));
+  return "Unknown";
 }
 
-function detectType(pkg: PackageJson | undefined, entries: FindEntry[]): ProjectIntel["type"] {
-  const deps = { ...(pkg?.dependencies ?? {}), ...(pkg?.devDependencies ?? {}) };
-  const has = (name: string) => Boolean(deps[name]);
-
-  if (has("next")) return "next";
-  if (has("nuxt")) return "next";
-  if (has("astro")) return "vite";
-  if (has("vite")) return "vite";
-  if (has("react-scripts")) return "cra";
-  if (pkg) return "node";
-
-  const hasExt = (ext: string) => entries.some((entry) => entry.type === "file" && extOf(entry.path) === ext);
-  if (entries.some((entry) => /^(go\.mod)$/.test(entry.path))) return "go";
-  if (entries.some((entry) => /^Cargo\.toml$/.test(entry.path))) return "rust";
-  if (hasExt("py") || entries.some((entry) => entry.path === "pyproject.toml")) return "python";
-  if (hasExt("html")) return "static";
-  return "unknown";
+function detectPackageManager(files: string[]): string {
+  if (files.includes("pnpm-lock.yaml")) return "pnpm";
+  if (files.includes("yarn.lock")) return "yarn";
+  if (files.includes("bun.lockb") || files.includes("bun.lock")) return "bun";
+  if (files.includes("package-lock.json")) return "npm";
+  return "npm";
 }
 
-function detectFramework(pkg: PackageJson | undefined, type: ProjectIntel["type"]): string | undefined {
-  const deps = { ...(pkg?.dependencies ?? {}), ...(pkg?.devDependencies ?? {}) };
-  if (deps.next) return `Next.js ${deps.next}`;
-  if (deps.nuxt) return `Nuxt ${deps.nuxt}`;
-  if (deps.astro) return `Astro ${deps.astro}`;
-  if (deps.vite) return `Vite ${deps.vite}`;
-  if (deps.expo) return `Expo ${deps.expo}`;
-  if (deps["react-native"]) return "React Native";
-  if (deps.react) return `React ${deps.react}`;
-  if (deps.vue) return `Vue ${deps.vue}`;
-  if (deps.svelte) return `Svelte ${deps.svelte}`;
-  if (deps.express) return `Express ${deps.express}`;
-  if (deps.fastify) return `Fastify ${deps.fastify}`;
-  if (deps.hono) return `Hono ${deps.hono}`;
-  if (type === "python") return "Python";
-  if (type === "go") return "Go";
-  if (type === "rust") return "Rust";
-  return undefined;
-}
-
-function detectPackageManager(pkg: PackageJson | undefined, entries: FindEntry[]): ProjectIntel["packageManager"] {
-  const paths = new Set(entries.map((entry) => entry.path));
-  if (paths.has("pnpm-lock.yaml")) return "pnpm";
-  if (paths.has("yarn.lock")) return "yarn";
-  if (paths.has("bun.lockb") || paths.has("bun.lock")) return "bun";
-  if (paths.has("package-lock.json")) return "npm";
-  if (pkg?.packageManager) {
-    const name = pkg.packageManager.split("@")[0];
-    if (name === "npm" || name === "pnpm" || name === "yarn" || name === "bun") return name;
-  }
-  if (pkg) return "npm";
-  if (paths.has("poetry.lock") || paths.has("pyproject.toml")) return "poetry";
-  if (paths.has("requirements.txt")) return "pip";
-  if (paths.has("Cargo.toml")) return "cargo";
-  if (paths.has("go.mod")) return "go";
-  return undefined;
-}
-
-function detectDatabase(pkg: PackageJson | undefined, entries: FindEntry[]): string | undefined {
-  const deps = { ...(pkg?.dependencies ?? {}), ...(pkg?.devDependencies ?? {}) };
-  if (deps["@supabase/supabase-js"]) return "Supabase (Postgres)";
-  if (deps.prisma) {
-    const provider = entries.find((entry) => entry.path.endsWith("schema.prisma"));
-    return provider ? "Prisma" : "Prisma";
-  }
-  if (deps.drizzle || deps["drizzle-orm"]) return "Drizzle";
-  if (deps.mongoose) return "MongoDB (Mongoose)";
-  if (deps.pg || deps.postgres) return "PostgreSQL";
-  if (deps.mysql2) return "MySQL";
-  if (deps.redis || deps.ioredis) return "Redis";
-  return undefined;
-}
-
-function languageStatistics(entries: FindEntry[]): LanguageStat[] {
-  const totals = new Map<string, { files: number; bytes: number }>();
-  let allBytes = 0;
-
-  for (const entry of entries) {
-    if (entry.type !== "file" || isBinaryPath(entry.path)) continue;
-    const ext = extOf(entry.path);
-    if (!TEXT_EXT_FOR_STATS.has(ext)) continue;
-    const language = languageName(ext);
-    const current = totals.get(language) ?? { files: 0, bytes: 0 };
-    current.files += 1;
-    current.bytes += entry.size;
-    totals.set(language, current);
-    allBytes += entry.size;
-  }
-
-  return [...totals.entries()]
-    .map(([language, value]) => ({
-      language,
-      files: value.files,
-      bytes: value.bytes,
-      percent: allBytes > 0 ? Math.round((value.bytes / allBytes) * 1000) / 10 : 0,
-    }))
-    .sort((a, b) => b.bytes - a.bytes)
-    .slice(0, 10);
-}
-
-function languageName(ext: string): string {
-  const map: Record<string, string> = {
-    ts: "TypeScript",
-    tsx: "TypeScript",
-    js: "JavaScript",
-    jsx: "JavaScript",
-    mjs: "JavaScript",
-    cjs: "JavaScript",
-    css: "CSS",
-    scss: "SCSS",
-    html: "HTML",
-    md: "Markdown",
-    mdx: "MDX",
-    json: "JSON",
-    py: "Python",
-    go: "Go",
-    rs: "Rust",
-    java: "Java",
-    rb: "Ruby",
-    php: "PHP",
-    sql: "SQL",
-    yml: "YAML",
-    yaml: "YAML",
-    toml: "TOML",
-    sh: "Shell",
-  };
-  return map[ext] ?? ext.toUpperCase();
-}
-
-function toRoutePath(filePath: string): string {
-  if (filePath.startsWith("app/")) {
-    const segments = filePath
-      .replace(/^app\//, "")
-      .replace(/\/route\.(ts|js|tsx|jsx)$/, "")
-      .replace(/\/page\.(ts|js|tsx|jsx)$/, "")
-      .split("/")
-      .filter((segment) => !(segment.startsWith("(") && segment.endsWith(")")))
-      .map((segment) => {
-        const optionalCatchAll = segment.match(/^\[\[\.\.\.(.+)\]\]$/);
-        if (optionalCatchAll) return `:${optionalCatchAll[1]}?`;
-        const catchAll = segment.match(/^\[\.\.\.(.+)\]$/);
-        if (catchAll) return `:${catchAll[1]}*`;
-        const dynamic = segment.match(/^\[(.+)\]$/);
-        if (dynamic) return `:${dynamic[1]}`;
-        return segment;
-      });
-    return `/${segments.join("/")}`.replace(/\/$/, "") || "/";
-  }
-  return filePath
-    .replace(/^(src\/)?pages\/api\//, "/api/")
-    .replace(/\.(ts|js|tsx|jsx)$/, "")
-    .replace(/\/index$/, "")
-    .replace(/\[(.+?)\]/g, ":$1");
-}
-
-async function collectApiRoutes(sandbox: Sandbox, entries: FindEntry[]): Promise<ApiRouteInfo[]> {
-  const routeFiles = entries.filter(
-    (entry) =>
-      entry.type === "file" &&
-      (/^app\/.*\/?route\.(ts|js|tsx|jsx)$/.test(entry.path) || /^(src\/)?pages\/api\/.*\.(ts|js|tsx|jsx)$/.test(entry.path)),
+function isTestFile(path: string): boolean {
+  const lower = path.toLowerCase();
+  return (
+    lower.includes("__tests__/") ||
+    lower.endsWith(".test.ts") ||
+    lower.endsWith(".test.tsx") ||
+    lower.endsWith(".test.js") ||
+    lower.endsWith(".spec.ts") ||
+    lower.endsWith(".spec.tsx") ||
+    lower.endsWith(".spec.js")
   );
-  if (routeFiles.length === 0) return [];
-
-  const list = routeFiles.slice(0, 300).map((entry) => entry.path);
-  const grep = await exec(
-    sandbox,
-    `grep -nE "export (async )?function (GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)|export const (GET|POST|PUT|PATCH|DELETE)" ${list
-      .map((path) => `'${path}'`)
-      .join(" ")} 2>/dev/null | head -n 400`,
-    { timeoutMs: 30_000 },
-  );
-
-  const methodsByFile = new Map<string, string[]>();
-  for (const line of grep.stdout.split("\n")) {
-    const match = line.match(/^(.*?):(\d+):(.*)$/);
-    if (!match) continue;
-    const [, file, , text] = match;
-    const method = text.match(/\b(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\b/)?.[1];
-    if (!method) continue;
-    const current = methodsByFile.get(file) ?? [];
-    if (!current.includes(method)) current.push(method);
-    methodsByFile.set(file, current);
-  }
-
-  const routes: ApiRouteInfo[] = [];
-  for (const file of list) {
-    const methods = methodsByFile.get(file) ?? ["ANY"];
-    const route = toRoutePath(file);
-    for (const method of methods) {
-      routes.push({ method, route, file, dynamic: route.includes(":") });
-    }
-  }
-  return routes.sort((a, b) => a.route.localeCompare(b.route) || a.method.localeCompare(b.method));
 }
 
-function architectureLayers(entries: FindEntry[]): ArchitectureLayer[] {
-  const groups = new Map<string, Set<string>>();
-  for (const entry of entries) {
-    if (entry.type !== "file" || isBinaryPath(entry.path)) continue;
-    for (const rule of LAYER_RULES) {
-      if (!rule.match.test(entry.path)) continue;
-      const bucket = groups.get(rule.name) ?? new Set<string>();
-      const topLevel = entry.path.split("/").slice(0, 2).join("/");
-      bucket.add(topLevel);
-      groups.set(rule.name, bucket);
-      break;
-    }
-  }
+function isApiRoute(path: string): boolean {
+  return (
+    (path.startsWith("app/") || path.startsWith("src/app/")) &&
+    path.includes("/api/") &&
+    (path.endsWith("route.ts") || path.endsWith("route.js"))
+  );
+}
 
-  const layers: ArchitectureLayer[] = [];
-  for (const rule of LAYER_RULES) {
-    const paths = groups.get(rule.name);
-    if (!paths || paths.size === 0) continue;
-    layers.push({
-      name: rule.name,
-      paths: [...paths].slice(0, 12),
-      description: rule.description,
+function buildEntries(files: string[], directories: string[]): ProjectEntry[] {
+  const entries: ProjectEntry[] = [];
+
+  for (const dir of directories) {
+    const depth = dir.split("/").filter(Boolean).length;
+    entries.push({
+      path: dir,
+      name: dir.split("/").filter(Boolean).pop() ?? dir,
+      type: "directory",
+      depth,
     });
   }
-  return layers;
-}
 
-function detectTests(pkg: PackageJson | undefined, entries: FindEntry[]): ProjectIntel["tests"] {
-  const deps = { ...(pkg?.dependencies ?? {}), ...(pkg?.devDependencies ?? {}) };
-  const files = entries.filter(
-    (entry) =>
-      entry.type === "file" &&
-      /\.(test|spec)\.(ts|tsx|js|jsx)$/.test(entry.path) ||
-      (entry.type === "file" && /(^|\/)__tests__\//.test(entry.path)),
-  ).length;
-
-  let framework: string | undefined;
-  let command: string | undefined;
-
-  if (deps.vitest) {
-    framework = "vitest";
-    command = "npx vitest run";
-  } else if (deps.jest) {
-    framework = "jest";
-    command = "npx jest";
-  } else if (deps.playwright || deps["@playwright/test"]) {
-    framework = "playwright";
-    command = "npx playwright test";
-  } else if (deps.mocha) {
-    framework = "mocha";
-    command = "npx mocha";
-  } else if (pkg?.scripts?.test) {
-    framework = "script";
-    command = `${pkg.scripts.test}`;
+  for (const file of files) {
+    const depth = file.split("/").filter(Boolean).length;
+    entries.push({
+      path: file,
+      name: file.split("/").filter(Boolean).pop() ?? file,
+      type: "file",
+      depth,
+    });
   }
 
-  return { framework, files, command };
+  return entries.sort((a, b) => {
+    if (a.path === b.path) return 0;
+    if (a.type !== b.type) return a.type === "directory" ? -1 : 1;
+    return a.path.localeCompare(b.path);
+  });
 }
 
-async function readGitSummary(sandbox: Sandbox): Promise<GitSummary> {
-  const check = await exec(sandbox, "git rev-parse --is-inside-work-tree 2>/dev/null", {
-    timeoutMs: 15_000,
-  });
-  if (check.stdout.trim() !== "true") return { isRepo: false };
+function parseJson<T>(text: string, fallback: T): T {
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return fallback;
+  }
+}
 
-  const [status, branch, remotes] = await Promise.all([
-    exec(sandbox, "git status --porcelain=v1 2>/dev/null | wc -l", { timeoutMs: 20_000 }),
-    exec(sandbox, "git status -sb 2>/dev/null | head -n 1", { timeoutMs: 20_000 }),
-    exec(sandbox, "git remote 2>/dev/null", { timeoutMs: 15_000 }),
-  ]);
+function emptySnapshot(root: string): ProjectSnapshot {
+  return {
+    root,
+    name: "workspace",
+    framework: "Unknown",
+    packageManager: "npm",
+    language: "Unknown",
+    files: [],
+    directories: [],
+    dependencies: {},
+    devDependencies: {},
+    scripts: {},
+    languages: {},
+    hasGit: false,
+    gitBranch: null,
+    apiRoutes: [],
+    testFiles: [],
+    entries: [],
+    scannedAt: new Date().toISOString(),
+  };
+}
 
-  const header = branch.stdout.trim();
-  const nameMatch = header.match(/^##\s+([^.\s]+)/);
-  const aheadMatch = header.match(/ahead (\d+)/);
-  const behindMatch = header.match(/behind (\d+)/);
-  const changed = Number(status.stdout.trim()) || 0;
+export async function scanProject(
+  target?: SandboxInput,
+): Promise<ProjectSnapshot> {
+  const sandbox = await getSandbox(target);
+
+  const excludes = IGNORED.map((name) => `-not -path '*/${name}/*'`).join(" ");
+  const command = [
+    `cd ${SANDBOX_ROOT} 2>/dev/null || exit 1`,
+    `find . -maxdepth 6 -mindepth 1 ${excludes} -print 2>/dev/null`,
+  ].join(" && ");
+
+  const run = await execCommand(sandbox, command, {
+    cwd: SANDBOX_ROOT,
+    timeoutMs: 60000,
+  }).catch(() => null);
+
+  if (!run || run.exitCode !== 0) {
+    return emptySnapshot(SANDBOX_ROOT);
+  }
+
+  const files: string[] = [];
+  const directories: string[] = [];
+
+  for (const rawLine of run.stdout.split("\n")) {
+    const line = rawLine.replace(/\r$/, "").trim();
+    if (!line.startsWith("./")) continue;
+    const path = line.slice(2).replace(/\/+$/, "");
+    if (!path) continue;
+
+    if (IGNORED.some((name) => path === name || path.startsWith(`${name}/`))) {
+      continue;
+    }
+
+    if (line.endsWith("/")) {
+      directories.push(path);
+      continue;
+    }
+
+    const lower = path.toLowerCase();
+    if (!CODE_EXTENSIONS.some((ext) => lower.endsWith(ext))) continue;
+    files.push(path);
+  }
+
+  files.sort();
+  directories.sort();
+
+  let pkg: PackageJson = {};
+  if (files.includes("package.json")) {
+    const text = await readFileText(sandbox, "package.json").catch(() => "");
+    pkg = text ? parseJson<PackageJson>(text, {}) : {};
+  }
+
+  const branchRun = await execCommand(
+    sandbox,
+    "git rev-parse --abbrev-ref HEAD 2>/dev/null || true",
+    { cwd: SANDBOX_ROOT, timeoutMs: 20000 },
+  ).catch(() => null);
+
+  const gitBranch = branchRun ? branchRun.stdout.trim() : "";
+  const languages: Record<string, number> = {};
+  for (const file of files) {
+    const language = languageFor(file);
+    languages[language] = (languages[language] ?? 0) + 1;
+  }
 
   return {
-    isRepo: true,
-    branch: nameMatch?.[1]?.replace(/^No commits yet on /, "") ?? "unknown",
-    clean: changed === 0,
-    changed,
-    ahead: aheadMatch ? Number(aheadMatch[1]) : 0,
-    behind: behindMatch ? Number(behindMatch[1]) : 0,
-    remotes: remotes.stdout.trim().split("\n").filter(Boolean),
+    root: SANDBOX_ROOT,
+    name: typeof pkg.name === "string" && pkg.name.trim() ? pkg.name.trim() : "workspace",
+    framework: detectFramework(pkg),
+    packageManager: detectPackageManager(files),
+    language: detectLanguage(pkg, files),
+    files,
+    directories,
+    dependencies: pkg.dependencies ?? {},
+    devDependencies: pkg.devDependencies ?? {},
+    scripts: pkg.scripts ?? {},
+    languages,
+    hasGit: Boolean(gitBranch) && gitBranch !== "HEAD",
+    gitBranch: gitBranch || null,
+    apiRoutes: files.filter(isApiRoute),
+    testFiles: files.filter(isTestFile),
+    entries: buildEntries(files, directories),
+    scannedAt: new Date().toISOString(),
   };
 }
 
-function projectSummary(intel: Omit<ProjectIntel, "summary">): string {
-  const parts: string[] = [];
-  parts.push(`${intel.name} — ${intel.type}${intel.framework ? ` (${intel.framework})` : ""}.`);
-  parts.push(
-    `${intel.fileCount} files across ${intel.directoryCount} directories, ${Math.round(
-      intel.totalBytes / 1024,
-    )} KB of text.`,
-  );
-  if (intel.languages.length > 0) {
-    parts.push(
-      `Languages: ${intel.languages
-        .slice(0, 4)
-        .map((language) => `${language.language} ${language.percent}%`)
-        .join(", ")}.`,
-    );
-  }
-  if (intel.packageManager) parts.push(`Package manager: ${intel.packageManager}.`);
-  if (intel.entryPoints.length > 0) parts.push(`Entry points: ${intel.entryPoints.join(", ")}.`);
-  if (intel.apiRoutes.length > 0) {
-    parts.push(
-      `${intel.apiRoutes.length} API routes, e.g. ${intel.apiRoutes
-        .slice(0, 5)
-        .map((route) => `${route.method} ${route.route}`)
-        .join(", ")}.`,
-    );
-  }
-  if (intel.database) parts.push(`Database: ${intel.database}.`);
-  if (intel.tests.command) parts.push(`Tests: ${intel.tests.framework} (${intel.tests.command}).`);
-  if (intel.git.isRepo) {
-    parts.push(
-      `Git: branch ${intel.git.branch}, ${intel.git.clean ? "clean" : `${intel.git.changed} changed`}.`,
-    );
-  }
-  return parts.join(" ");
+export const getProject = scanProject;
+export const readProject = scanProject;
+export const projectSnapshot = scanProject;
+
+export async function readProjectFile(
+  target: SandboxInput,
+  path: string,
+): Promise<string> {
+  return readFileText(target, path);
 }
 
-export async function scanProject(sandbox: Sandbox): Promise<ProjectIntel> {
-  const entries = await findEntries(sandbox);
+export async function writeProjectFile(
+  target: SandboxInput,
+  path: string,
+  content: string,
+): Promise<void> {
+  return writeFileText(target, path, content);
+}
 
-  const paths = new Set(entries.map((entry) => entry.path));
-  const packageJsonPath = MANIFESTS.find((path) => paths.has(path) && path === "package.json");
-  const pkgResult = packageJsonPath
-    ? await readJson<PackageJson>(sandbox, packageJsonPath)
-    : { ok: false as const };
-  const pkg = pkgResult.ok ? pkgResult.value : undefined;
-
-  const type = detectType(pkg, entries);
-  const dependencies = toDependencies(pkg);
-
-  const entryPoints = ENTRY_CANDIDATES.filter((path) => paths.has(path));
-  if (entryPoints.length === 0 && pkg?.main && paths.has(pkg.main)) entryPoints.push(pkg.main);
-
-  const [apiRoutes, git] = await Promise.all([
-    collectApiRoutes(sandbox, entries),
-    readGitSummary(sandbox),
-  ]);
-
-  const fileEntries = entries.filter((entry) => entry.type === "file");
-  const directoryEntries = entries.filter((entry) => entry.type === "directory");
-
-  const base: Omit<ProjectIntel, "summary"> = {
-    root: "",
-    name: pkg?.name ?? relativePath("") ?? "workspace",
-    type,
-    framework: detectFramework(pkg, type),
-    runtime: pkg?.engines?.node ? `node ${pkg.engines.node}` : type === "python" ? "python" : undefined,
-    packageManager: detectPackageManager(pkg, entries),
-    entryPoints,
-    languages: languageStatistics(entries),
-    dependencies,
-    scripts: pkg?.scripts ?? {},
-    database: detectDatabase(pkg, entries),
-    apiRoutes,
-    architecture: architectureLayers(entries),
-    fileCount: fileEntries.length,
-    directoryCount: directoryEntries.length,
-    totalBytes: fileEntries.reduce((total, entry) => total + entry.size, 0),
-    tests: detectTests(pkg, entries),
-    git,
-    scannedAt: Date.now(),
-  };
-
-  // name falls back to the workspace directory name
-  if (!pkg?.name) {
-    const pwd = await exec(sandbox, "basename $(pwd)");
-    base.name = pwd.stdout.trim() || "workspace";
-    base.root = relativePath((await exec(sandbox, "pwd")).stdout.trim());
-  }
-
-  return { ...base, summary: projectSummary(base) };
+export async function readPackageJson(
+  target: SandboxInput,
+): Promise<PackageJson> {
+  const text = await readFileText(target, "package.json").catch(() => "");
+  return text ? parseJson<PackageJson>(text, {}) : {};
 }

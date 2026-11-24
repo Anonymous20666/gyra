@@ -1,236 +1,177 @@
-// app/lib/coding/search.ts
-// Hybrid project search: filenames + content + symbols + imports.
-// One engine powers the Search panel, the agent's search_codebase tool and
-// context selection.
+/* app/lib/coding/search.ts
+ * Project text search inside the sandbox (ripgrep, grep fallback).
+ */
 
-import type { Sandbox } from "@e2b/code-interpreter";
-import type { CodeIndex } from "./types";
-import { exec } from "./sandbox";
-import type { SearchFilters, SearchHit, SearchMatch, SearchResponse } from "./types";
+import {
+  SANDBOX_ROOT,
+  execCommand,
+  getSandbox,
+  type SandboxInput,
+} from "./sandbox";
 
-const GREP_EXCLUDES = [
-  "--exclude-dir=node_modules",
-  "--exclude-dir=.git",
-  "--exclude-dir=.next",
-  "--exclude-dir=dist",
-  "--exclude-dir=build",
-  "--exclude-dir=coverage",
-  "--exclude-dir=.turbo",
-  "--exclude-dir=.venv",
-  "--exclude-dir=__pycache__",
-].join(" ");
+export type SearchMatch = {
+  path: string;
+  line: number;
+  column: number;
+  text: string;
+};
 
-function escapeRegex(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+export type SearchOptions = {
+  caseSensitive?: boolean;
+  regex?: boolean;
+  maxResults?: number;
+  include?: string;
+};
+
+export type SearchResult = {
+  query: string;
+  matches: SearchMatch[];
+  results: SearchMatch[];
+  hits: SearchMatch[];
+  total: number;
+  truncated: boolean;
+  error: string | null;
+};
+
+function shellQuote(value: string): string {
+  return `'${String(value).replace(/'/g, `'\\''`)}'`;
 }
 
-function buildPattern(query: string, filters: SearchFilters): string {
-  if (filters.regex) return query;
-  if (filters.exact) return escapeRegex(query);
-  return query
-    .split(/\s+/)
-    .filter(Boolean)
-    .map(escapeRegex)
-    .join(".*");
+function clampMax(value?: number): number {
+  const raw = Number(value);
+  if (!Number.isFinite(raw) || raw <= 0) return 500;
+  return Math.min(Math.round(raw), 2000);
 }
 
-function parseGrep(output: string, filters: SearchFilters): Map<string, SearchMatch[]> {
-  const byFile = new Map<string, SearchMatch[]>();
-  const regex = filters.regex
-    ? (() => {
-        try {
-          return new RegExp(
-            filters.exact ? escapeRegex(filters.glob ?? "") : "",
-            filters.caseSensitive ? "" : "i",
-          );
-        } catch {
-          return undefined;
-        }
-      })()
-    : undefined;
+function parseMatches(output: string, limit: number): { matches: SearchMatch[]; truncated: boolean } {
+  const matches: SearchMatch[] = [];
+  let truncated = false;
 
-  for (const raw of output.split("\n")) {
-    if (!raw.trim()) continue;
-    const match = raw.match(/^(.*?):(\d+):(.*)$/);
-    if (!match) continue;
-    const [, file, lineText, text] = match;
-    const path = file.replace(/^\.\//, "");
-    const column = filters.caseSensitive ? text.indexOf(lineText) : -1;
+  for (const rawLine of output.split("\n")) {
+    const line = rawLine.replace(/\r$/, "");
+    if (!line.trim()) continue;
+    if (matches.length >= limit) {
+      truncated = true;
+      break;
+    }
 
-    const entry: SearchMatch = {
-      line: Number(lineText),
-      column: column === -1 ? Math.max(0, text.toLowerCase().indexOf(lineText.toLowerCase())) : column,
-      length: lineText.length,
-      preview: text.trim().slice(0, 240),
-    };
+    const first = line.indexOf(":");
+    if (first === -1) continue;
+    const second = line.indexOf(":", first + 1);
+    if (second === -1) continue;
 
-    const current = byFile.get(path) ?? [];
-    if (current.length < 8) current.push(entry);
-    byFile.set(path, current);
+    const path = line.slice(0, first).replace(/^\.\//, "");
+    const lineNumber = Number(line.slice(first + 1, second));
+    if (!Number.isFinite(lineNumber)) continue;
+
+    matches.push({
+      path,
+      line: lineNumber,
+      column: 1,
+      text: line.slice(second + 1).trimEnd(),
+    });
   }
 
-  void regex;
-  return byFile;
+  return { matches, truncated };
 }
 
-function pathScore(path: string, query: string): number {
-  const filename = (path.split("/").pop() ?? path).toLowerCase();
-  const needle = query.toLowerCase();
-  if (filename === needle) return 120;
-  if (filename === `${needle}.ts` || filename === `${needle}.tsx` || filename === `${needle}.js`) return 110;
-  if (filename.startsWith(needle)) return 85;
-  if (filename.includes(needle)) return 65;
-  if (path.toLowerCase().includes(needle)) return 40;
-  return 0;
+async function runSearch(
+  target: SandboxInput,
+  query: string,
+  options: SearchOptions,
+): Promise<SearchResult> {
+  const limit = clampMax(options.maxResults);
+  const pattern = shellQuote(query);
+  const include = options.include ? `-g ${shellQuote(options.include)}` : "";
+
+  const flags = [
+    options.caseSensitive ? "" : "-i",
+    options.regex ? "" : "-F",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const rg = `rg -n --no-heading --color never ${flags} ${include} -e ${pattern} . 2>/dev/null`;
+  const grep = `grep -rnI ${options.caseSensitive ? "" : "-i"} ${
+    options.regex ? "-E" : "-F"
+  } -e ${pattern} . 2>/dev/null`;
+  const exclude = `--exclude-dir=node_modules --exclude-dir=.git --exclude-dir=.next --exclude-dir=dist --exclude-dir=build`;
+
+  const command = [
+    `cd ${SANDBOX_ROOT} 2>/dev/null || exit 1`,
+    `if command -v rg >/dev/null 2>&1; then ${rg} | head -n ${limit + 50}; else ${grep.replace("grep -rnI", `grep -rnI ${exclude}`)} | head -n ${limit + 50}; fi`,
+  ].join("; ");
+
+  const sandbox = await getSandbox(target);
+  const run = await execCommand(sandbox, command, {
+    cwd: SANDBOX_ROOT,
+    timeoutMs: 60000,
+  }).catch(() => null);
+
+  if (!run) {
+    return {
+      query,
+      matches: [],
+      results: [],
+      hits: [],
+      total: 0,
+      truncated: false,
+      error: "Search could not run inside the sandbox.",
+    };
+  }
+
+  const { matches, truncated } = parseMatches(`${run.stdout}`, limit);
+
+  return {
+    query,
+    matches,
+    results: matches,
+    hits: matches,
+    total: matches.length,
+    truncated,
+    error: matches.length === 0 && run.stderr.trim() ? run.stderr.trim().slice(0, 400) : null,
+  };
 }
 
 export async function searchProject(
-  sandbox: Sandbox,
+  target: SandboxInput,
   query: string,
-  options: { index?: CodeIndex; filters?: SearchFilters; limit?: number } = {},
-): Promise<SearchResponse> {
-  const startedAt = Date.now();
-  const filters = options.filters ?? {};
-  const limit = options.limit ?? 60;
-  const trimmed = query.trim();
+  options?: SearchOptions,
+): Promise<SearchResult>;
+export async function searchProject(
+  query: string,
+  options?: SearchOptions,
+): Promise<SearchResult>;
+export async function searchProject(
+  targetOrQuery: SandboxInput | string,
+  queryOrOptions?: string | SearchOptions,
+  maybeOptions?: SearchOptions,
+): Promise<SearchResult> {
+  const queryIsSecond = typeof queryOrOptions === "string";
 
-  if (!trimmed) {
-    return { query, hits: [], totalFiles: 0, tookMs: 0, strategy: "lexical" };
-  }
+  const target: SandboxInput = queryIsSecond
+    ? (targetOrQuery as SandboxInput)
+    : undefined;
+  const query = queryIsSecond
+    ? (queryOrOptions as string)
+    : String(targetOrQuery ?? "");
+  const options = (queryIsSecond ? maybeOptions : (queryOrOptions as SearchOptions | undefined)) ?? {};
 
-  const pattern = buildPattern(trimmed, filters);
-  const include = filters.glob ? `--include='${filters.glob}'` : "";
-  const insensitive = filters.caseSensitive ? "" : "-i";
-  const hidden = filters.includeHidden ? "" : "--exclude-dir='.*'";
-
-  const [contentResult, fileResult] = await Promise.all([
-    exec(
-      sandbox,
-      `grep -rnE ${insensitive} ${hidden} ${include} ${GREP_EXCLUDES} -- ${JSON.stringify(pattern)} . 2>/dev/null | head -n 900`,
-      { timeoutMs: 60_000 },
-    ),
-    exec(
-      sandbox,
-      `find . -type f -not -path './node_modules/*' -not -path './.git/*' -not -path './.next/*' ` +
-        `-not -path './dist/*' -not -path './build/*' ${insensitive ? "-iname" : "-name"} ${JSON.stringify(
-          `*${trimmed}*`,
-        )} 2>/dev/null | head -n 60`,
-      { timeoutMs: 30_000 },
-    ),
-  ]);
-
-  const contentByFile = parseGrep(contentResult.stdout, { ...filters, regex: Boolean(filters.regex) });
-  const hits = new Map<string, SearchHit>();
-
-  const addHit = (hit: SearchHit): void => {
-    const existing = hits.get(hit.path);
-    if (!existing || existing.score < hit.score) {
-      hits.set(hit.path, { ...hit, matches: hit.matches.length > 0 ? hit.matches : existing?.matches ?? [] });
-    } else if (existing) {
-      existing.score += Math.min(hit.score / 4, 20);
-      const merged = new Map<number, SearchMatch>();
-      for (const match of [...existing.matches, ...hit.matches]) merged.set(match.line, match);
-      existing.matches = [...merged.values()].slice(0, 8);
-    }
-  };
-
-  /* filenames */
-  for (const rawPath of fileResult.stdout.split("\n")) {
-    const path = rawPath.replace(/^\.\//, "").trim();
-    if (!path) continue;
-    addHit({
-      path,
-      type: "file",
-      score: pathScore(path, trimmed),
+  const clean = query.trim();
+  if (!clean) {
+    return {
+      query: "",
       matches: [],
-      note: "Filename match",
-    });
+      results: [],
+      hits: [],
+      total: 0,
+      truncated: false,
+      error: "A search query is required.",
+    };
   }
 
-  /* content */
-  for (const [path, matches] of contentByFile) {
-    const isComment = matches.some((match) =>
-      /^\s*(\/\/|\*|\/\*|#)/.test(match.preview),
-    );
-    const score = 22 + Math.min(matches.length, 10) * 5 + pathScore(path, trimmed) / 3;
-    addHit({
-      path,
-      type: isComment ? "comment" : "content",
-      score,
-      matches,
-      note: `${matches.length} match${matches.length === 1 ? "" : "es"}`,
-    });
-  }
-
-  /* symbols + imports from the index */
-  if (options.index) {
-    const needle = trimmed.toLowerCase();
-    for (const symbol of options.index.symbols) {
-      const name = symbol.name.toLowerCase();
-      if (!(name === needle || name.includes(needle))) continue;
-      addHit({
-        path: symbol.file,
-        type: "symbol",
-        score: (name === needle ? 95 : 55) + (symbol.exported ? 5 : 0),
-        matches: [
-          {
-            line: symbol.line,
-            column: Math.max(0, symbol.column - 1),
-            length: symbol.name.length,
-            preview: symbol.signature ?? symbol.name,
-          },
-        ],
-        symbol,
-        note: `Definition: ${symbol.kind} ${symbol.name}`,
-      });
-    }
-
-    for (const edge of options.index.imports) {
-      if (!edge.specifier.toLowerCase().includes(needle)) continue;
-      addHit({
-        path: edge.from,
-        type: "import",
-        score: 35,
-        matches: [
-          { line: edge.line, column: 0, length: trimmed.length, preview: edge.specifier },
-        ],
-        note: `Imports ${edge.specifier}`,
-      });
-    }
-  }
-
-  const ranked = [...hits.values()]
-    .filter((hit) => {
-      if (filters.language && !hit.path.endsWith(`.${filters.language}`)) return false;
-      if (filters.modifiedOnly && hit.type === "file" && hit.matches.length === 0) return false;
-      if (filters.kinds && !filters.kinds.includes(hit.type)) return false;
-      return true;
-    })
-    .sort((a, b) => b.score - a.score || a.path.localeCompare(b.path))
-    .slice(0, limit);
-
-  return {
-    query: trimmed,
-    hits: ranked,
-    totalFiles: hits.size,
-    tookMs: Date.now() - startedAt,
-    strategy: options.index ? "hybrid" : "lexical",
-  };
+  return runSearch(target, clean, options);
 }
 
-/** Compact text block the model can read, used by the agent tool. */
-export function searchResultToText(response: SearchResponse, maxHits = 18): string {
-  if (response.hits.length === 0) {
-    return `No matches for "${response.query}".`;
-  }
-  const lines: string[] = [
-    `${response.hits.length} of ${response.totalFiles} files matched "${response.query}" (${response.strategy}, ${response.tookMs}ms):`,
-  ];
-  for (const hit of response.hits.slice(0, maxHits)) {
-    lines.push(`- ${hit.path} — ${hit.note ?? hit.type}`);
-    for (const match of hit.matches.slice(0, 3)) {
-      lines.push(`    ${match.line}: ${match.preview}`);
-    }
-  }
-  return lines.join("\n");
-}
+export const searchWorkspace = searchProject;
+export const findInProject = searchProject;
