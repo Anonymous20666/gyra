@@ -1,162 +1,225 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import Logo from "../Logo";
-import { PROMPT_LIBRARY, type Prompt } from "./data";
+import { useCallback, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { RotateCcw, SearchX } from "lucide-react";
+import ToastContainer, { showToast } from "@/app/components/Toast";
+import { PROMPT_LIBRARY } from "./data";
+import {
+  PENDING_PROMPT_STORAGE_KEY,
+  enrichPromptLibrary,
+  filterPrompts,
+  type EnrichedPrompt,
+  type SortMode,
+} from "./utils";
+import SamplesHeader from "./components/SamplesHeader";
+import SamplesHero from "./components/SamplesHero";
+import DiscoveryControls from "./components/DiscoveryControls";
+import PromptCard from "./components/PromptCard";
+import PromptDetailDrawer from "./components/PromptDetailDrawer";
+import CategoryIcon from "./components/CategoryIcon";
 
-export default function LibraryPage() {
+export default function PromptSamplesPage() {
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [sortMode, setSortMode] = useState<SortMode>("category");
+  const [selectedPrompt, setSelectedPrompt] = useState<EnrichedPrompt | null>(null);
 
-  const categories = activeCategory
-    ? PROMPT_LIBRARY.filter((c) => c.id === activeCategory)
-    : PROMPT_LIBRARY;
+  const allPrompts = useMemo(() => enrichPromptLibrary(PROMPT_LIBRARY), []);
 
-  const filtered = categories
-    .map((cat) => ({
+  const visiblePrompts = useMemo(
+    () => filterPrompts(allPrompts, query, activeCategory, sortMode),
+    [allPrompts, query, activeCategory, sortMode]
+  );
+
+  const featuredPrompt = useMemo(() => {
+    if (activeCategory) {
+      return allPrompts.find((p) => p.categoryId === activeCategory) || allPrompts[0] || null;
+    }
+    return allPrompts[0] || null;
+  }, [allPrompts, activeCategory]);
+
+  // Group by category when viewing "All" in default category order with no active search
+  const showGroupedByCategory =
+    activeCategory === null && sortMode === "category" && query.trim().length === 0;
+
+  const groupedSections = useMemo(() => {
+    if (!showGroupedByCategory) return [];
+    return PROMPT_LIBRARY.map((cat) => ({
       ...cat,
-      prompts: cat.prompts.filter(
-        (p) =>
-          !query.trim() ||
-          p.title.toLowerCase().includes(query.toLowerCase()) ||
-          p.description.toLowerCase().includes(query.toLowerCase()) ||
-          p.prompt.toLowerCase().includes(query.toLowerCase())
-      ),
-    }))
-    .filter((cat) => cat.prompts.length > 0);
+      items: visiblePrompts.filter((p) => p.categoryId === cat.id),
+    })).filter((cat) => cat.items.length > 0);
+  }, [showGroupedByCategory, visiblePrompts]);
 
-  const usePrompt = (p: Prompt) => {
-    const text = p.prompt;
-    window.location.href = `/dashboard?prompt=${encodeURIComponent(text)}`;
+  const launchInChat = useCallback(
+    (promptText: string) => {
+      const cleaned = promptText.trim();
+      if (!cleaned) return;
+
+      try {
+        sessionStorage.setItem(PENDING_PROMPT_STORAGE_KEY, cleaned);
+      } catch {
+        // Fallback to URL param below
+      }
+
+      if (cleaned.length <= 1400) {
+        router.push(`/dashboard?prompt=${encodeURIComponent(cleaned)}`);
+      } else {
+        router.push("/dashboard?from=samples");
+      }
+    },
+    [router]
+  );
+
+  const copyPromptText = useCallback(async (promptText: string) => {
+    try {
+      await navigator.clipboard.writeText(promptText);
+      showToast("Prompt copied to clipboard", "success");
+    } catch {
+      showToast("Could not access clipboard", "error");
+    }
+  }, []);
+
+  const resetFilters = () => {
+    setQuery("");
+    setActiveCategory(null);
+    setSortMode("category");
   };
 
   return (
-    <main className="min-h-screen bg-black text-white">
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-500/5 rounded-full blur-[160px]" />
-      </div>
+    <div className="min-h-[100dvh] bg-white dark:bg-[#09090B] text-zinc-950 dark:text-zinc-100 flex flex-col">
+      <SamplesHeader />
 
-      {/* Nav */}
-      <div className="relative z-10 border-b border-zinc-800/50 px-6 py-4 flex items-center justify-between sticky top-0 bg-black/95 backdrop-blur">
-        <Link href="/" className="flex items-center gap-3">
-          <Logo size={28} animated={false} />
-          <span className="font-bold tracking-widest text-sm">GYRA</span>
-          <span className="text-zinc-600 text-xs tracking-widest">LIBRARY</span>
-        </Link>
-        <Link
-          href="/dashboard"
-          className="text-sm text-zinc-400 hover:text-white transition-colors"
-        >
-          Open chat →
-        </Link>
-      </div>
+      <SamplesHero
+        totalPrompts={allPrompts.length}
+        totalCategories={PROMPT_LIBRARY.length}
+        featuredPrompt={featuredPrompt}
+        onPreviewFeatured={(item) => setSelectedPrompt(item)}
+        onUseFeatured={(item) => launchInChat(item.prompt)}
+      />
 
-      <div className="relative z-10 max-w-5xl mx-auto px-6 md:px-12 py-12">
-        <p className="text-xs tracking-[0.3em] text-zinc-500 uppercase mb-4">
-          Prompt Library
-        </p>
-        <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">
-          Start with a prompt.
-        </h1>
-        <p className="text-zinc-400 max-w-2xl mb-10 leading-relaxed">
-          A curated collection of prompts that work well with Gyra. Tap any
-          card to open it directly in chat.
-        </p>
+      <main className="flex-1 mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-[max(4rem,calc(env(safe-area-inset-bottom)+3rem))]">
+        <DiscoveryControls
+          categories={PROMPT_LIBRARY}
+          totalCount={allPrompts.length}
+          visibleCount={visiblePrompts.length}
+          query={query}
+          activeCategory={activeCategory}
+          sortMode={sortMode}
+          onQueryChange={setQuery}
+          onSelectCategory={setActiveCategory}
+          onSortChange={setSortMode}
+        />
 
-        {/* Search */}
-        <div className="mb-8 max-w-xl">
-          <div className="flex items-center gap-3 bg-zinc-900 border border-zinc-800 rounded-full px-5 py-3">
-            <svg
-              className="w-4 h-4 text-zinc-500"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+        <div className="mt-7 sm:mt-8">
+          {visiblePrompts.length === 0 ? (
+            <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/70 dark:bg-[#101014] px-6 py-14 text-center">
+              <SearchX
+                className="mx-auto h-7 w-7 text-zinc-400 dark:text-zinc-500"
+                strokeWidth={1.5}
               />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search prompts…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="bg-transparent outline-none text-sm flex-1 placeholder:text-zinc-500"
-            />
-          </div>
-        </div>
+              <h2 className="mt-3 text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                No matching prompt samples
+              </h2>
+              <p className="mx-auto mt-1.5 max-w-sm text-sm text-zinc-500 dark:text-zinc-400">
+                {query.trim()
+                  ? `Nothing matched "${query.trim()}". Try broader keywords or clear your category filter.`
+                  : "This category does not have any matching prompts right now."}
+              </p>
+              <button
+                type="button"
+                onClick={resetFilters}
+                className="mt-5 inline-flex h-9 items-center gap-1.5 rounded-lg bg-zinc-900 dark:bg-zinc-100 px-4 text-xs font-medium text-white dark:text-zinc-950 hover:opacity-90 transition-opacity"
+              >
+                <RotateCcw className="h-3.5 w-3.5" strokeWidth={1.75} />
+                <span>Reset filters</span>
+              </button>
+            </div>
+          ) : showGroupedByCategory ? (
+            <div className="space-y-10 sm:space-y-12">
+              {groupedSections.map((section) => (
+                <section
+                  key={section.id}
+                  aria-labelledby={`cat-heading-${section.id}`}
+                  className="space-y-4"
+                >
+                  <div className="flex items-end justify-between gap-4 border-b border-zinc-200/80 dark:border-zinc-800/80 pb-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <CategoryIcon
+                          categoryId={section.id}
+                          className="h-4 w-4 text-[#1F5B7C] dark:text-[#7DD3FC] shrink-0"
+                        />
+                        <h2
+                          id={`cat-heading-${section.id}`}
+                          className="text-base sm:text-lg font-semibold tracking-tight text-zinc-950 dark:text-zinc-50"
+                        >
+                          {section.title}
+                        </h2>
+                        <span className="text-xs text-zinc-400 dark:text-zinc-500 tabular-nums">
+                          · {section.items.length}
+                        </span>
+                      </div>
+                      <p className="mt-0.5 text-xs sm:text-sm text-zinc-500 dark:text-zinc-400">
+                        {section.description}
+                      </p>
+                    </div>
 
-        {/* Categories */}
-        <div className="flex flex-wrap gap-2 mb-10">
-          <button
-            onClick={() => setActiveCategory(null)}
-            className={`px-4 py-2 rounded-full text-sm border transition-colors ${
-              activeCategory === null
-                ? "bg-white text-black border-white"
-                : "bg-transparent text-zinc-400 border-zinc-800 hover:border-zinc-600 hover:text-white"
-            }`}
-          >
-            All
-          </button>
-          {PROMPT_LIBRARY.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => setActiveCategory(cat.id)}
-              className={`px-4 py-2 rounded-full text-sm border transition-colors flex items-center gap-2 ${
-                activeCategory === cat.id
-                  ? "bg-white text-black border-white"
-                  : "bg-transparent text-zinc-400 border-zinc-800 hover:border-zinc-600 hover:text-white"
-              }`}
-            >
-              <span>{cat.emoji}</span>
-              {cat.title}
-            </button>
-          ))}
-        </div>
+                    <button
+                      type="button"
+                      onClick={() => setActiveCategory(section.id)}
+                      className="text-xs font-medium text-zinc-500 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors whitespace-nowrap shrink-0"
+                    >
+                      Filter category
+                    </button>
+                  </div>
 
-        {/* Prompt grid */}
-        {filtered.length === 0 ? (
-          <p className="text-zinc-500 text-sm">No prompts match your search.</p>
-        ) : (
-          filtered.map((cat) => (
-            <section key={cat.id} className="mb-12">
-              <div className="mb-5">
-                <h2 className="text-xl font-semibold flex items-center gap-2">
-                  <span>{cat.emoji}</span>
-                  {cat.title}
-                </h2>
-                <p className="text-sm text-zinc-500 mt-1">{cat.description}</p>
-              </div>
-              <div className="grid md:grid-cols-2 gap-4">
-                {cat.prompts.map((p) => (
-                  <button
-                    key={p.id}
-                    onClick={() => usePrompt(p)}
-                    className="text-left bg-zinc-950 border border-zinc-800 rounded-2xl p-5 hover:border-zinc-600 transition-all group"
-                  >
-                    <h3 className="font-semibold text-white mb-1 group-hover:text-blue-400 transition-colors">
-                      {p.title}
-                    </h3>
-                    <p className="text-sm text-zinc-400 mb-3">
-                      {p.description}
-                    </p>
-                    <p className="text-xs text-zinc-600 line-clamp-2 font-mono leading-relaxed">
-                      {p.prompt}
-                    </p>
-                    <p className="text-xs text-blue-400 mt-3">
-                      Use this prompt →
-                    </p>
-                  </button>
-                ))}
-              </div>
-            </section>
-          ))
-        )}
-      </div>
-    </main>
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {section.items.map((item) => (
+                      <PromptCard
+                        key={item.id}
+                        item={item}
+                        showCategoryLabel={false}
+                        onPreview={(p) => setSelectedPrompt(p)}
+                        onUsePrompt={(p) => launchInChat(p.prompt)}
+                        onCopyPrompt={(p) => void copyPromptText(p.prompt)}
+                      />
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {visiblePrompts.map((item) => (
+                <PromptCard
+                  key={item.id}
+                  item={item}
+                  showCategoryLabel={activeCategory === null}
+                  onPreview={(p) => setSelectedPrompt(p)}
+                  onUsePrompt={(p) => launchInChat(p.prompt)}
+                  onCopyPrompt={(p) => void copyPromptText(p.prompt)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </main>
+
+      {/* Responsive Detail Sheet / Slide-over Drawer (key resets field state per prompt) */}
+      <PromptDetailDrawer
+        key={selectedPrompt?.id || "closed"}
+        prompt={selectedPrompt}
+        onClose={() => setSelectedPrompt(null)}
+        onUseResolvedPrompt={(resolved) => {
+          setSelectedPrompt(null);
+          launchInChat(resolved);
+        }}
+        onCopyResolvedPrompt={(resolved) => void copyPromptText(resolved)}
+      />
+
+      <ToastContainer />
+    </div>
   );
 }

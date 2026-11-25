@@ -7,7 +7,7 @@ import {
   Check,
   Code2,
   FolderKanban,
-  Image as ImageIcon,
+  LayoutGrid,
   LogIn,
   MessageSquare,
   Moon,
@@ -67,7 +67,7 @@ type DashboardSidebarProps = {
 
 const WORKSPACE_LINKS = [
   { href: "/projects", label: "Projects", icon: FolderKanban },
-  { href: "/library", label: "Library", icon: ImageIcon },
+  { href: "/library", label: "Prompt Samples", icon: LayoutGrid },
   { href: "/studio", label: "Studio", icon: Wand2 },
   { href: "/journal", label: "Journal", icon: BookOpen },
   { href: "/playground", label: "Playground", icon: Terminal },
