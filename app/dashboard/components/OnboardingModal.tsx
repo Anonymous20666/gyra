@@ -40,9 +40,15 @@ export default function OnboardingModal({ onUsePrompt }: Props) {
   const [step, setStep] = useState(0);
 
   useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
     try {
-      if (!localStorage.getItem(STORAGE_KEY)) setOpen(true);
+      if (!localStorage.getItem(STORAGE_KEY)) {
+        timer = setTimeout(() => setOpen(true), 0);
+      }
     } catch {}
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
   }, []);
 
   const dismiss = () => {
