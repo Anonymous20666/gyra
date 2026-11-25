@@ -621,3 +621,68 @@ input[type="range"].gyra-slider::-moz-range-thumb {
     animation: none;
   }
 }
+
+
+/* ============================================================
+   API Crawler Spider Breathing & Active Processing Pulse
+   ============================================================ */
+@keyframes gyra-spider-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 3px rgba(56, 189, 248, 0.32));
+  }
+  50% {
+    transform: scale(1.09);
+    filter: drop-shadow(0 0 7px rgba(250, 204, 21, 0.52));
+  }
+}
+
+@keyframes gyra-spider-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 6px rgba(250, 204, 21, 0.72));
+  }
+  50% {
+    transform: scale(1.22);
+    filter: drop-shadow(0 0 14px rgba(56, 189, 248, 0.95));
+  }
+}
+
+@keyframes gyra-spider-ring {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.78;
+  }
+  100% {
+    transform: scale(1.95);
+    opacity: 0;
+  }
+}
+
+.gyra-spider-breathe {
+  animation: gyra-spider-breathe 3.2s ease-in-out infinite;
+  transform-origin: center;
+  will-change: transform, filter;
+}
+
+.gyra-spider-pulse {
+  animation: gyra-spider-pulse 0.85s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  transform-origin: center;
+  will-change: transform, filter;
+}
+
+.gyra-spider-ring {
+  animation: gyra-spider-ring 1.15s cubic-bezier(0, 0, 0.2, 1) infinite;
+  transform-origin: center;
+  will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gyra-spider-breathe,
+  .gyra-spider-pulse,
+  .gyra-spider-ring {
+    animation: none;
+  }
+}

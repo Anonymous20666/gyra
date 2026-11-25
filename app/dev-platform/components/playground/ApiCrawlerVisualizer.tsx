@@ -5,6 +5,7 @@ import {
   Network,
   FileCode2,
   BarChart3,
+  Bug,
   Hand,
   ZoomIn,
   ZoomOut,
@@ -58,6 +59,7 @@ export interface ApiCrawlerVisualizerProps {
   stream: boolean;
   includeVoice?: boolean;
   runSignal?: number;
+  isProcessing?: boolean;
   liveExecution?: LiveExecutionSnapshot | null;
   onSelectQueueItem?: (item: CrawlerQueueItem) => void;
 }
@@ -698,12 +700,31 @@ class PrecisionBrainCrawler {
     }
   }
 
-  draw(ctx: CanvasRenderingContext2D, t: number, badge?: string) {
-    const s = this.scale;
-    const breath = 0.5 + 0.5 * Math.sin(t * 3.4);
+  draw(ctx: CanvasRenderingContext2D, t: number, badge?: string, isProcessing = false) {
+    const breatheMul = isProcessing
+      ? 1 + Math.sin(t * 9.0) * 0.085
+      : 1 + Math.sin(t * 2.8) * 0.032;
+    const s = this.scale * breatheMul;
+    const breath = isProcessing
+      ? 0.65 + 0.35 * Math.sin(t * 9.5)
+      : 0.5 + 0.5 * Math.sin(t * 3.4);
     const theme = GYRA_TELEMETRY_THEME;
 
     ctx.save();
+
+    // Expanding pulse waves around spider during active API request processing
+    if (isProcessing) {
+      for (let wIdx = 0; wIdx < 2; wIdx++) {
+        const phase = (t * 1.35 + wIdx * 0.5) % 1;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, (16 + phase * 38) * this.scale, 0, Math.PI * 2);
+        ctx.strokeStyle = wIdx === 0 ? theme.spiderPrimary : theme.spiderSecondary;
+        ctx.globalAlpha = (1 - phase) * 0.52;
+        ctx.lineWidth = 1.6;
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
 
     for (const r of this.ripples) {
       ctx.beginPath();
@@ -967,6 +988,7 @@ export function ApiCrawlerVisualizer({
   stream,
   includeVoice = false,
   runSignal = 0,
+  isProcessing = false,
   liveExecution = null,
   onSelectQueueItem,
 }: ApiCrawlerVisualizerProps) {
@@ -981,6 +1003,11 @@ export function ApiCrawlerVisualizer({
   const [steerMode, setSteerMode] = useState<boolean>(false);
   const [activeReportMetricId, setActiveReportMetricId] = useState<string | null>(null);
   const [reducedMotion, setReducedMotion] = useState<boolean>(false);
+  const [pulseBurst, setPulseBurst] = useState<boolean>(false);
+
+  const activelyProcessing = Boolean(isProcessing || liveExecution?.streaming || pulseBurst);
+  const isProcessingRef = useRef<boolean>(activelyProcessing);
+  isProcessingRef.current = activelyProcessing;
 
   const graphCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const graphWrapRef = useRef<HTMLDivElement | null>(null);
@@ -1131,6 +1158,9 @@ export function ApiCrawlerVisualizer({
     if (runSignal > 0) {
       setFocusedCluster(activeTrace.cluster);
       userGraphTargetRef.current = null;
+      setPulseBurst(true);
+      const timer = window.setTimeout(() => setPulseBurst(false), 2600);
+      return () => window.clearTimeout(timer);
     }
   }, [activeTrace.targetNodeId, activeTrace.cluster, runSignal]);
 
@@ -1566,8 +1596,9 @@ export function ApiCrawlerVisualizer({
         ctx.globalAlpha = 1;
 
         if (!reducedMotion) {
-          const speedMul = isActive ? 0.72 : 0.32;
-          const packetCount = isActive ? 2 : 1;
+          const boost = isProcessingRef.current && isActive ? 1.65 : 1;
+          const speedMul = (isActive ? 0.72 : 0.32) * boost;
+          const packetCount = isActive ? (isProcessingRef.current ? 3 : 2) : 1;
           for (let pk = 0; pk < packetCount; pk++) {
             const p = (t * speedMul + idx * 0.17 + pk * 0.5) % 1;
             const inv = 1 - p;
@@ -1705,18 +1736,18 @@ export function ApiCrawlerVisualizer({
       CLUSTER_DEFS.forEach((c, idx) => {
         const inFocus = !focusedCluster || focusedCluster === c.id;
         if (!inFocus) return;
-        const cp = project(c.cx, c.cy - c.spreadY * 0.95, idx);
-        const text = `${c.code} ${c.label}`;
+        const cp = project(c.cx, c.cy - c.spreadY * 1.16, idx);
+        const text = `${c.code} · ${c.label}`;
         const tw = ctx.measureText(text).width;
-        const bx = Math.max(fieldLeft + 4, Math.min(w - tw - 14, cp.x - tw / 2));
-        const by = Math.max(8, Math.min(h - 22, cp.y));
+        const bx = Math.max(fieldLeft + 6, Math.min(w - tw - 16, cp.x - tw / 2));
+        const by = Math.max(11, Math.min(h - 24, cp.y));
         const col = theme.clusterColors[c.id];
 
-        ctx.fillStyle = "rgba(3, 6, 10, 0.9)";
+        ctx.fillStyle = "rgba(3, 6, 10, 0.92)";
         ctx.strokeStyle = `${col}88`;
-        ctx.lineWidth = 0.8;
+        ctx.lineWidth = 0.85;
         ctx.beginPath();
-        ctx.roundRect(bx - 4, by - 7, tw + 8, 14, 2);
+        ctx.roundRect(bx - 5, by - 7.5, tw + 10, 15, 2.5);
         ctx.fill();
         ctx.stroke();
 
@@ -1782,8 +1813,20 @@ export function ApiCrawlerVisualizer({
         }
       }
       spider.probePoint = minHubDist < 95 ? nearestHubPt : null;
-      spider.update(goalX, goalY, dt, t, theme.spiderPrimary, userOverride ? 0.22 : 0.085);
-      spider.draw(ctx, t, "CRAWLER");
+      spider.update(
+        goalX,
+        goalY,
+        dt,
+        t,
+        theme.spiderPrimary,
+        userOverride ? 0.22 : isProcessingRef.current ? 0.14 : 0.085
+      );
+      spider.draw(
+        ctx,
+        t,
+        isProcessingRef.current ? "PROCESSING" : "CRAWLER",
+        isProcessingRef.current
+      );
 
       ctx.restore();
 
@@ -2001,7 +2044,7 @@ export function ApiCrawlerVisualizer({
         beamCol,
         userOverride ? 0.22 : 0.11
       );
-      codeSpiderRef.current.draw(ctx, t);
+      codeSpiderRef.current.draw(ctx, t, undefined, isProcessingRef.current);
 
       ctx.restore();
     };
@@ -2071,11 +2114,30 @@ export function ApiCrawlerVisualizer({
   return (
     <section
       aria-label="Gyra Precision Telemetry Crawler"
-      className="rounded-lg border border-[#1F1F23] bg-[#03060A] overflow-hidden flex flex-col"
+      className="flex-1 min-h-[460px] lg:min-h-[520px] rounded-lg border border-[#1F1F23] bg-[#03060A] overflow-hidden flex flex-col"
     >
-      {/* Unified Gyra Precision Telemetry Header + Manual Stage Controls */}
-      <div className="px-3 py-2 border-b border-[#18181B] bg-[#07090D] flex flex-wrap items-center justify-between gap-2">
+      {/* Unified Gyra Precision Telemetry Header + Animated Spider Icon + Manual Controls */}
+      <div className="px-3 py-2 border-b border-[#18181B] bg-[#07090D] flex flex-wrap items-center justify-between gap-2 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
+          <div
+            className="relative w-6 h-6 rounded border border-[#1F3A4D] bg-[#060E16] flex items-center justify-center shrink-0"
+            aria-label={activelyProcessing ? "Spider crawler processing API request" : "Spider crawler monitoring telemetry"}
+          >
+            {activelyProcessing && (
+              <span
+                aria-hidden="true"
+                className="gyra-spider-ring absolute inset-0 rounded border border-[#38BDF8]/80 pointer-events-none"
+              />
+            )}
+            <Bug
+              className={`w-3.5 h-3.5 transition-colors ${
+                activelyProcessing
+                  ? "gyra-spider-pulse text-[#FACC15]"
+                  : "gyra-spider-breathe text-[#7DD3FC]"
+              }`}
+              aria-hidden="true"
+            />
+          </div>
           <span className="font-mono text-[11px] font-bold tracking-wider text-[#F4F4F5] uppercase whitespace-nowrap">
             Gyra Telemetry Crawler
           </span>
@@ -2085,11 +2147,15 @@ export function ApiCrawlerVisualizer({
           <span className="font-mono text-[11px] text-[#7DD3FC] truncate">
             {activeTrace.method} {activeTrace.path}
           </span>
-          {activeTrace.isLiveExecution && (
+          {activelyProcessing ? (
+            <span className="font-mono text-[10px] font-bold text-[#FACC15] shrink-0">
+              · PROCESSING
+            </span>
+          ) : activeTrace.isLiveExecution ? (
             <span className="font-mono text-[10px] font-semibold text-[#34D399] shrink-0">
               · LIVE
             </span>
-          )}
+          ) : null}
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
@@ -2132,7 +2198,7 @@ export function ApiCrawlerVisualizer({
       </div>
 
       {/* Manual Stage Selector Bar (Zero Auto-Play) */}
-      <div className="px-3 py-1.5 border-b border-[#18181B] bg-[#05070B] flex items-center justify-between gap-2">
+      <div className="px-3 py-1.5 border-b border-[#18181B] bg-[#05070B] flex items-center justify-between gap-2 shrink-0">
         <div
           className="grid grid-cols-3 gap-1 w-full sm:w-auto p-0.5 rounded-md bg-[#0B0E14] border border-[#1F1F23]"
           role="tablist"
@@ -2169,10 +2235,10 @@ export function ApiCrawlerVisualizer({
       {/* TAB 1: PRECISION RADAR + DENSE TELEMETRY CONSTELLATION + API BOXES  */}
       {/* =================================================================== */}
       {stage === "route" && (
-        <div className="flex flex-col">
+        <div className="flex-1 min-h-0 flex flex-col">
           <div
             ref={graphWrapRef}
-            className="relative w-full h-[355px] sm:h-[385px]"
+            className="relative w-full flex-1 min-h-[370px] sm:min-h-[420px] lg:min-h-[450px]"
             style={{ backgroundColor: theme.bg }}
           >
             <canvas
@@ -2234,7 +2300,7 @@ export function ApiCrawlerVisualizer({
       {/* TAB 2: LARGE ARTICULATED SPIDER WALKING ON LIVE HTTP/JSON/SSE CODE  */}
       {/* =================================================================== */}
       {stage === "crawl" && (
-        <div className="p-3 sm:p-4 space-y-3" style={{ backgroundColor: theme.bg }}>
+        <div className="flex-1 flex flex-col justify-between p-3 sm:p-4 gap-3" style={{ backgroundColor: theme.bg }}>
           <div className="flex flex-wrap items-start justify-between gap-2 pb-2.5 border-b border-[#18181B]">
             <div className="min-w-0">
               <div className="font-mono text-[10px] font-bold tracking-widest uppercase text-[#FACC15]">
@@ -2383,15 +2449,15 @@ export function ApiCrawlerVisualizer({
       {/* TAB 3: PRECISION TELEMETRY REPORT + SWEEPING LINEAGE FAN            */}
       {/* =================================================================== */}
       {stage === "report" && (
-        <div className="flex flex-col" style={{ backgroundColor: theme.bg }}>
-          <div className="px-3.5 py-2 bg-[#1F5B7C] text-[#F8FAFC] flex items-center justify-between gap-2 text-[10.5px] font-mono font-bold tracking-wider uppercase">
+        <div className="flex-1 flex flex-col" style={{ backgroundColor: theme.bg }}>
+          <div className="px-3.5 py-2 bg-[#1F5B7C] text-[#F8FAFC] flex items-center justify-between gap-2 text-[10.5px] font-mono font-bold tracking-wider uppercase shrink-0">
             <span>Gyra Platform · Telemetry Report</span>
             <span className="tabular-nums text-[#FACC15]">
               {codeLines.length} Lines · 6 Verified
             </span>
           </div>
 
-          <div className="p-3.5 sm:p-4 space-y-4">
+          <div className="flex-1 flex flex-col justify-between p-3.5 sm:p-4 gap-4">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <div>
                 <h3 className="font-mono text-[24px] sm:text-[28px] font-bold tracking-tight text-[#FFFFFF] leading-none">
