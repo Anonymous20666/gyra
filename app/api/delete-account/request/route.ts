@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+function getResend() {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) throw new Error("Missing RESEND_API_KEY");
+  return new Resend(key);
+}
 
 export async function POST(req: Request) {
   try {
@@ -9,7 +13,7 @@ export async function POST(req: Request) {
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://gyra.ng";
     const confirmLink = `${baseUrl}/delete-account/confirm?token=${token}`;
 
-    const { error } = await resend.emails.send({
+    const { error } = await getResend().emails.send({
       from: "Gyra Security <security@updates.gyra.ng>",
       to: [email],
       subject: "Action Required: Confirm Account Deletion",
