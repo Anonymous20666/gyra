@@ -615,19 +615,22 @@ class PrecisionBrainCrawler {
     const dy = goalY - this.y;
     const dist = Math.hypot(dx, dy);
 
-    if (dist > 1.5) {
+    if (dist > 1.8) {
       const desired = Math.atan2(dy, dx);
       let dAng = desired - this.angle;
       while (dAng > Math.PI) dAng -= Math.PI * 2;
       while (dAng < -Math.PI) dAng += Math.PI * 2;
-      this.angle += dAng * Math.min(1, dt * 7.2);
+      this.angle += dAng * Math.min(1, dt * 7.8);
 
       const move = 1 - Math.exp(-speed * 60 * dt);
       this.x += dx * move;
       this.y += dy * move;
-    } else {
-      this.x += Math.sin(t * 2.4) * 0.14;
-      this.y += Math.cos(t * 1.9) * 0.14;
+    } else if (this.probePoint) {
+      const faceAng = Math.atan2(this.probePoint.y - this.y, this.probePoint.x - this.x);
+      let dAng = faceAng - this.angle;
+      while (dAng > Math.PI) dAng -= Math.PI * 2;
+      while (dAng < -Math.PI) dAng += Math.PI * 2;
+      this.angle += dAng * Math.min(1, dt * 8.5);
     }
 
     const groupAMoving = this.legs.some(
@@ -637,11 +640,11 @@ class PrecisionBrainCrawler {
       (l) => (l.index + (l.side === 1 ? 1 : 0)) % 2 === 1 && l.stepProgress < 0.7
     );
 
-    const stepDist = 20 * this.scale;
+    const stepDist = 18 * this.scale;
 
     for (const leg of this.legs) {
       if (leg.stepProgress < 1) {
-        leg.stepProgress = Math.min(1, leg.stepProgress + dt * 8.2);
+        leg.stepProgress = Math.min(1, leg.stepProgress + dt * 8.6);
         const p = leg.stepProgress;
         const ease = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
         leg.footX = leg.startX + (leg.targetX - leg.startX) * ease;
@@ -655,12 +658,13 @@ class PrecisionBrainCrawler {
         let wantX = ideal.x;
         let wantY = ideal.y;
 
-        if (leg.index === 0 && this.probePoint && dist < 38) {
+        if (leg.index === 0 && this.probePoint && dist < 44) {
           const pdx = this.probePoint.x - ideal.x;
           const pdy = this.probePoint.y - ideal.y;
-          if (Math.hypot(pdx, pdy) < 95 * this.scale) {
-            wantX = ideal.x + pdx * 0.62 + Math.sin(t * 4.2 + leg.side) * 3;
-            wantY = ideal.y + pdy * 0.62 + Math.cos(t * 3.7 + leg.side) * 3;
+          if (Math.hypot(pdx, pdy) < 115 * this.scale) {
+            const reach = leg.side === -1 ? 0.96 : 0.78;
+            wantX = ideal.x + pdx * reach + Math.sin(t * 4.2 + leg.side) * 1.4;
+            wantY = ideal.y + pdy * reach + Math.cos(t * 3.7 + leg.side) * 1.4;
           }
         }
 
@@ -671,7 +675,7 @@ class PrecisionBrainCrawler {
         if (err > stepDist && canStep) {
           leg.startX = leg.footX;
           leg.startY = leg.footY;
-          const lead = Math.min(20 * this.scale, dist * 0.32);
+          const lead = Math.min(18 * this.scale, dist * 0.3);
           const lx = dist > 2 ? (dx / dist) * lead : 0;
           const ly = dist > 2 ? (dy / dist) * lead : 0;
           leg.targetX = wantX + lx;
@@ -971,6 +975,136 @@ class PrecisionBrainCrawler {
 
     ctx.restore();
   }
+
+  getTouchPoint(): { x: number; y: number } {
+    const frontLegs = this.legs.filter((l) => l.index === 0);
+    if (frontLegs.length === 0) return { x: this.x, y: this.y };
+    if (this.probePoint) {
+      let best = frontLegs[0];
+      let bestD = Infinity;
+      for (const fl of frontLegs) {
+        const d = Math.hypot(fl.footX - this.probePoint.x, fl.footY - this.probePoint.y);
+        if (d < bestD) {
+          bestD = d;
+          best = fl;
+        }
+      }
+      return { x: best.footX, y: best.footY };
+    }
+    return {
+      x: (frontLegs[0].footX + (frontLegs[1]?.footX ?? frontLegs[0].footX)) / 2,
+      y: (frontLegs[0].footY + (frontLegs[1]?.footY ?? frontLegs[0].footY)) / 2,
+    };
+  }
+}
+
+interface LegTouchPopoverOpts {
+  tx: number;
+  ty: number;
+  spiderX: number;
+  spiderY: number;
+  title: string;
+  metric: string;
+  detail: string;
+  accent: string;
+  bounds: { minX: number; maxX: number; minY: number; maxY: number };
+  t: number;
+}
+
+function drawLegTouchPopover(ctx: CanvasRenderingContext2D, opts: LegTouchPopoverOpts) {
+  const { tx, ty, spiderX, spiderY, title, metric, detail, accent, bounds, t } = opts;
+
+  ctx.save();
+
+  // Tactile contact rings right where the spider leg touches
+  const pulseR = 4.5 + Math.sin(t * 7.5) * 1.8;
+  ctx.beginPath();
+  ctx.arc(tx, ty, pulseR + 3, 0, Math.PI * 2);
+  ctx.strokeStyle = accent;
+  ctx.globalAlpha = 0.48;
+  ctx.lineWidth = 1.1;
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(tx, ty, 2.5, 0, Math.PI * 2);
+  ctx.fillStyle = "#FFFFFF";
+  ctx.globalAlpha = 0.96;
+  ctx.shadowColor = accent;
+  ctx.shadowBlur = 8;
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.globalAlpha = 1;
+
+  // Measure compact telemetry card
+  ctx.font = "700 8.5px 'JetBrains Mono', monospace";
+  const titleW = ctx.measureText(title).width;
+  ctx.font = "700 8px 'JetBrains Mono', monospace";
+  const metricW = ctx.measureText(metric).width;
+  ctx.font = "500 8px 'JetBrains Mono', monospace";
+  const shortDetail = detail.length > 34 ? `${detail.slice(0, 33)}…` : detail;
+  const detailW = ctx.measureText(shortDetail).width;
+
+  const padX = 8;
+  const cardW = Math.min(
+    Math.max(132, Math.max(titleW + metricW + 24, detailW + padX * 2 + 4)),
+    Math.max(132, bounds.maxX - bounds.minX - 12)
+  );
+  const cardH = 34;
+
+  // Place popover away from spider body and clamp inside canvas bounds
+  const preferRight = tx >= spiderX ? tx + cardW + 22 <= bounds.maxX : tx - cardW - 22 < bounds.minX;
+  const preferAbove = ty <= spiderY ? ty - cardH - 18 >= bounds.minY : ty + cardH + 18 > bounds.maxY;
+
+  let cx = preferRight ? tx + 16 : tx - cardW - 16;
+  let cy = preferAbove ? ty - cardH - 12 : ty + 12;
+
+  cx = Math.max(bounds.minX + 4, Math.min(bounds.maxX - cardW - 4, cx));
+  cy = Math.max(bounds.minY + 4, Math.min(bounds.maxY - cardH - 4, cy));
+
+  const anchorX = cx > tx ? cx : cx + cardW;
+  const anchorY = cy + cardH * 0.5;
+  const elbowX = tx + (anchorX - tx) * 0.42;
+
+  // Crisp leader trace from touching tarsus tip to detail card
+  ctx.beginPath();
+  ctx.moveTo(tx, ty);
+  ctx.lineTo(elbowX, anchorY);
+  ctx.lineTo(anchorX, anchorY);
+  ctx.strokeStyle = accent;
+  ctx.globalAlpha = 0.72;
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+
+  // Card surface
+  ctx.fillStyle = "rgba(5, 9, 16, 0.94)";
+  ctx.strokeStyle = `${accent}AA`;
+  ctx.lineWidth = 0.95;
+  ctx.beginPath();
+  ctx.roundRect(cx, cy, cardW, cardH, 4);
+  ctx.fill();
+  ctx.stroke();
+
+  // Accent bar
+  ctx.fillStyle = accent;
+  ctx.fillRect(cx + 1, cy + 4, 2.2, cardH - 8);
+
+  // Header line: title + live metric
+  ctx.font = "700 8.5px 'JetBrains Mono', monospace";
+  ctx.fillStyle = "#F8FAFC";
+  ctx.textBaseline = "top";
+  ctx.fillText(title, cx + padX, cy + 5.5);
+
+  ctx.font = "700 8px 'JetBrains Mono', monospace";
+  ctx.fillStyle = accent;
+  ctx.fillText(metric, cx + cardW - metricW - 6, cy + 5.8);
+
+  // Detail line
+  ctx.font = "500 8px 'JetBrains Mono', monospace";
+  ctx.fillStyle = "#A1A1AA";
+  ctx.fillText(shortDetail, cx + padX, cy + 19.5);
+
+  ctx.restore();
 }
 
 function truncateText(str: string, max: number): string {
@@ -1013,13 +1147,18 @@ export function ApiCrawlerVisualizer({
   const graphWrapRef = useRef<HTMLDivElement | null>(null);
   const codeCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const codeWrapRef = useRef<HTMLDivElement | null>(null);
+  const reportCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const reportWrapRef = useRef<HTMLDivElement | null>(null);
 
   const graphSpiderRef = useRef<PrecisionBrainCrawler | null>(null);
   const codeSpiderRef = useRef<PrecisionBrainCrawler | null>(null);
+  const reportSpiderRef = useRef<PrecisionBrainCrawler | null>(null);
   const activeHubIdRef = useRef<string>(activeHubId);
   const activeCodeLineRef = useRef<number>(activeCodeLine);
+  const activeReportMetricIdRef = useRef<string | null>(activeReportMetricId);
   activeHubIdRef.current = activeHubId;
   activeCodeLineRef.current = activeCodeLine;
+  activeReportMetricIdRef.current = activeReportMetricId;
   const userGraphTargetRef = useRef<{ x: number; y: number; until: number } | null>(null);
   const userCodeTargetRef = useRef<{ x: number; y: number; until: number } | null>(null);
   const pointerDownRef = useRef<boolean>(false);
@@ -1400,24 +1539,71 @@ export function ApiCrawlerVisualizer({
     [activeTrace, theme]
   );
 
-  const activeHubNode = useMemo(
-    () => CONSTELLATION.nodes.find((n) => n.id === activeHubId) ?? CONSTELLATION.nodes[3],
-    [activeHubId]
-  );
-
   const activeCodeLineObj = useMemo(
     () => codeLines.find((l) => l.num === activeCodeLine) ?? codeLines[4],
     [codeLines, activeCodeLine]
   );
 
+  // Deterministic real execution pipeline for the currently selected endpoint
+  const pipelineHubs = useMemo(() => {
+    const t = activeTrace.targetNodeId;
+    if (t === "hub-gyra-1.0") {
+      return ["hub-edge-tls", "hub-auth-sha", "hub-guardrails", "hub-gyra-1.0", "hub-sse-pipe", "hub-ledger"];
+    }
+    if (t === "hub-super-2.0") {
+      return ["hub-edge-tls", "hub-auth-sha", "hub-kv-cache", "hub-super-2.0", "hub-sse-pipe", "hub-ledger"];
+    }
+    if (t === "hub-ledger") {
+      return ["hub-edge-tls", "hub-auth-sha", "hub-ledger"];
+    }
+    return ["hub-edge-tls", "hub-auth-sha", t, "hub-ledger"];
+  }, [activeTrace.targetNodeId]);
+
+  const getHubLiveDetail = (hubId: string): { metric: string; detail: string } => {
+    switch (hubId) {
+      case "hub-edge-tls":
+        return { metric: "4ms · H2", detail: "TLS 1.3 · proxy_buffering=off" };
+      case "hub-auth-sha":
+        return { metric: "6ms · OK", detail: "SHA-256 gyra_ key · 100/m quota" };
+      case "hub-guardrails":
+        return { metric: "3ms · PASS", detail: "Prompt injection scan · clean" };
+      case "hub-gyra-1.0":
+        return {
+          metric: `${activeTrace.ttftMs}ms TTFT`,
+          detail: `${activeTrace.model} · ${activeTrace.tokens} tok`,
+        };
+      case "hub-sse-pipe":
+        return {
+          metric: `${activeTrace.status} SSE`,
+          detail: activeTrace.stream ? "Streaming live delta chunks" : "Buffered JSON completion",
+        };
+      case "hub-super-2.0":
+        return { metric: `${activeTrace.ttftMs}ms TTFT`, detail: "32k deep reasoning cluster" };
+      case "hub-kv-cache":
+        return { metric: "HIT · 18ms", detail: "System prompt KV cache warm" };
+      case "hub-ltx-video":
+        return { metric: "720p GPU", detail: "Async render queue via Fal" };
+      case "hub-voice-hd":
+        return { metric: "24kHz PCM", detail: "Neural TTS audio synthesis" };
+      case "hub-whisper-v3":
+        return { metric: "ASR v3", detail: "Word-level timestamps ready" };
+      case "hub-yt-extract":
+        return { metric: "JSON IDX", detail: "Captions & metadata parsed" };
+      case "hub-ledger":
+        return { metric: activeTrace.costLabel, detail: `${activeTrace.costNote} · Supabase sync` };
+      default:
+        return { metric: `${activeTrace.latencyMs}ms`, detail: `${activeTrace.method} ${activeTrace.path}` };
+    }
+  };
+
   const getApiBoxes = (w: number, h: number) => {
     const compact = w < 440;
-    const boxW = compact ? 74 : 112;
-    const boxH = compact ? 28 : 31;
-    const leftPad = compact ? 6 : 10;
-    const topPad = 14;
-    const bottomPad = 16;
-    const availH = Math.max(210, h - topPad - bottomPad);
+    const boxW = compact ? 70 : 94;
+    const boxH = compact ? 26 : 29;
+    const leftPad = compact ? 5 : 8;
+    const topPad = 10;
+    const bottomPad = 10;
+    const availH = Math.max(200, h - topPad - bottomPad);
     const step = (availH - boxH) / Math.max(1, SAMPLE_QUEUE.length - 1);
 
     return SAMPLE_QUEUE.map((item, idx) => {
@@ -1449,17 +1635,7 @@ export function ApiCrawlerVisualizer({
     let lastTime = performance.now();
     const epoch = lastTime;
 
-    const patrolHubIds = [
-      "hub-edge-tls",
-      "hub-auth-sha",
-      "hub-ledger",
-      activeTrace.targetNodeId,
-      "hub-sse-pipe",
-      "hub-super-2.0",
-      "hub-whisper-v3",
-      "hub-ltx-video",
-    ];
-    let patrolIdx = 0;
+    let patrolIdx = Math.max(0, pipelineHubs.indexOf(activeHubIdRef.current));
     let patrolTimer = 0;
 
     const drawFrame = (now: number, syncFirst = false) => {
@@ -1468,7 +1644,7 @@ export function ApiCrawlerVisualizer({
       const t = (now - epoch) / 1000;
 
       const w = Math.max(300, Math.round(wrap.clientWidth || 360));
-      const h = Math.max(340, Math.round(wrap.clientHeight || 370));
+      const h = Math.max(300, Math.round(wrap.clientHeight || 340));
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
       if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
@@ -1483,7 +1659,7 @@ export function ApiCrawlerVisualizer({
       ctx.fillRect(0, 0, w, h);
 
       const bgPulse = 0.78 + 0.22 * Math.sin(t * 1.5);
-      const rad = ctx.createRadialGradient(w * 0.62, h * 0.48, 12, w * 0.62, h * 0.48, w * 0.64);
+      const rad = ctx.createRadialGradient(w * 0.58, h * 0.5, 10, w * 0.58, h * 0.5, w * 0.58);
       rad.addColorStop(0, theme.vignette);
       rad.addColorStop(1, "rgba(0,0,0,0)");
       ctx.globalAlpha = bgPulse;
@@ -1493,12 +1669,12 @@ export function ApiCrawlerVisualizer({
 
       const boxes = getApiBoxes(w, h);
       const compact = w < 440;
-      const fieldLeft = boxes[0].portX + (compact ? 22 : 34);
-      const fieldRight = w - (compact ? 10 : 18);
-      const fieldTop = 16;
-      const fieldBottom = h - 18;
+      const fieldLeft = boxes[0].portX + (compact ? 14 : 20);
+      const fieldRight = w - (compact ? 8 : 12);
+      const fieldTop = 12;
+      const fieldBottom = h - 14;
       const fieldW = Math.max(150, fieldRight - fieldLeft);
-      const fieldH = Math.max(220, fieldBottom - fieldTop);
+      const fieldH = Math.max(210, fieldBottom - fieldTop);
 
       const focusedDef = focusedCluster
         ? CLUSTER_DEFS.find((c) => c.id === focusedCluster)
@@ -1756,12 +1932,12 @@ export function ApiCrawlerVisualizer({
         ctx.fillText(text, bx, by);
       });
 
-      // 5. Active Autonomous Roaming Spider + Instant User Steering
-      const spiderScale = compact ? 0.7 : 0.86;
+      // 5. Purposeful Pipeline Spider Patrol + Leg-Touch Telemetry Reveal
+      const spiderScale = compact ? 0.68 : 0.8;
       if (!graphSpiderRef.current) {
         const startIdx = CONSTELLATION.hubIndexById.get(activeHubIdRef.current) ?? 3;
         const sp = pts[startIdx];
-        graphSpiderRef.current = new PrecisionBrainCrawler(sp.x, sp.y, spiderScale);
+        graphSpiderRef.current = new PrecisionBrainCrawler(sp.x - 24, sp.y + 18, spiderScale);
       } else {
         graphSpiderRef.current.scale = spiderScale;
       }
@@ -1774,18 +1950,29 @@ export function ApiCrawlerVisualizer({
 
       let goalX: number;
       let goalY: number;
+      let inspectedNodeIdx = CONSTELLATION.hubIndexById.get(activeHubIdRef.current) ?? 3;
 
       if (userOverride) {
         goalX = userOverride.x;
         goalY = userOverride.y;
+        let minD = Infinity;
+        for (let i = 0; i < CONSTELLATION.nodes.length; i++) {
+          if (!CONSTELLATION.nodes[i].isHub) continue;
+          const d = Math.hypot(pts[i].x - spider.x, pts[i].y - spider.y);
+          if (d < minD) {
+            minD = d;
+            inspectedNodeIdx = i;
+          }
+        }
       } else {
         patrolTimer += dt;
         const candidateHubs = focusedCluster
           ? CONSTELLATION.nodes.filter((n) => n.isHub && n.cluster === focusedCluster).map((n) => n.id)
-          : patrolHubIds;
-        const hopList = candidateHubs.length > 0 ? candidateHubs : patrolHubIds;
+          : pipelineHubs;
+        const hopList = candidateHubs.length > 0 ? candidateHubs : pipelineHubs;
 
-        if (patrolTimer > 2.4) {
+        const hopInterval = isProcessingRef.current ? 1.55 : 2.3;
+        if (patrolTimer > hopInterval) {
           patrolTimer = 0;
           patrolIdx = (patrolIdx + 1) % hopList.length;
           const nextId = hopList[patrolIdx];
@@ -1795,38 +1982,52 @@ export function ApiCrawlerVisualizer({
           }
         }
 
-        const currentTargetId = hopList[patrolIdx % hopList.length] ?? activeHubIdRef.current;
-        const targetNodeIndex = CONSTELLATION.hubIndexById.get(currentTargetId) ?? 3;
-        const targetPt = pts[targetNodeIndex];
-        goalX = targetPt.x + Math.sin(t * 1.4) * 14;
-        goalY = targetPt.y + Math.cos(t * 1.2) * 10;
+        const currentTargetId = activeHubIdRef.current || hopList[patrolIdx % hopList.length];
+        inspectedNodeIdx = CONSTELLATION.hubIndexById.get(currentTargetId) ?? 3;
+        const targetPt = pts[inspectedNodeIdx];
+        // Park deliberately beside the hub so the front legs reach out and touch it cleanly
+        const approachOffsetX = targetPt.x > fieldLeft + fieldW * 0.55 ? -30 : 30;
+        const approachOffsetY = targetPt.y > fieldTop + fieldH * 0.55 ? -20 : 20;
+        goalX = Math.max(fieldLeft + 24, Math.min(fieldRight - 24, targetPt.x + approachOffsetX));
+        goalY = Math.max(fieldTop + 24, Math.min(fieldBottom - 24, targetPt.y + approachOffsetY));
       }
 
-      let nearestHubPt: { x: number; y: number } | null = null;
-      let minHubDist = Infinity;
-      for (let i = 0; i < CONSTELLATION.nodes.length; i++) {
-        if (!CONSTELLATION.nodes[i].isHub) continue;
-        const d = Math.hypot(pts[i].x - spider.x, pts[i].y - spider.y);
-        if (d < minHubDist) {
-          minHubDist = d;
-          nearestHubPt = pts[i];
-        }
-      }
-      spider.probePoint = minHubDist < 95 ? nearestHubPt : null;
+      const inspectedNode = CONSTELLATION.nodes[inspectedNodeIdx];
+      const inspectedPt = pts[inspectedNodeIdx];
+      const distToInspected = Math.hypot(inspectedPt.x - spider.x, inspectedPt.y - spider.y);
+      spider.probePoint = distToInspected < 115 ? inspectedPt : null;
       spider.update(
         goalX,
         goalY,
         dt,
         t,
-        theme.spiderPrimary,
-        userOverride ? 0.22 : isProcessingRef.current ? 0.14 : 0.085
+        theme.clusterColors[inspectedNode.cluster],
+        userOverride ? 0.22 : isProcessingRef.current ? 0.14 : 0.095
       );
       spider.draw(
         ctx,
         t,
-        isProcessingRef.current ? "PROCESSING" : "CRAWLER",
+        isProcessingRef.current ? "PROCESSING" : undefined,
         isProcessingRef.current
       );
+
+      // Reveal live telemetry detail card right where the spider's front leg touches!
+      if (inspectedNode && distToInspected < 95) {
+        const touchPt = spider.getTouchPoint();
+        const liveMeta = getHubLiveDetail(inspectedNode.id);
+        drawLegTouchPopover(ctx, {
+          tx: touchPt.x,
+          ty: touchPt.y,
+          spiderX: spider.x,
+          spiderY: spider.y,
+          title: inspectedNode.label ?? "GYRA NODE",
+          metric: liveMeta.metric,
+          detail: liveMeta.detail,
+          accent: theme.clusterColors[inspectedNode.cluster],
+          bounds: { minX: fieldLeft + 2, maxX: w - 4, minY: 6, maxY: h - 6 },
+          t,
+        });
+      }
 
       ctx.restore();
 
@@ -1890,7 +2091,7 @@ export function ApiCrawlerVisualizer({
       ro.disconnect();
       window.cancelAnimationFrame(rafId);
     };
-  }, [stage, theme, selectedQueueId, focusedCluster, activeTrace.targetNodeId, reducedMotion]);
+  }, [stage, theme, selectedQueueId, focusedCluster, pipelineHubs, activeTrace, reducedMotion]);
 
   const handleGraphPointer = (
     e: React.PointerEvent<HTMLCanvasElement>,
@@ -2013,10 +2214,10 @@ export function ApiCrawlerVisualizer({
       }
 
       const liveLineNum = activeCodeLineRef.current;
-      const lineY = Math.max(20, Math.min(h - 20, (liveLineNum - 0.5) * lineH));
+      const lineY = Math.max(18, Math.min(h - 18, (liveLineNum - 0.5) * lineH));
       const targetX = userOverride
         ? userOverride.x
-        : Math.min(w - 64, Math.max(92, w * 0.58 + Math.sin(t * 1.5) * 34));
+        : Math.min(w - 46, Math.max(118, w - 62));
       const targetY = userOverride ? userOverride.y : lineY;
 
       if (!codeSpiderRef.current) {
@@ -2035,16 +2236,35 @@ export function ApiCrawlerVisualizer({
       ctx.fillStyle = grad;
       ctx.fillRect(0, lineY - lineH * 0.55, w, lineH * 1.1);
 
-      codeSpiderRef.current.probePoint = { x: Math.max(54, targetX - 44), y: lineY };
+      const probeX = Math.max(58, targetX - 46);
+      codeSpiderRef.current.probePoint = { x: probeX, y: lineY };
       codeSpiderRef.current.update(
         targetX,
         targetY,
         dt,
         t,
         beamCol,
-        userOverride ? 0.22 : 0.11
+        userOverride ? 0.22 : 0.12
       );
       codeSpiderRef.current.draw(ctx, t, undefined, isProcessingRef.current);
+
+      // Reveal extracted code telemetry right where the spider's front leg touches!
+      if (curLine) {
+        const touchPt = codeSpiderRef.current.getTouchPoint();
+        const metricMatch = extractedMetrics.find((m) => m.lineNum === curLine.num);
+        drawLegTouchPopover(ctx, {
+          tx: touchPt.x,
+          ty: touchPt.y,
+          spiderX: codeSpiderRef.current.x,
+          spiderY: codeSpiderRef.current.y,
+          title: `L.${String(curLine.num).padStart(2, "0")} · ${metricMatch ? metricMatch.label : curLine.tag}`,
+          metric: metricMatch ? metricMatch.value : curLine.highlightToken ?? "READ",
+          detail: curLine.explanation,
+          accent: beamCol,
+          bounds: { minX: 6, maxX: w - 6, minY: 6, maxY: h - 6 },
+          t,
+        });
+      }
 
       ctx.restore();
     };
@@ -2066,7 +2286,192 @@ export function ApiCrawlerVisualizer({
       ro.disconnect();
       window.cancelAnimationFrame(rafId);
     };
-  }, [stage, theme, codeLines, reducedMotion]);
+  }, [stage, theme, codeLines, extractedMetrics, reducedMotion]);
+
+  // =========================================================================
+  // TAB 3: LIVE SPIDER WALKING THE BEZIER LINEAGE & TOUCH-REVEALING SOURCE LINES
+  // =========================================================================
+  useIsomorphicLayoutEffect(() => {
+    if (stage !== "report") return;
+    const canvas = reportCanvasRef.current;
+    const wrap = reportWrapRef.current;
+    if (!canvas || !wrap) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    let rafId = 0;
+    let lastTime = performance.now();
+    const epoch = lastTime;
+    let autoIdx = 0;
+    let autoTimer = 0;
+
+    const drawReport = (now: number, syncFirst = false) => {
+      const dt = syncFirst ? 0.016 : Math.min(0.05, Math.max(0.001, (now - lastTime) / 1000));
+      lastTime = now;
+      const t = (now - epoch) / 1000;
+
+      const w = Math.max(280, Math.round(wrap.clientWidth || 360));
+      const h = Math.max(132, Math.round(wrap.clientHeight || 144));
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+      if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
+        canvas.width = Math.round(w * dpr);
+        canvas.height = Math.round(h * dpr);
+      }
+
+      ctx.save();
+      ctx.scale(dpr, dpr);
+
+      ctx.fillStyle = "#04070D";
+      ctx.fillRect(0, 0, w, h);
+
+      // Subtle precision horizontal guide rails
+      const topY = 12;
+      const rulerY = h - 22;
+      ctx.strokeStyle = "rgba(91, 158, 194, 0.1)";
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      ctx.moveTo(14, topY);
+      ctx.lineTo(w - 14, topY);
+      ctx.moveTo(14, rulerY);
+      ctx.lineTo(w - 14, rulerY);
+      ctx.stroke();
+
+      const manualId = activeReportMetricIdRef.current;
+      if (!manualId && !reducedMotion) {
+        autoTimer += dt;
+        if (autoTimer > 2.0) {
+          autoTimer = 0;
+          autoIdx = (autoIdx + 1) % extractedMetrics.length;
+        }
+      } else if (manualId) {
+        const found = extractedMetrics.findIndex((m) => m.id === manualId);
+        if (found >= 0) autoIdx = found;
+      }
+
+      const focusedMetric = extractedMetrics[autoIdx % extractedMetrics.length] ?? extractedMetrics[0];
+      const padX = 18;
+      const spanW = Math.max(120, w - padX * 2);
+
+      // Sweeping Bezier lineage curves from metric cards down to exact wire lines
+      extractedMetrics.forEach((m, idx) => {
+        const startX = padX + ((idx + 0.5) / extractedMetrics.length) * spanW;
+        const endX = padX + ((m.lineNum - 1) / Math.max(1, codeLines.length - 1)) * spanW;
+        const isLit = focusedMetric.id === m.id;
+        const cp1y = topY + (rulerY - topY) * 0.56;
+        const cp2y = topY + (rulerY - topY) * 0.44;
+
+        ctx.beginPath();
+        ctx.moveTo(startX, topY);
+        ctx.bezierCurveTo(startX, cp1y, endX, cp2y, endX, rulerY);
+        ctx.strokeStyle = m.accent;
+        ctx.globalAlpha = isLit ? 0.95 : 0.24;
+        ctx.lineWidth = isLit ? 2.1 : 1.05;
+        ctx.stroke();
+
+        // Top & bottom terminal nodes
+        ctx.fillStyle = m.accent;
+        ctx.globalAlpha = isLit ? 1 : 0.45;
+        ctx.beginPath();
+        ctx.arc(startX, topY, isLit ? 3.2 : 2.1, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(endX, rulerY, isLit ? 3.6 : 2.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Traveling spark up the lit thread from spider touch -> metric card
+        if (isLit && !reducedMotion) {
+          const p = (t * 0.95) % 1;
+          const inv = 1 - p;
+          const px =
+            inv * inv * inv * endX +
+            3 * inv * inv * p * endX +
+            3 * inv * p * p * startX +
+            p * p * p * startX;
+          const py =
+            inv * inv * inv * rulerY +
+            3 * inv * inv * p * cp2y +
+            3 * inv * p * p * cp1y +
+            p * p * p * topY;
+          ctx.beginPath();
+          ctx.arc(px, py, 2.8, 0, Math.PI * 2);
+          ctx.fillStyle = "#FFFFFF";
+          ctx.shadowColor = m.accent;
+          ctx.shadowBlur = 9;
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        }
+        ctx.globalAlpha = 1;
+      });
+
+      // Bottom wire-line ruler ticks
+      codeLines.forEach((line) => {
+        const tx = padX + ((line.num - 1) / Math.max(1, codeLines.length - 1)) * spanW;
+        const tagged = extractedMetrics.some((m) => m.lineNum === line.num);
+        const isCurrent = focusedMetric.lineNum === line.num;
+        ctx.beginPath();
+        ctx.moveTo(tx, isCurrent ? rulerY - 7 : tagged ? rulerY - 4 : rulerY - 2);
+        ctx.lineTo(tx, rulerY + 6);
+        ctx.strokeStyle = isCurrent ? focusedMetric.accent : tagged ? "#E4E4E7" : "#273142";
+        ctx.lineWidth = isCurrent ? 2 : tagged ? 1.3 : 0.9;
+        ctx.stroke();
+      });
+
+      // Live articulated spider walking the lineage rail & touching the active source line!
+      const targetTickX =
+        padX + ((focusedMetric.lineNum - 1) / Math.max(1, codeLines.length - 1)) * spanW;
+      const spiderXGoal = targetTickX > w * 0.55 ? targetTickX - 28 : targetTickX + 28;
+      const spiderYGoal = rulerY - 26;
+
+      if (!reportSpiderRef.current) {
+        reportSpiderRef.current = new PrecisionBrainCrawler(spiderXGoal, spiderYGoal, 0.56);
+      } else {
+        reportSpiderRef.current.scale = 0.56;
+      }
+
+      const rSpider = reportSpiderRef.current;
+      rSpider.probePoint = { x: targetTickX, y: rulerY };
+      rSpider.update(spiderXGoal, spiderYGoal, dt, t, focusedMetric.accent, 0.14);
+      rSpider.draw(ctx, t, undefined, isProcessingRef.current);
+
+      const srcLine = codeLines.find((l) => l.num === focusedMetric.lineNum);
+      const touchPt = rSpider.getTouchPoint();
+      drawLegTouchPopover(ctx, {
+        tx: touchPt.x,
+        ty: touchPt.y,
+        spiderX: rSpider.x,
+        spiderY: rSpider.y,
+        title: `L.${String(focusedMetric.lineNum).padStart(2, "0")} · ${focusedMetric.label}`,
+        metric: focusedMetric.value,
+        detail: srcLine
+          ? `${srcLine.prefix.trim()} ${srcLine.highlightToken ?? ""}`.trim()
+          : focusedMetric.sublabel,
+        accent: focusedMetric.accent,
+        bounds: { minX: 6, maxX: w - 6, minY: 16, maxY: rulerY - 4 },
+        t,
+      });
+
+      ctx.restore();
+    };
+
+    drawReport(performance.now(), true);
+
+    const ro = new ResizeObserver(() => drawReport(performance.now(), true));
+    ro.observe(wrap);
+
+    if (!reducedMotion) {
+      const loop = (now: number) => {
+        drawReport(now, false);
+        rafId = window.requestAnimationFrame(loop);
+      };
+      rafId = window.requestAnimationFrame(loop);
+    }
+
+    return () => {
+      ro.disconnect();
+      window.cancelAnimationFrame(rafId);
+    };
+  }, [stage, codeLines, extractedMetrics, reducedMotion]);
 
   const jumpSpiderToCodeLine = (lineNum: number) => {
     activeCodeLineRef.current = lineNum;
@@ -2114,7 +2519,7 @@ export function ApiCrawlerVisualizer({
   return (
     <section
       aria-label="Gyra Precision Telemetry Crawler"
-      className="flex-1 min-h-[460px] lg:min-h-[520px] rounded-lg border border-[#1F1F23] bg-[#03060A] overflow-hidden flex flex-col"
+      className="rounded-lg border border-[#1F1F23] bg-[#03060A] overflow-hidden flex flex-col"
     >
       {/* Unified Gyra Precision Telemetry Header + Animated Spider Icon + Manual Controls */}
       <div className="px-3 py-2 border-b border-[#18181B] bg-[#07090D] flex flex-wrap items-center justify-between gap-2 shrink-0">
@@ -2165,7 +2570,7 @@ export function ApiCrawlerVisualizer({
               onClick={() =>
                 setFocusedCluster((prev) => (prev ? null : activeTrace.cluster))
               }
-              className="min-h-[34px] sm:min-h-[28px] px-2.5 py-1 rounded border border-[#27272A] bg-[#0F1218] hover:border-[#3F3F46] text-[10.5px] font-mono text-[#E4E4E7] inline-flex items-center gap-1.5 whitespace-nowrap"
+              className="min-h-[32px] sm:min-h-[26px] px-2 py-1 rounded border border-[#27272A] bg-[#0F1218] hover:border-[#3F3F46] text-[10.5px] font-mono text-[#E4E4E7] inline-flex items-center gap-1 whitespace-nowrap"
             >
               {focusedCluster ? (
                 <>
@@ -2184,7 +2589,7 @@ export function ApiCrawlerVisualizer({
             <button
               type="button"
               onClick={() => setSteerMode((s) => !s)}
-              className={`min-h-[34px] sm:min-h-[28px] px-2.5 py-1 rounded border text-[10.5px] font-mono inline-flex items-center gap-1.5 transition-colors whitespace-nowrap ${
+              className={`min-h-[32px] sm:min-h-[26px] px-2 py-1 rounded border text-[10.5px] font-mono inline-flex items-center gap-1 transition-colors whitespace-nowrap ${
                 steerMode
                   ? "border-[#FACC15] bg-[#241E08] text-[#FEF08A]"
                   : "border-[#27272A] bg-[#0F1218] text-[#D4D4D8] hover:border-[#3F3F46]"
@@ -2213,7 +2618,7 @@ export function ApiCrawlerVisualizer({
                 role="tab"
                 aria-selected={active}
                 onClick={() => setStage(id)}
-                className={`min-h-[38px] sm:min-h-[30px] px-2 sm:px-3 py-1 rounded text-[11.5px] font-medium inline-flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap ${
+                className={`min-h-[34px] sm:min-h-[28px] px-2 sm:px-2.5 py-1 rounded text-[11px] font-medium inline-flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap ${
                   active
                     ? "bg-[#1F5B7C] text-[#F8FAFC] font-semibold"
                     : "text-[#A1A1AA] hover:text-[#F4F4F5] hover:bg-[#121620]"
@@ -2235,10 +2640,10 @@ export function ApiCrawlerVisualizer({
       {/* TAB 1: PRECISION RADAR + DENSE TELEMETRY CONSTELLATION + API BOXES  */}
       {/* =================================================================== */}
       {stage === "route" && (
-        <div className="flex-1 min-h-0 flex flex-col">
+        <div className="flex flex-col">
           <div
             ref={graphWrapRef}
-            className="relative w-full flex-1 min-h-[370px] sm:min-h-[420px] lg:min-h-[450px]"
+            className="relative w-full h-[325px] sm:h-[345px] lg:h-[355px]"
             style={{ backgroundColor: theme.bg }}
           >
             <canvas
@@ -2259,38 +2664,65 @@ export function ApiCrawlerVisualizer({
               aria-label="Precision radar API constellation with rectangular API endpoint boxes, breathing fiber conduits, and active AI-brain spider"
             />
 
-            <div className="absolute top-2 right-2.5 pointer-events-none">
+            <div className="absolute top-2 right-2 pointer-events-none">
               <span className="font-mono text-[9.5px] text-[#A1A1AA] bg-[#03060A]/88 border border-[#1F1F23] px-2 py-0.5 rounded">
-                {steerMode ? "Drag to guide spider" : "Tap API box or cluster"}
+                {steerMode ? "Drag spider to probe" : "Tap API box or hop"}
               </span>
             </div>
           </div>
 
-          <div className="px-3.5 py-2.5 border-t border-[#18181B] bg-[#06090F] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 font-mono text-[11px]">
-                <span
-                  className="font-bold uppercase"
-                  style={{ color: theme.clusterColors[activeHubNode.cluster] }}
-                >
-                  {activeHubNode.label ?? "GYRA MESH"}
-                </span>
-                <span className="text-[#3F3F46]">·</span>
-                <span className="text-[#F4F4F5] truncate">
-                  {activeTrace.method} {activeTrace.path}
-                </span>
-              </div>
-              <p className="text-[12px] text-[#A1A1AA] mt-0.5 leading-snug">
-                {activeHubNode.role ?? "Routing live payload across Gyra inference clusters."}
-              </p>
+          {/* Interactive Active Pipeline Hop Rail (Tap any hop to send spider's legs there) */}
+          <div className="px-2.5 py-2 border-t border-[#18181B] bg-[#06090F] flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-1 overflow-x-auto max-w-full">
+              {pipelineHubs.map((hubId, i) => {
+                const node = CONSTELLATION.nodes.find((n) => n.id === hubId);
+                if (!node) return null;
+                const isTouching = activeHubId === hubId;
+                const col = theme.clusterColors[node.cluster];
+                const meta = getHubLiveDetail(hubId);
+                return (
+                  <React.Fragment key={hubId}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        activeHubIdRef.current = hubId;
+                        setActiveHubId(hubId);
+                        userGraphTargetRef.current = null;
+                      }}
+                      className={`px-2 py-1 rounded border font-mono text-[10px] inline-flex items-center gap-1.5 transition-colors whitespace-nowrap ${
+                        isTouching
+                          ? "bg-[#0F1B29] border-[#5B9EC2] text-[#FFFFFF]"
+                          : "bg-[#080C12] border-[#1A202B] text-[#A1A1AA] hover:border-[#303A4A]"
+                      }`}
+                    >
+                      <span
+                        className="w-1.5 h-1.5 rounded-full shrink-0"
+                        style={{ backgroundColor: col }}
+                      />
+                      <span className="font-semibold">
+                        {(node.label ?? hubId).split(" ")[0]}
+                      </span>
+                      <span className="text-[9.5px] tabular-nums" style={{ color: isTouching ? col : "#71717A" }}>
+                        {meta.metric.split(" ")[0]}
+                      </span>
+                    </button>
+                    {i < pipelineHubs.length - 1 && (
+                      <span className="text-[#3F3F46] font-mono text-[10px]" aria-hidden="true">
+                        →
+                      </span>
+                    )}
+                  </React.Fragment>
+                );
+              })}
             </div>
+
             <button
               type="button"
               onClick={() => setStage("crawl")}
-              className="self-start sm:self-center px-3 py-1.5 rounded border border-[#27272A] bg-[#0E131B] hover:border-[#5B9EC2] font-mono text-[11px] font-semibold text-[#F4F4F5] inline-flex items-center gap-1 shrink-0 whitespace-nowrap"
+              className="px-2.5 py-1 rounded border border-[#27272A] bg-[#0E131B] hover:border-[#5B9EC2] font-mono text-[10.5px] font-semibold text-[#F4F4F5] inline-flex items-center gap-1 shrink-0 whitespace-nowrap"
             >
               <span>Inspect Code</span>
-              <ArrowUpRight className="w-3.5 h-3.5 text-[#FACC15]" />
+              <ArrowUpRight className="w-3 h-3 text-[#FACC15]" />
             </button>
           </div>
         </div>
@@ -2300,29 +2732,28 @@ export function ApiCrawlerVisualizer({
       {/* TAB 2: LARGE ARTICULATED SPIDER WALKING ON LIVE HTTP/JSON/SSE CODE  */}
       {/* =================================================================== */}
       {stage === "crawl" && (
-        <div className="flex-1 flex flex-col justify-between p-3 sm:p-4 gap-3" style={{ backgroundColor: theme.bg }}>
-          <div className="flex flex-wrap items-start justify-between gap-2 pb-2.5 border-b border-[#18181B]">
+        <div className="p-2.5 sm:p-3 space-y-2.5" style={{ backgroundColor: theme.bg }}>
+          <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-[#18181B]">
             <div className="min-w-0">
-              <div className="font-mono text-[10px] font-bold tracking-widest uppercase text-[#FACC15]">
-                Crawler · Reading Live Wire &amp; Code
-              </div>
-              <div className="font-mono text-[20px] sm:text-[22px] font-bold tracking-tight text-[#FFFFFF] leading-tight mt-0.5">
-                {activeTrace.model}
-              </div>
-              <p className="text-[11.5px] text-[#A1A1AA] mt-0.5 leading-snug">
-                <span className="font-mono text-[#7DD3FC] mr-1.5">
-                  L.{String(activeCodeLineObj.num).padStart(2, "0")}
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-[15px] font-bold tracking-tight text-[#FFFFFF]">
+                  {activeTrace.model}
                 </span>
+                <span className="font-mono text-[10px] font-bold text-[#FACC15] uppercase">
+                  L.{String(activeCodeLineObj.num).padStart(2, "0")} · {activeCodeLineObj.tag}
+                </span>
+              </div>
+              <p className="text-[11px] text-[#A1A1AA] truncate">
                 {activeCodeLineObj.explanation}
               </p>
             </div>
-            <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[10.5px] font-mono tabular-nums shrink-0">
-              <span className="text-[#71717A]">LINES</span>
-              <span className="text-[#F4F4F5] text-right">{codeLines.length}</span>
-              <span className="text-[#71717A]">TTFT</span>
-              <span className="text-[#FACC15] text-right">{activeTrace.ttftMs}ms</span>
-              <span className="text-[#71717A]">SIZE</span>
-              <span className="text-[#7DD3FC] text-right">{activeTrace.payloadSize}</span>
+            <div className="flex items-center gap-2.5 text-[10px] font-mono tabular-nums shrink-0">
+              <span className="text-[#71717A]">
+                TTFT <strong className="text-[#FACC15]">{activeTrace.ttftMs}ms</strong>
+              </span>
+              <span className="text-[#71717A]">
+                SIZE <strong className="text-[#7DD3FC]">{activeTrace.payloadSize}</strong>
+              </span>
             </div>
           </div>
 
@@ -2339,7 +2770,7 @@ export function ApiCrawlerVisualizer({
             style={{ touchAction: steerMode ? "none" : "pan-y" }}
             className="relative rounded-md border border-[#1F1F23] bg-[#04070C] overflow-hidden"
           >
-            <div className="p-2 sm:p-3 font-mono text-[10px] sm:text-[11px] leading-[1.62] overflow-x-auto">
+            <div className="p-2 font-mono text-[10px] sm:text-[10.5px] leading-[1.52] overflow-x-auto">
               {codeLines.map((line) => {
                 const isActive = line.num === activeCodeLine;
                 const isTagged = taggedLines.includes(line.num) && Boolean(line.highlightToken);
@@ -2348,9 +2779,9 @@ export function ApiCrawlerVisualizer({
                     key={line.num}
                     type="button"
                     onClick={() => jumpSpiderToCodeLine(line.num)}
-                    className={`w-full text-left flex items-center gap-2 px-1 py-[1px] rounded-sm transition-colors ${
+                    className={`w-full text-left flex items-center gap-1.5 px-1 py-[0.5px] rounded-sm transition-colors ${
                       isActive
-                        ? "bg-[#38BDF8]/[0.1] text-[#FFFFFF]"
+                        ? "bg-[#38BDF8]/[0.11] text-[#FFFFFF]"
                         : "text-[#A1A1AA] hover:bg-[#FFFFFF]/[0.03]"
                     }`}
                   >
@@ -2358,7 +2789,7 @@ export function ApiCrawlerVisualizer({
                       {String(line.num).padStart(2, "0")}
                     </span>
                     <span
-                      className="w-7 shrink-0 text-[9px] font-bold tracking-wider"
+                      className="w-6 shrink-0 text-[8.5px] font-bold tracking-wider"
                       style={{
                         color:
                           line.tag === "HDR"
@@ -2404,75 +2835,51 @@ export function ApiCrawlerVisualizer({
             />
           </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="font-mono text-[10px] font-bold tracking-wider uppercase text-[#FACC15]">
-                Tagged in this read
-              </span>
-              <span className="font-mono text-[10px] text-[#71717A]">
-                Tap card or line to direct spider
-              </span>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {extractedMetrics.map((m) => {
-                const isCurrent = activeCodeLine === m.lineNum;
-                return (
-                  <button
-                    key={m.id}
-                    type="button"
-                    onClick={() => jumpSpiderToCodeLine(m.lineNum)}
-                    className={`text-left rounded border px-2.5 py-2 transition-colors ${
-                      isCurrent
-                        ? "bg-[#0E1824] border-[#5B9EC2]"
-                        : "bg-[#070A10] border-[#1A1F29] hover:border-[#2E3848]"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-1 text-[9.5px] font-mono text-[#71717A]">
-                      <span className="truncate">{m.label}</span>
-                      <span className="font-bold tabular-nums" style={{ color: m.accent }}>
-                        L.{String(m.lineNum).padStart(2, "0")}
-                      </span>
-                    </div>
-                    <div className="font-mono text-[15px] font-bold text-[#FFFFFF] tabular-nums mt-0.5 truncate">
-                      {m.value}
-                    </div>
-                    <div className="text-[10px] text-[#71717A] truncate">{m.sublabel}</div>
-                  </button>
-                );
-              })}
-            </div>
+          <div className="grid grid-cols-3 gap-1.5">
+            {extractedMetrics.map((m) => {
+              const isCurrent = activeCodeLine === m.lineNum;
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => jumpSpiderToCodeLine(m.lineNum)}
+                  className={`text-left rounded border px-2 py-1.5 transition-colors ${
+                    isCurrent
+                      ? "bg-[#0E1824] border-[#5B9EC2]"
+                      : "bg-[#070A10] border-[#1A1F29] hover:border-[#2E3848]"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-1 text-[9px] font-mono text-[#71717A]">
+                    <span className="truncate">{m.label}</span>
+                    <span className="font-bold tabular-nums" style={{ color: m.accent }}>
+                      L.{String(m.lineNum).padStart(2, "0")}
+                    </span>
+                  </div>
+                  <div className="font-mono text-[13px] font-bold text-[#FFFFFF] tabular-nums truncate">
+                    {m.value}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
 
       {/* =================================================================== */}
-      {/* TAB 3: PRECISION TELEMETRY REPORT + SWEEPING LINEAGE FAN            */}
+      {/* TAB 3: PRECISION TELEMETRY REPORT + LIVE SPIDER LINEAGE RAIL        */}
       {/* =================================================================== */}
       {stage === "report" && (
-        <div className="flex-1 flex flex-col" style={{ backgroundColor: theme.bg }}>
-          <div className="px-3.5 py-2 bg-[#1F5B7C] text-[#F8FAFC] flex items-center justify-between gap-2 text-[10.5px] font-mono font-bold tracking-wider uppercase shrink-0">
-            <span>Gyra Platform · Telemetry Report</span>
+        <div className="flex flex-col" style={{ backgroundColor: theme.bg }}>
+          <div className="px-3 py-1.5 bg-[#1F5B7C] text-[#F8FAFC] flex items-center justify-between gap-2 text-[10px] font-mono font-bold tracking-wider uppercase shrink-0">
+            <span>{activeTrace.model} · {activeTrace.requestId}</span>
             <span className="tabular-nums text-[#FACC15]">
-              {codeLines.length} Lines · 6 Verified
+              {activeTrace.status} OK · {activeTrace.payloadSize}
             </span>
           </div>
 
-          <div className="flex-1 flex flex-col justify-between p-3.5 sm:p-4 gap-4">
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <div>
-                <h3 className="font-mono text-[24px] sm:text-[28px] font-bold tracking-tight text-[#FFFFFF] leading-none">
-                  {activeTrace.model}
-                </h3>
-                <p className="font-mono text-[11px] text-[#7DD3FC] mt-1">
-                  {activeTrace.method} {activeTrace.path} · {activeTrace.requestId}
-                </p>
-              </div>
-              <span className="font-mono text-[11px] font-semibold text-[#34D399] tabular-nums">
-                {activeTrace.status} OK · {activeTrace.payloadSize}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <div className="p-2.5 sm:p-3 space-y-2.5">
+            {/* Compact 3x2 Verified Metrics Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
               {extractedMetrics.map((m) => {
                 const selected = activeReportMetricId === m.id;
                 const dimmed = activeReportMetricId !== null && !selected;
@@ -2483,24 +2890,24 @@ export function ApiCrawlerVisualizer({
                     onClick={() =>
                       setActiveReportMetricId((prev) => (prev === m.id ? null : m.id))
                     }
-                    className={`text-left rounded border px-3 py-2.5 transition-all min-h-[78px] ${
+                    className={`text-left rounded border px-2.5 py-2 transition-all ${
                       selected
                         ? "border-[#7DD3FC] bg-[#0F1B29]"
                         : dimmed
-                          ? "border-[#151A22] bg-[#05080D] opacity-35 hover:opacity-80"
+                          ? "border-[#151A22] bg-[#05080D] opacity-45 hover:opacity-90"
                           : "border-[#1C2330] bg-[#080C12] hover:border-[#364459]"
                     }`}
                   >
-                    <div className="flex items-center justify-between gap-1 text-[10px] font-mono text-[#71717A]">
+                    <div className="flex items-center justify-between gap-1 text-[9.5px] font-mono text-[#71717A]">
                       <span className="truncate">{m.label}</span>
                       <span className="font-bold tabular-nums" style={{ color: m.accent }}>
                         L.{String(m.lineNum).padStart(2, "0")}
                       </span>
                     </div>
-                    <div className="font-mono text-[18px] sm:text-[20px] font-bold text-[#FFFFFF] tabular-nums mt-1 truncate">
+                    <div className="font-mono text-[15px] sm:text-[16px] font-bold text-[#FFFFFF] tabular-nums mt-0.5 truncate">
                       {m.value}
                     </div>
-                    <div className="text-[10.5px] text-[#8E96A4] truncate mt-0.5">
+                    <div className="text-[9.5px] text-[#8E96A4] truncate">
                       {m.sublabel}
                     </div>
                   </button>
@@ -2508,56 +2915,57 @@ export function ApiCrawlerVisualizer({
               })}
             </div>
 
-            <div>
-              <svg
-                viewBox="0 0 600 96"
-                className="w-full h-[88px] block overflow-visible"
-                role="img"
-                aria-label="Sweeping Bezier lineage curves mapping extracted telemetry metrics back to exact source lines"
-              >
-                {extractedMetrics.map((m, idx) => {
-                  const startX = 50 + idx * 100;
-                  const endX =
-                    20 + ((m.lineNum - 1) / Math.max(1, codeLines.length - 1)) * 560;
-                  const lit = activeReportMetricId === null || activeReportMetricId === m.id;
-                  return (
-                    <g key={m.id} opacity={lit ? 1 : 0.14}>
-                      <path
-                        d={`M ${startX} 2 C ${startX} 54, ${endX} 42, ${endX} 82`}
-                        fill="none"
-                        stroke={m.accent}
-                        strokeWidth={activeReportMetricId === m.id ? 2.4 : 1.35}
-                      />
-                      <circle cx={startX} cy={3} r={2.8} fill={m.accent} />
-                      <circle cx={endX} cy={82} r={3.4} fill={m.accent} />
-                    </g>
-                  );
-                })}
-
-                {codeLines.map((line) => {
-                  const tx =
-                    20 + ((line.num - 1) / Math.max(1, codeLines.length - 1)) * 560;
-                  const tagged = extractedMetrics.some((m) => m.lineNum === line.num);
-                  return (
-                    <line
-                      key={line.num}
-                      x1={tx}
-                      y1={tagged ? 78 : 83}
-                      x2={tx}
-                      y2={92}
-                      stroke={tagged ? "#FFFFFF" : "#272F3D"}
-                      strokeWidth={tagged ? 1.6 : 1}
-                    />
-                  );
-                })}
-              </svg>
-
-              <div className="flex items-center justify-between text-[10px] font-mono text-[#71717A] tabular-nums px-1">
+            {/* Live Spider Walking the Bezier Lineage Rail (Reveals source snippet at touching legs) */}
+            <div className="rounded-md border border-[#1B2230] bg-[#04070D] overflow-hidden">
+              <div ref={reportWrapRef} className="relative w-full h-[142px]">
+                <canvas
+                  ref={reportCanvasRef}
+                  onPointerDown={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const ratio = Math.max(0, Math.min(1, (x - 18) / Math.max(1, rect.width - 36)));
+                    const approxLine = 1 + ratio * (codeLines.length - 1);
+                    let best = extractedMetrics[0];
+                    let bestD = Infinity;
+                    for (const m of extractedMetrics) {
+                      const d = Math.abs(m.lineNum - approxLine);
+                      if (d < bestD) {
+                        bestD = d;
+                        best = m;
+                      }
+                    }
+                    if (best) setActiveReportMetricId(best.id);
+                  }}
+                  className="w-full h-full block cursor-pointer select-none"
+                  aria-label="Live spider walking Bezier lineage rail and revealing source code snippets where its legs touch"
+                />
+              </div>
+              <div className="px-2.5 py-1 border-t border-[#141A24] bg-[#060A10] flex items-center justify-between text-[9.5px] font-mono text-[#71717A] tabular-nums">
                 <span>LINE 01</span>
-                <span className="text-[#A1A1AA] text-center truncate px-2">
-                  Every value tagged to the exact line it came from
+                <span className="text-[#A1A1AA] truncate px-2">
+                  Tap card or ruler · spider touches exact source line
                 </span>
                 <span>LINE {String(codeLines.length).padStart(2, "0")}</span>
+              </div>
+            </div>
+
+            {/* Compact Latency Breakdown Waterfall Strip */}
+            <div className="rounded border border-[#1A202B] bg-[#070B12] px-2.5 py-1.5 space-y-1">
+              <div className="flex items-center justify-between font-mono text-[9.5px] tabular-nums">
+                <span className="text-[#A1A1AA]">PIPELINE LATENCY WATERFALL</span>
+                <span className="text-[#7DD3FC] font-semibold">{activeTrace.latencyMs}ms TOTAL</span>
+              </div>
+              <div className="h-1.5 w-full rounded-sm bg-[#0E141E] overflow-hidden flex">
+                <div className="h-full bg-[#FACC15]" style={{ width: "8%" }} title="Edge TLS 4ms" />
+                <div className="h-full bg-[#34D399]" style={{ width: "10%" }} title="SHA-256 Auth 6ms" />
+                <div className="h-full bg-[#38BDF8]" style={{ width: "32%" }} title={`TTFT ${activeTrace.ttftMs}ms`} />
+                <div className="h-full bg-[#A78BFA]" style={{ width: "50%" }} title="Token Stream & Ledger" />
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-2 font-mono text-[9px] text-[#71717A] tabular-nums">
+                <span><strong className="text-[#FACC15]">EDGE</strong> 4ms</span>
+                <span><strong className="text-[#34D399]">AUTH</strong> 6ms</span>
+                <span><strong className="text-[#38BDF8]">TTFT</strong> {activeTrace.ttftMs}ms</span>
+                <span><strong className="text-[#A78BFA]">STREAM</strong> {Math.max(12, activeTrace.latencyMs - activeTrace.ttftMs - 10)}ms</span>
               </div>
             </div>
           </div>

@@ -195,7 +195,7 @@ export function RequestBuilder({
       </div>
 
       {/* Scrollable Configuration Area */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-4 flex flex-col gap-4">
+      <div className="flex-1 min-h-0 overflow-y-auto p-3.5 space-y-3">
         {/* Authentication Bar */}
         <div className="bg-[#09090B] border border-[#1F1F23] rounded-lg p-3.5 space-y-2">
           <div className="flex items-center justify-between gap-2">
