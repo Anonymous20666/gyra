@@ -34,6 +34,7 @@ import type {
 
 const SIDEBAR_COLLAPSED_KEY = "gyra:sidebar_collapsed_v1";
 const RECENT_IMAGES_KEY = "gyra:recent_images_v1";
+const PENDING_PROMPT_STORAGE_KEY = "gyra:pending_prompt_v1";
 
 type SupabaseUser = {
   id: string;
@@ -56,6 +57,8 @@ function DashboardWorkspace() {
   const searchParams = useSearchParams();
   const projectId = searchParams.get("projectId");
   const queryChatId = searchParams.get("chat");
+  const queryPrompt = searchParams.get("prompt");
+  const fromSamples = searchParams.get("from");
 
   // User & subscription
   const [user, setUser] = useState<SupabaseUser>(null);
@@ -125,6 +128,41 @@ function DashboardWorkspace() {
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
+
+  // Load prefilled prompt handed off from Prompt Samples (/library) without auto-submitting
+  useEffect(() => {
+    const id = window.requestAnimationFrame(() => {
+      let incoming = queryPrompt ? queryPrompt.trim() : "";
+      try {
+        const stored = sessionStorage.getItem(PENDING_PROMPT_STORAGE_KEY);
+        if (stored && stored.trim()) {
+          // Prefer sessionStorage when present (preserves long multiline templates cleanly)
+          incoming = stored.trim();
+          sessionStorage.removeItem(PENDING_PROMPT_STORAGE_KEY);
+        }
+      } catch {
+        // Ignore storage restrictions
+      }
+
+      if (!incoming) return;
+
+      setInput(incoming);
+      showToast("Prompt loaded — review and send when ready", "info");
+
+      try {
+        const url = new URL(window.location.href);
+        if (url.searchParams.has("prompt") || url.searchParams.has("from")) {
+          url.searchParams.delete("prompt");
+          url.searchParams.delete("from");
+          const cleanUrl = url.pathname + (url.search ? url.search : "") + url.hash;
+          window.history.replaceState({}, "", cleanUrl);
+        }
+      } catch {
+        // Ignore URL cleanup error
+      }
+    });
+    return () => window.cancelAnimationFrame(id);
+  }, [queryPrompt, fromSamples]);
 
   // Restore persisted UI preferences after mount without blocking render
   useEffect(() => {
